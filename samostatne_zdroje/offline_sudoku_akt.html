@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Sudoku</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --board-bg: #fff;
+            --primary-color: #8ec6eb;			
+            --select-color: #b7defa;
+            --success-color: #a7ee6d;
+            --border-thin: #888;  
+            --border-thick: #2c3e50;
+            
+            /* PRIDANÉ PREMENNÉ PRE FARBY TEXTU */
+            --fixed-text: #000000;   /* Čierna pre predvyplnené čísla */
+            --user-text: #1b5379;    /* Modrá pre čísla zadané užívateľom */
+            --error-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 10px; color: var(--fixed-text); }
+
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            max-width: 800px;
+            z-index: 10; /* Aby boli ovládacie prvky nad canvasom ak treba */
+            position: relative;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-size: 0.9em; font-weight: bold; color: #555; }
+        
+        select, button {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: black;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #5aace2; }
+        
+        /* UPRAVENÉ: Čierny text pre sekundárne tlačidlá */
+        button.secondary { 
+            background-color: #95a5a6; 
+            color: #000000; 
+        }
+        button.secondary:hover { background-color: #7f8c8d; }
+        
+        button.success { background-color: var(--success-color); }
+        button.success:hover { background-color: #67c918; }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            z-index: 10;
+            position: relative;
+        }
+
+        .board-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #sudoku-board {
+            display: grid;
+            background-color: var(--board-bg);
+            border: 3px solid var(--border-thick);
+            user-select: none;
+            gap: 0; 
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            font-weight: bold;
+            box-sizing: border-box; 
+            border-right: 1px solid var(--border-thin);
+            border-bottom: 1px solid var(--border-thin);
+            color: var(--fixed-text);
+        }
+
+        .grid-9 { grid-template-columns: repeat(9, 1fr); }
+        .grid-6 { grid-template-columns: repeat(6, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        .grid-9 .cell:nth-child(9n+3), .grid-9 .cell:nth-child(9n+6) { border-right: 2px solid var(--border-thick); }
+        .grid-9 .cell:nth-child(9n) { border-right: none; }
+        .grid-9 .cell:nth-child(n+19):nth-child(-n+27), .grid-9 .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--border-thick); }
+        .grid-9 .cell:nth-child(n+73) { border-bottom: none; }
+
+        .grid-6 .cell:nth-child(6n+3) { border-right: 2px solid var(--border-thick); }
+        .grid-6 .cell:nth-child(6n) { border-right: none; }
+        .grid-6 .cell:nth-child(n+7):nth-child(-n+12), .grid-6 .cell:nth-child(n+19):nth-child(-n+24) { border-bottom: 2px solid var(--border-thick); }
+        .grid-6 .cell:nth-child(n+31) { border-bottom: none; }
+
+        .grid-4 .cell:nth-child(4n+2) { border-right: 2px solid var(--border-thick); }
+        .grid-4 .cell:nth-child(4n) { border-right: none; }
+        .grid-4 .cell:nth-child(n+5):nth-child(-n+8) { border-bottom: 2px solid var(--border-thick); }
+        .grid-4 .cell:nth-child(n+13) { border-bottom: none; }
+
+        .cell.fixed { background-color: #f8f9fa; cursor: default; }
+        /* Vlastnosti pre bunku so zadaným číslom od užívateľa */
+        .cell.user-input { 
+            color: var(--user-text); 
+            background-color: #d1feff; /* Svetlomodré pozadie pre užívateľské vstupy */
+        }
+
+        /* Vlastnosti pre práve vybranú bunku (kliknutím) */
+        .cell.selected { 
+            background-color: var(--select-color) !important; 
+            color: #185d8b; 
+        }
+
+        /* Vlastnosti pre bunku s chybou (po kontrole) */
+        .cell.error { 
+            background-color: #fadbd8 !important; 
+            color: var(--error-color); 
+        }
+
+        /* Vlastnosti pre správne zadanú bunku (po kontrole) */
+        .cell.correct { 
+            background-color: #d5f5e3 !important; 
+            color: #3d770e; /* Vaša tmavozelená farba */
+            font-weight: bold; 
+        }
+
+        /* Vlastnosti pre zvýraznenie buniek s rovnakým číslom */
+        .cell.highlight { 
+            background-color: #e8e8e8 !important; 
+        }
+
+        .bottom-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .bottom-actions button {
+            padding: 12px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 250px;
+        }
+
+        .info-box {
+            background: white;
+            padding: 10px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .timer { font-size: 1.2em; font-weight: bold; color: var(--fixed-text); }
+        .timer.hidden { visibility: hidden; }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        .num-btn {
+            padding: 6px 0;
+            font-size: 1.1em;
+			font-weight: bold;
+            background-color: lightgrey;
+            border: 1px solid #bdc3c7;
+            color: var(--fixed-text);
+        }
+        .num-btn:hover { background-color: #e3f2fd; color: #000; }
+
+        /* UPRAVENÉ: Tlačidlá Backspace a Vymazať vedľa seba */
+        .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+        
+        /* Definujeme pomer šírky tlačidiel */
+        .action-buttons button:first-child {
+            flex: 0.3; /* Kratšie tlačidlo Backspace */
+            font-weight: bold;
+        }
+
+        .action-buttons button:last-child {
+            flex: 0.7; /* Dlhšie tlačidlo Vymazať */
+            padding: 10px 5px;
+            font-weight: bold;
+        }
+
+        /* Spoločné vlastnosti zostávajú v .action-buttons */
+        .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .remaining-counts {
+            display: grid;                   /* Zmena na grid pre presné riadkovanie */
+            grid-template-columns: repeat(3, 1fr); /* Vytvorí presne 3 rovnaké stĺpce */
+            gap: 10px;                       /* Medzera medzi prvkami horizontálne aj vertikálne */
+            justify-items: center;           /* Zarovná položky na stred v každej bunke */
+            font-size: 0.9em;
+            width: 100%;                     /* Aby kontajner využil celú šírku side-panelu */
+        }
+        .count-item {
+            background: #eee;
+            padding: 4px 8px;                /* Mierne zväčšený padding pre lepšiu klikateľnosť/vzhľad */
+            border-radius: 4px;
+            margin: 0;                       /* Margin už nie je potrebný, nahrádza ho 'gap' v gride */
+            width: 60px;                     /* Fixná šírka zabezpečí, že čísla budú pod sebou v rovine */
+            text-align: center;
+        }
+
+        .count-item.done {
+            background: #a7ee6d; /* ZMENENÉ: Vaša nová zelená */
+            color: #000000;      /* ZMENENÉ: Čierny text namiesto bieleho */
+            opacity: 1;          /* ZMENENÉ: Zrušenie priehľadnosti, aby bola farba sýta */
+        }
+
+        /* --- NOVÉ ŠTÝLY PRE OHŇOSTROJ A MODÁLNE OKNO --- */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998; /* Vysoko, ale pod modálnym oknom */
+            pointer-events: none; /* Kliknutia prejdú cez plátno, ak by bolo treba */
+            display: none; /* Skryté defaultne */
+        }
+
+        #victory-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 9999;
+            display: none; /* Skryté defaultne */
+            border: 3px solid var(--success-color);
+            min-width: 300px;
+        }
+
+        #victory-modal h2 {
+            margin-top: 0;
+            color: #3d770e;
+        }
+
+        #victory-modal p.final-time {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--fixed-text);
+        }
+
+        @media (max-width: 700px) {
+            .game-container { flex-direction: column; align-items: center; }
+            .side-panel { width: 100%; max-width: 350px; }
+            .board-container { width: 100%; max-width: 360px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworks-canvas"></canvas>
+
+    <div id="victory-modal">
+        <h2>Pekný výkon!</h2>
+        <p>Všetko je správne.</p>
+        <p class="final-time" id="modal-time"></p>
+        <button onclick="closeVictoryModal()">Zavrieť</button>
+    </div>
+
+    <h1>Offline Sudoku</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Veľkosť</label>
+            <select id="grid-size">
+                <option value="4">4 x 4</option>
+                <option value="6">6 x 6</option>
+                <option value="9" selected>9 x 9</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Obtiažnosť</label>
+            <select id="difficulty">
+                <option value="0.2">Veľmi ľahké</option>
+                <option value="0.4" selected>Ľahké</option>
+                <option value="0.5">Stredne ťažké</option>
+                <option value="0.6">Veľmi ťažké</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Zobrazenie</label>
+            <div style="display: flex; align-items: center; gap: 5px; height: 35px;">
+                <input type="checkbox" id="toggle-timer" checked>
+                <label for="toggle-timer" style="font-weight: normal; cursor: pointer;">Zobraziť čas</label>
+            </div>
+        </div>
+        <div class="control-group" style="justify-content: flex-end;">
+            <button onclick="startGame()">Nová hra</button>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="board-container">
+            <div id="sudoku-board" class="grid-9"></div>
+            
+            <div class="bottom-actions">
+                <button class="success" onclick="checkBoard()">Skontrolovať zadané</button>
+                <button class="success" onclick="evaluateGame()">Vyhodnotiť hru</button>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="info-box">
+                <div>Čas:</div>
+                <div id="timer" class="timer">00:00</div>
+            </div>
+
+            <div class="info-box">
+                <div><strong>Zostávajúce čísla:</strong></div>
+                <div id="remaining-counts" class="remaining-counts"></div>
+            </div>
+
+            <div class="numpad" id="numpad"></div>
+
+            <div class="action-buttons">
+                <button class="secondary" onclick="deleteNumber()" title="Backspace">⌫</button>
+                <button class="secondary" onclick="clearUserInputs()">Vymazať všetko</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let currentBoard = [];     
+    let solutionBoard = [];    
+    let initialBoard = [];     
+    let gridSize = 9;
+    let selectedCellIndex = -1;
+    let timerInterval;
+    let secondsElapsed = 0;
+    let gameActive = false;
+
+    const boardEl = document.getElementById('sudoku-board');
+    const numpadEl = document.getElementById('numpad');
+    const timerEl = document.getElementById('timer');
+    const countsEl = document.getElementById('remaining-counts');
+    const toggleTimerEl = document.getElementById('toggle-timer');
+
+    // Fireworks variables
+    let fireworksCanvas, ctx, fireworksLoop;
+    let particles = [];
+
+    window.onload = () => {
+        fireworksCanvas = document.getElementById('fireworks-canvas');
+        ctx = fireworksCanvas.getContext('2d');
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        startGame();
+    };
+
+    toggleTimerEl.addEventListener('change', (e) => {
+        if(e.target.checked) timerEl.classList.remove('hidden');
+        else timerEl.classList.add('hidden');
+    });
+
+    document.addEventListener('keydown', handleKeyboard);
+
+    function startGame() {
+        closeVictoryModal(); // Ensure fireworks are off
+        gridSize = parseInt(document.getElementById('grid-size').value);
+        const difficulty = parseFloat(document.getElementById('difficulty').value);
+        boardEl.innerHTML = '';
+        boardEl.className = `grid-${gridSize}`;
+        numpadEl.style.gridTemplateColumns = gridSize <= 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+        generateNumpad();
+        stopTimer();
+        startTimer();
+        gameActive = true;
+        selectedCellIndex = -1;
+        solutionBoard = generateValidBoard(gridSize);
+        initialBoard = createPuzzle(solutionBoard, difficulty);
+        currentBoard = [...initialBoard]; 
+        renderBoard();
+        updateCounts();
+    }
+
+    function generateValidBoard(size) {
+        let board = new Array(size * size).fill(0);
+        solveBoard(board, size);
+        return board;
+    }
+
+    function solveBoard(board, size) {
+        for (let i = 0; i < size * size; i++) {
+            if (board[i] === 0) {
+                let nums = shuffle(getRange(1, size));
+                for (let num of nums) {
+                    if (isValid(board, i, num, size)) {
+                        board[i] = num;
+                        if (solveBoard(board, size)) return true;
+                        board[i] = 0;
+                    }
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function isValid(board, index, num, size) {
+        const row = Math.floor(index / size);
+        const col = index % size;
+        for (let c = 0; c < size; c++) if (board[row * size + c] === num) return false;
+        for (let r = 0; r < size; r++) if (board[r * size + col] === num) return false;
+        let boxRows, boxCols;
+        if (size === 9) { boxRows = 3; boxCols = 3; }
+        else if (size === 6) { boxRows = 2; boxCols = 3; }
+        else { boxRows = 2; boxCols = 2; }
+        const startRow = Math.floor(row / boxRows) * boxRows;
+        const startCol = Math.floor(col / boxCols) * boxCols;
+        for (let r = 0; r < boxRows; r++) {
+            for (let c = 0; c < boxCols; c++) {
+                if (board[(startRow + r) * size + (startCol + c)] === num) return false;
+            }
+        }
+        return true;
+    }
+
+    function createPuzzle(fullBoard, difficulty) {
+        let puzzle = [...fullBoard];
+        let attempts = Math.floor((gridSize * gridSize) * difficulty); 
+        while (attempts > 0) {
+            let idx = Math.floor(Math.random() * (gridSize * gridSize));
+            if (puzzle[idx] !== 0) {
+                puzzle[idx] = 0;
+                attempts--;
+            }
+        }
+        return puzzle;
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function getRange(start, end) {
+        return Array(end - start + 1).fill().map((_, idx) => start + idx);
+    }
+
+    function renderBoard() {
+        boardEl.innerHTML = '';
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            const value = currentBoard[i];
+            const isFixed = initialBoard[i] !== 0;
+            if (isFixed) {
+                cell.classList.add('fixed');
+                cell.textContent = value;
+            } else if (value !== 0) {
+                cell.classList.add('user-input');
+                cell.textContent = value;
+            }
+            cell.onclick = () => selectCell(i);
+            boardEl.appendChild(cell);
+        }
+    }
+
+    function generateNumpad() {
+        numpadEl.innerHTML = '';
+        for (let i = 1; i <= gridSize; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'num-btn';
+            btn.textContent = i;
+            btn.onclick = () => fillNumber(i);
+            numpadEl.appendChild(btn);
+        }
+    }
+
+    function updateCounts() {
+        const counts = {};
+        for (let i = 1; i <= gridSize; i++) counts[i] = 0;
+        currentBoard.forEach(num => { if (num !== 0) counts[num]++; });
+        countsEl.innerHTML = '';
+        for (let i = 1; i <= gridSize; i++) {
+            const remaining = gridSize - counts[i];
+            const span = document.createElement('div');
+            span.className = 'count-item';
+            if (remaining <= 0) span.classList.add('done');
+            span.innerHTML = `<b>${i}</b>: ${Math.max(0, remaining)}`;
+            countsEl.appendChild(span);
+        }
+    }
+
+    function selectCell(index) {
+        if (!gameActive) return;
+        selectedCellIndex = index;
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(c => c.classList.remove('selected', 'highlight'));
+        cells[index].classList.add('selected');
+        const val = currentBoard[index];
+        if (val !== 0) {
+            currentBoard.forEach((num, idx) => {
+                if (num === val) cells[idx].classList.add('highlight');
+            });
+        }
+    }
+
+    function fillNumber(num) {
+        if (!gameActive || selectedCellIndex === -1 || initialBoard[selectedCellIndex] !== 0) return;
+        currentBoard[selectedCellIndex] = num;
+        const cells = document.querySelectorAll('.cell');
+        const cell = cells[selectedCellIndex];
+        cell.textContent = num;
+        cell.className = 'cell user-input selected'; 
+        selectCell(selectedCellIndex); 
+        updateCounts();
+    }
+
+    function deleteNumber() {
+        if (!gameActive || selectedCellIndex === -1 || initialBoard[selectedCellIndex] !== 0) return;
+        currentBoard[selectedCellIndex] = 0;
+        const cells = document.querySelectorAll('.cell');
+        cells[selectedCellIndex].textContent = '';
+        cells[selectedCellIndex].className = 'cell selected';
+        updateCounts();
+        const allCells = document.querySelectorAll('.cell');
+        allCells.forEach(c => c.classList.remove('highlight'));
+    }
+
+    function clearUserInputs() {
+        if (!confirm("Naozaj chcete vymazať všetky vami zadané čísla?")) return;
+        for (let i = 0; i < currentBoard.length; i++) if (initialBoard[i] === 0) currentBoard[i] = 0;
+        renderBoard();
+        updateCounts();
+    }
+
+    function handleKeyboard(e) {
+        if (!gameActive) return;
+        const key = e.key;
+        const num = parseInt(key);
+        if (!isNaN(num) && num >= 1 && num <= gridSize) fillNumber(num);
+        else if (key === 'Backspace' || key === 'Delete') deleteNumber();
+        else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) moveSelection(key);
+    }
+
+    function moveSelection(key) {
+        if (selectedCellIndex === -1) { selectCell(0); return; }
+        let row = Math.floor(selectedCellIndex / gridSize);
+        let col = selectedCellIndex % gridSize;
+        if (key === 'ArrowUp') row = Math.max(0, row - 1);
+        if (key === 'ArrowDown') row = Math.min(gridSize - 1, row + 1);
+        if (key === 'ArrowLeft') col = Math.max(0, col - 1);
+        if (key === 'ArrowRight') col = Math.min(gridSize - 1, col + 1);
+        selectCell(row * gridSize + col);
+    }
+
+    function checkBoard() {
+        const cells = document.querySelectorAll('.cell');
+        for (let i = 0; i < currentBoard.length; i++) {
+            if (initialBoard[i] !== 0 || currentBoard[i] === 0) continue; 
+            if (currentBoard[i] !== solutionBoard[i]) {
+                cells[i].classList.add('error');
+            } else {
+                cells[i].classList.add('correct');
+            }
+        }
+        setTimeout(() => {
+            cells.forEach(c => c.classList.remove('error', 'correct'));
+        }, 3000);
+    }
+
+    function evaluateGame() {
+        if (currentBoard.includes(0)) {
+            alert("Hra ešte nie je dokončená.");
+            return;
+        }
+        let isCorrect = currentBoard.every((val, idx) => val === solutionBoard[idx]);
+        if (isCorrect) {
+            stopTimer();
+            
+            // Podfarbenie boardu
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.style.backgroundColor = "#a7ee6d";
+                cell.style.color = "#000000";
+            });
+            
+            // SPUSTENIE OHŇOSTROJA A ZOBRAZENIE MODÁLNEHO OKNA
+            startFireworks();
+            document.getElementById('modal-time').innerText = `Čas: ${formatTime(secondsElapsed)}`;
+            document.getElementById('victory-modal').style.display = 'block';
+
+            gameActive = false;
+        } else {
+            alert("Riešenie nie je správne.");
+        }
+    }
+
+    function startTimer() {
+        secondsElapsed = 0;
+        timerInterval = setInterval(() => {
+            secondsElapsed++;
+            timerEl.textContent = formatTime(secondsElapsed);
+        }, 1000);
+    }
+
+    function stopTimer() { clearInterval(timerInterval); }
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    /* --- LOGIKA PRE OHŇOSTROJ --- */
+    function resizeCanvas() {
+        fireworksCanvas.width = window.innerWidth;
+        fireworksCanvas.height = window.innerHeight;
+    }
+
+    function startFireworks() {
+        fireworksCanvas.style.display = 'block';
+        particles = [];
+        animateFireworks();
+    }
+
+    function closeVictoryModal() {
+        document.getElementById('victory-modal').style.display = 'none';
+        fireworksCanvas.style.display = 'none';
+        if (fireworksLoop) cancelAnimationFrame(fireworksLoop);
+    }
+
+    function createParticle(x, y, color) {
+        const p = {};
+        p.x = x;
+        p.y = y;
+        p.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 2;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.alpha = 1;
+        p.decay = Math.random() * 0.015 + 0.005;
+        return p;
+    }
+
+    function animateFireworks() {
+        // Tmavé pozadie s priehľadnosťou pre efekt "stopy"
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+        ctx.fillRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+
+        // Pridanie nových explózií náhodne
+        if (Math.random() < 0.05) { // Frekvencia explózií
+            const x = Math.random() * fireworksCanvas.width;
+            const y = Math.random() * (fireworksCanvas.height / 2); // Vyššie na obrazovke
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < 50; i++) { // Počet častíc v jednej explózii
+                particles.push(createParticle(x, y, color));
+            }
+        }
+
+        // Aktualizácia a kreslenie častíc
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05; // Gravitácia
+            p.alpha -= p.decay;
+
+            if (p.alpha <= 0) {
+                particles.splice(i, 1);
+            } else {
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+        fireworksLoop = requestAnimationFrame(animateFireworks);
+    }
+
+</script>
+<br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+    <br><br>
+</body>
+</html>

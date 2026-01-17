@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Precvičovanie malej násobilky</title>
+  <style>
+    :root{
+      --bg:#f7f7f7;
+      --panel:#ffffff;
+      --accent:#2b7a2b;
+      --error:#c62828;
+      --muted:#dcdcdc;
+      --cell-border:#bbb;
+      --header-bg:#e0e0e0;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);font-family:monospace;}
+    .container{
+      max-width:1100px;
+      margin:18px auto;
+      padding:14px;
+      background:var(--panel);
+      box-shadow:0 6px 18px rgba(0,0,0,0.06);
+      border-radius:8px;
+    }
+    .top-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+    label{font-weight:700;font-size:14px;}
+    input[type="text"], input[type="number"]{
+      font-family:monospace;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:14px;
+    }
+    input[type="number"]{width:84px;}
+    button{font-family:monospace;padding:7px 10px;border-radius:6px;border:1px solid #888;background:#fff;cursor:pointer;font-size:14px;}
+    button.primary{background:var(--accent);color:#fff;border-color:rgba(0,0,0,0.08);}
+    .center{text-align:center;margin-top:12px;}
+    h1{margin:6px 0 6px; font-size: 24px;}
+    .instructions{ color:#333; margin-bottom: 4px; font-size: 150%; }
+    .example{ font-size: 40px; font-weight:700; margin: 6px 0; line-height:1;}
+    .message{ min-height: 17px; margin-top: 4px; font-weight: 700; font-size: 14px; }
+    .message.error{ color: var(--error); }
+    .message.warn{ color: #b36b00; }
+    .grid-wrap{ display: flex; justify-content: center; margin-top: 12px; }
+    table.mtable{ border-collapse: collapse; font-size: 15px; max-width: 100%; }
+    table.mtable th, table.mtable td{border:1px solid var(--cell-border);width:44px;height:44px;text-align:center;vertical-align:middle;padding:0;}
+    table.mtable th{background:var(--header-bg);color:#000;font-weight:700;font-size:20px;}
+    table.mtable td.cell{cursor:pointer;background:#fff;user-select:none;font-size:20px;font-weight:700;}
+    table.mtable td.cell:hover{outline:3px solid rgba(0,0,0,0.06);}
+    td.correct{background:#c8e6c9 !important;}
+    .controls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+    .results{margin-top:12px;text-align:center;}
+    .hidden{display:none;}
+    .summary{margin-top:12px;padding:10px;border:1px dashed #ccc;border-radius:6px;background:#fafafa;font-size:14px;}
+    .detail{margin-top:12px;}
+    table.report{width:100%;border-collapse:collapse;font-size:14px;}
+    table.report th, table.report td{border:1px solid #ddd;padding:8px;text-align:left;}
+    .legend{margin-top:10px;font-size:14px;}
+    .ok{color:green;font-weight:700;}
+    .bad{color:crimson;font-weight:700;}
+    .small-muted{color:#666;font-size:14px;}
+
+    /* responzívne úpravy pre veľmi malé obrazovky */
+    @media (max-width:420px){
+      .container{padding:10px;margin:10px;}
+      .example{font-size:34px;}
+      table.mtable th, table.mtable td{width:36px;height:36px;}
+      table.mtable td.cell{font-size:18px;}
+      input[type="number"]{width:72px;}
+    }
+
+    /* Tlačové štýly: pri tlači zobrazíme len detailView */
+    @media print {
+      /* skryť všetko */
+      body * { visibility: hidden !important; }
+      /* zobraziť detailView a jeho obsah */
+      #detailView, #detailView * { visibility: visible !important; }
+      /* umiestniť detailView hore na stránke */
+      #detailView { position: absolute !important; left: 0; top: 0; width: 100%; padding: 0.5cm; box-sizing: border-box; }
+      /* voliteľné: zväčšiť písmo pri tlači */
+      #detailView { font-size: 12pt; font-family: monospace; }
+      /* odstrániť pozadie, tiene */
+      .container, .detail { box-shadow: none !important; background: #fff !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainContainer">
+    <div class="top-row">
+      <div>
+        <label for="studentName">Meno žiaka</label><br />
+        <input id="studentName" type="text" placeholder="Zadajte meno" />
+      </div>
+      <div>
+        <label for="taskCount">Počet úloh</label><br />
+        <input id="taskCount" type="number" min="1" max="100" value="20" />
+      </div>
+      <div style="align-self:end;">
+        <button id="startBtn" class="primary">Štart</button>
+      </div>
+    </div>
+
+    <div class="center">
+      <h1>Precvičovanie malej násobilky</h1>
+      <div class="instructions">Klikni na správny výsledok násobenia. Dbaj na poradie činiteľov v zadaní.</div>
+
+      <div id="exampleBox" class="example" aria-live="polite">— x — =</div>
+      <div id="feedback" class="message"></div>
+
+      <div class="grid-wrap">
+        <table class="mtable" id="multTable" aria-label="Tabuľka násobenia"></table>
+      </div>
+
+      <div class="controls">
+        <button id="finishBtn" class="hidden">Ukončiť cvičenie</button>
+      </div>
+
+      <div id="endControls" class="results hidden">
+        <button id="evaluateBtn">Vyhodnotiť</button>
+        <button id="detailBtn">Detailný prehľad</button>
+        <button id="printBtn" class="hidden">Tlačiť prehľad</button>
+      </div>
+
+      <div id="scoreBox" class="summary hidden"></div>
+
+      <div id="detailView" class="detail hidden" aria-live="polite"></div>
+    </div>
+	   <br><br>
+  <p style="text-align: center;"><b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)</p>
+  <br><br>
+  </div>
+
+  <script>
+    const MAX_FACTOR = 10;
+    const table = document.getElementById('multTable');
+    const exampleBox = document.getElementById('exampleBox');
+    const feedback = document.getElementById('feedback');
+    const startBtn = document.getElementById('startBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const evaluateBtn = document.getElementById('evaluateBtn');
+    const detailBtn = document.getElementById('detailBtn');
+    const printBtn = document.getElementById('printBtn');
+    const endControls = document.getElementById('endControls');
+    const scoreBox = document.getElementById('scoreBox');
+    const detailView = document.getElementById('detailView');
+
+    let tasks = [];
+    let currentIndex = -1;
+    let studentName = '';
+    let totalTasks = 20;
+
+    function buildTable(){
+      table.innerHTML = '';
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      headRow.appendChild(document.createElement('th'));
+      for(let c=1;c<=MAX_FACTOR;c++){
+        const th = document.createElement('th'); th.textContent = c; headRow.appendChild(th);
+      }
+      thead.appendChild(headRow); table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      for(let r=1;r<=MAX_FACTOR;r++){
+        const tr = document.createElement('tr');
+        const th = document.createElement('th'); th.textContent = r; tr.appendChild(th);
+        for(let c=1;c<=MAX_FACTOR;c++){
+          const td = document.createElement('td');
+          td.className = 'cell';
+          td.dataset.row = r;
+          td.dataset.col = c;
+          td.dataset.value = r*c;
+          td.textContent = r*c;
+          td.addEventListener('click', onCellClick);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+    }
+
+    function generateTasks(n){
+      const maxCombos = MAX_FACTOR * MAX_FACTOR;
+      const limit = Math.min(n, maxCombos);
+      const used = new Set();
+      const arr = [];
+      while(arr.length < limit){
+        const a = Math.floor(Math.random()*MAX_FACTOR)+1;
+        const b = Math.floor(Math.random()*MAX_FACTOR)+1;
+        const key = `${a},${b}`;
+        if(used.has(key)) continue;
+        used.add(key);
+        arr.push({
+          a,b,
+          correctAnswer: a*b,
+          studentAnswer: null,
+          firstTryCorrect: false,
+          attemptedWrong: false,
+          attemptedWrongOrder: false,
+          solved: false
+        });
+      }
+      return arr;
+    }
+
+    function startExercise(){
+      studentName = document.getElementById('studentName').value.trim() || 'Neznámy';
+      totalTasks = parseInt(document.getElementById('taskCount').value,10) || 20;
+      if(totalTasks < 1) totalTasks = 1;
+      const maxCombos = MAX_FACTOR * MAX_FACTOR;
+      if(totalTasks > maxCombos) totalTasks = maxCombos;
+      tasks = generateTasks(totalTasks);
+      currentIndex = -1;
+      scoreBox.classList.add('hidden');
+      detailView.classList.add('hidden');
+      endControls.classList.add('hidden');
+      finishBtn.classList.remove('hidden');
+      feedback.textContent = '';
+      buildTable();
+      clearCellHighlights();
+      nextTask();
+    }
+
+    function nextTask(){
+      currentIndex++;
+      if(currentIndex >= tasks.length){
+        finishExercise();
+        return;
+      }
+      feedback.textContent = '';
+      const t = tasks[currentIndex];
+      exampleBox.textContent = `${t.a} x ${t.b} =`;
+    }
+
+    function finishExercise(){
+      exampleBox.textContent = 'Cvičenie ukončené';
+      feedback.textContent = '';
+      finishBtn.classList.add('hidden');
+      endControls.classList.remove('hidden');
+      scoreBox.classList.add('hidden');
+      // zobraz tlačidlo pre tlač prehľadu
+      printBtn.classList.remove('hidden');
+    }
+
+    function onCellClick(e){
+      const td = e.currentTarget;
+      const row = parseInt(td.dataset.row,10);
+      const col = parseInt(td.dataset.col,10);
+      const val = parseInt(td.dataset.value,10);
+      if(currentIndex < 0 || currentIndex >= tasks.length) return;
+      const t = tasks[currentIndex];
+      if(t.solved) return;
+
+      if(row === t.a && col === t.b){
+        td.classList.add('correct');
+        feedback.textContent = '';
+        if(!t.attemptedWrong){
+          t.firstTryCorrect = true;
+        }
+        t.studentAnswer = val;
+        t.solved = true;
+
+        setTimeout(() => {
+          if(currentIndex === tasks.length -1){
+            finishExercise();
+          } else {
+            nextTask();
+          }
+        }, 700);
+      } else {
+        if(val === t.correctAnswer){
+          feedback.className = 'message warn';
+          feedback.textContent = 'Výsledok je síce správny, ale vychádzaj prosím z presného poradia činiteľov. Skús to prosím znova.';
+          t.attemptedWrongOrder = true;
+        } else {
+          feedback.className = 'message error';
+          feedback.textContent = 'Nesprávne. Skús to prosím znova.';
+        }
+        t.attemptedWrong = true;
+        t.studentAnswer = val;
+      }
+    }
+
+    function clearCellHighlights(){
+      const cells = table.querySelectorAll('td.cell');
+      cells.forEach(c => c.classList.remove('correct'));
+    }
+
+    function evaluate(){
+      const correctFirstTry = tasks.filter(t => t.firstTryCorrect).length;
+      const points = correctFirstTry;
+      const percent = Math.round((points / tasks.length) * 100);
+      scoreBox.classList.remove('hidden');
+      scoreBox.innerHTML = `<strong>Výsledok:</strong> ${points} / ${tasks.length} bodov — <strong>${percent}%</strong>`;
+    }
+
+    function showDetail(){
+      const now = new Date();
+      const dateStr = now.toLocaleString('sk-SK');
+      const correctFirstTry = tasks.filter(t => t.firstTryCorrect).length;
+      const percent = Math.round((correctFirstTry / tasks.length) * 100);
+
+      let html = '';
+      html += `<h2>Detailný prehľad</h2>`;
+      html += `<table class="report">`;
+      html += `<tr><th>Názov cvičenia</th><td>Precvičovanie malej násobilky</td></tr>`;
+      html += `<tr><th>Meno žiaka</th><td>${escapeHtml(studentName)}</td></tr>`;
+      html += `<tr><th>Počet úloh</th><td>${tasks.length}</td></tr>`;
+      html += `<tr><th>Bodové hodnotenie</th><td>${correctFirstTry} / ${tasks.length}</td></tr>`;
+      html += `<tr><th>Percentuálne hodnotenie</th><td>${percent}%</td></tr>`;
+      html += `<tr><th>Dátum a čas</th><td>${dateStr}</td></tr>`;
+      html += `</table>`;
+
+      html += `<h3 style="margin-top:12px;">Detail výsledkov</h3>`;
+      html += `<table class="report"><thead><tr><th>Príklad</th><th>Správna odpoveď</th><th>Odpoveď žiaka</th><th>Stav</th><th>Komentár</th></tr></thead><tbody>`;
+      tasks.forEach((t) => {
+        const example = `${t.a} x ${t.b}`;
+        const correct = t.correctAnswer;
+        const student = (t.studentAnswer === null) ? '—' : t.studentAnswer;
+        const ok = (t.firstTryCorrect) ? '✓' : '✗';
+        const statusClass = (t.firstTryCorrect) ? 'ok' : 'bad';
+        let comment = '';
+        if(t.attemptedWrongOrder){
+          comment = 'Žiak klikol na správny číselný výsledok, ale v nesprávnej bunke; poradie činiteľov sa musí dodržať.';
+        } else if(t.attemptedWrong && !t.firstTryCorrect){
+          comment = 'Úloha vyriešená po chybe; bod sa nepripočítava.';
+        } else if(!t.solved){
+          comment = 'Úloha nebola dokončená.';
+        }
+        html += `<tr><td>${example}</td><td>${correct}</td><td>${student}</td><td class="${statusClass}">${ok}</td><td>${escapeHtml(comment)}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+
+      html += `<div class="legend"><strong>Vysvetlivky:</strong> <span class="ok">✓ správne na prvýkrát</span>; <span class="bad">✗ nesprávne alebo nie na prvýkrát</span></div>`;
+
+      detailView.innerHTML = html;
+      detailView.classList.remove('hidden');
+      // zobraz tlačidlo aj v endControls (ak ešte nie je zobrazené)
+      printBtn.classList.remove('hidden');
+      // posuň zobrazenie na detail (užitočné pred tlačou)
+      detailView.scrollIntoView({behavior: 'smooth'});
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+    }
+
+    // zachytenie Ctrl+P / Cmd+P: ak je detailView zobrazený, spusti window.print()
+    window.addEventListener('keydown', function(e){
+      const isPrintShortcut = (e.key && (e.key.toLowerCase() === 'p')) && (e.ctrlKey || e.metaKey);
+      if(isPrintShortcut){
+        // ak je detailView zobrazený, predvolené správanie nahradíme volaním print (pre istotu)
+        if(!detailView.classList.contains('hidden')){
+          e.preventDefault();
+          // krátke oneskorenie, aby sa DOM prípadne upravil pred tlačou
+          setTimeout(() => window.print(), 50);
+        }
+        // ak detailView nie je zobrazený, necháme predvolené Ctrl+P
+      }
+    });
+
+    // tlačidlo pre tlač (alternatíva k Ctrl+P)
+    printBtn.addEventListener('click', function(){
+      if(!detailView.classList.contains('hidden')){
+        window.print();
+      }
+    });
+
+    // eventy
+    startBtn.addEventListener('click', startExercise);
+    finishBtn.addEventListener('click', () => { finishExercise(); });
+    evaluateBtn.addEventListener('click', evaluate);
+    detailBtn.addEventListener('click', showDetail);
+
+    buildTable();
+    document.getElementById('taskCount').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startExercise(); });
+    document.getElementById('studentName').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startExercise(); });
+  </script>
+
+</body>
+</html>

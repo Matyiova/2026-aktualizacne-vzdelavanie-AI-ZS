@@ -1,0 +1,670 @@
+<style>
+  #password-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-family: Arial, sans-serif;
+  }
+
+  #password-box {
+    border: 1px solid #ccc;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    text-align: center;
+  }
+
+  #password-input {
+    padding: 10px;
+    font-size: 18px;
+    width: 250px;
+  }
+
+  #toggle-eye {
+    cursor: pointer;
+    margin-left: -30px;
+    font-size: 18px;
+  }
+
+  #password-button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+</style>
+
+<div id="password-overlay">
+  <div id="password-box">
+    <h2>Zadajte heslo</h2>
+    <div style="position: relative; display: inline-block;">
+      <input type="password" id="password-input" placeholder="Heslo">
+      <span id="toggle-eye">👁️</span>
+    </div>
+    <br>
+    <button id="password-button">Potvrdiť</button>
+    <p id="error-msg" style="color:red; display:none; margin-top:10px;">Nesprávne heslo.</p>
+  </div>
+</div>
+
+<script>
+  const correctPassword = "ucitelkossuth2026"; // sem daj svoje heslo
+
+  const input = document.getElementById("password-input");
+  const button = document.getElementById("password-button");
+  const overlay = document.getElementById("password-overlay");
+  const errorMsg = document.getElementById("error-msg");
+  const eye = document.getElementById("toggle-eye");
+
+  // prepínanie viditeľnosti hesla
+  eye.addEventListener("click", () => {
+    if (input.type === "password") {
+      input.type = "text";
+      eye.textContent = "🙈";
+    } else {
+      input.type = "password";
+      eye.textContent = "👁️";
+    }
+  });
+
+  // kontrola hesla
+  button.addEventListener("click", () => {
+    if (input.value === correctPassword) {
+      overlay.style.display = "none"; // skryje okno a zobrazí stránku
+    } else {
+      errorMsg.style.display = "block";
+    }
+  });
+</script>
+
+
+<!DOCTYPE html>
+<html lang="sk">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Prehľad nástrojov a učebných zdrojov</title>
+    <style>
+      body { 
+        font-family: Courier bold, monospace; 
+        font-size: 110%; 
+      }
+      table {
+        border: 1px solid black; 
+        border-collapse: collapse; 
+        width: 1000px;
+        margin: 0 auto; /* centrovanie tabuľky horizontálne */
+      }
+	  td {
+  padding: 6px; /* alebo 5px, 10px podľa potreby */
+}
+table tr:nth-child(1) {
+  background-color: #ffffff; /* hlavička ostane biela */
+}
+
+table tr:nth-child(2n+2) {
+  background-color: #f2f2f2; /* každý druhý riadok od 2. */
+}
+
+table {
+  counter-reset: riadky; /* inicializácia čítača */
+}
+
+table tr:not(:first-child) td:first-child::before {
+  counter-increment: riadky;       /* zvýši čítač o 1 */
+  content: counter(riadky) ". ";   /* vloží číslo pred obsah bunky */
+  font-weight: bold;               /* voliteľné zvýraznenie */
+}
+    </style>
+	
+	 <style>
+    /* štýl pre zobrazenie a odsadenie */
+    #last-modified {
+      text-align: center;           
+      font-family: Courier bold, monospace;
+      font-size: 16px;
+      color: darkgreen;
+    }
+
+    /* štýl pre hrubý štítok */
+    #last-modified .label {
+      font-weight: 700;             /* hrubé písmo pre "Posledná zmena:" */
+      margin-right: 6px;            /* medzera medzi štítkom a časom */
+    }
+
+    /* štýl pre samotný čas (normálne písmo) */
+    #last-modified .time {
+      font-weight: 400;             /* normálne písmo pre čas */
+    }
+  </style>
+  </head>
+  <body>
+    <h1 style="font-weight: bold; text-align: center;">Nástroje na vytváranie digitálnych učebných zdrojov pre ZŠ<br>a príklady ich použitia v praxi - prehľad</h1>
+    <br>
+	<p style="font-weight: bold; font-size:140%; text-align: center;">Vytváranie pracovných listov</p>
+    <table style="border: 1px solid black; border-collapse: collapse; width: 1100px;" border="1">
+      <tbody>
+        <tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 700px;"><span style="font-size: 120%; font-weight: bold;">Názov nástroja</span> </td>
+          <td data-id="2" style="border: 1px solid black; width: 400px;"><span style="font-size: 120%; font-weight: bold;">Vytvorený učebný zdroj - príklad</span> </td>
+        </tr>
+        
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_MC_ries_aktualne.html" target="_blank"><b>Test s výberom z viacerých odpovedí aj s riešením - generátor PL na tlač</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/pracovny_list_test_MC_ries_priklad.rtf" target="_blank">Príklad - Test s výberom z viacerých odpovedí (aj s riešením)</a></td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_SA_ries_aktualne.html" target="_blank"><b>Test s doplnením písanej odpovede aj s riešením - generátor PL na tlač</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/pracovny_list_test_SA_ries_priklad.rtf" target="_blank">Príklad - Test s doplnením písanej odpovede (aj s riešením)</a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_priradovanie_ries_viac_uloh_aktualne.html" target="_blank"><b>Test s priraďovaním správnej odpovede aj s riešením - generátor PL na tlač</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Antonyma_test_priklad.rtf" target="_blank">Príklad - Antonymá - priraďovanie (aj s riešením)</a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/gen_pl_dopl_do_ram_def_akt.html" target="_blank"><b>Mriežka na doplňovanie slov bez tajničky (s uvedením definície) - generátor PL na tlač aj s riešením</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/cislovky_do_20_doplnovanie_pl_priklad.rtf" target="_blank">Príklad - Doplňovanie slov do mriežky (Číslovky do 20 po nemecky)</a></td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/Tajnicka_mriezka_miesane_aktualne.html" target="_blank"><b>Krížovka s tajničkou (mriežka) - aj dodatočné miešanie slov - generátor PL na tlač</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/krizovka_s_tajnickou_priklad.docx" target="_blank">Príklad - Krížovka s tajničkou</a></td>
+        </tr>
+		<tr style="height: 60px;">
+          <td data-id="3" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_viacsmerovky_aktualne.html" target="_blank"><b>Viacsmerovka - generátor PL na tlač</b></a></td>
+          <td data-id="4" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/viacsmerovka_pl_priklad.rtf" target="_blank">Príklad - Viacsmerovka - pracovný list</a></td>
+        </tr>
+		
+		
+        <tr style="height: 60px;">
+          <td data-id="5" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_uprava_slovosledu_akt.html" target="_blank"><b>Pomiešanie položiek vo vete aj s riešením - generátor PL na tlač</b></a>
+		  </td>
+          <td data-id="6" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/PL_Slovosled_po_spojke_deshalb_priklad.rtf" target="_blank">Príklad - Pomiešanie položiek vo vete</a></td>
+        </tr>
+		
+        <tr style="height: 60px;">
+          <td data-id="7" style="border: 1px solid black; width: 700px;"><a href="nastroje/zoradenie_viet_dialog_PL.html" target="_blank"><b>Zoradenie viet v dialógu - generátor PL na tlač</b></a>
+          </td>
+          <td data-id="8" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/pracovny_list_dialogy_priklad.docx" target="_blank">Príklad - Zoradenie viet v dialógu</a></td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td data-id="7" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_dopl_do_suv_textu_1_medz_vsetko_akt.html" target="_blank"><b>Výber z alternatív v odsekoch súvislého textu - generátor PL na tlač</b></a>
+          </td>
+          <td data-id="8" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/9_rocnik__telefonicky_rozhovor_kb_163_priklad.rtf" target="_blank">Príklad - Výber z alternatív (dialóg - nemecký jazyk)</a></td>
+        </tr>
+		
+		
+		 <tr style="height: 60px;">
+          <td data-id="7" style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_PL_pism_retazce_aktualne.html" target="_blank"><b>Tvorenie písmenových reťazcov - generátor PL na tlač</b></a>
+          </td>
+          <td data-id="8" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/PL_pismenove_retazce_priklad.rtf" target="_blank">Príklad - Písmenové reťazce</a></td>
+        </tr>
+		
+		
+		 <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/text_pre_dyslektikov.html" target="_blank"><b>Písanie textu pre dyslektikov (editor s možnosťou exportu)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/IV_A_2025.10.29_14_bez.pdf" target="_blank">Príklad - Ako k nám prišla bájka (pracovný list na čítanie)</a>
+          </td>
+        </tr>
+		 </tbody>
+    </table>
+		
+	<br><br>
+		<p style="font-weight: bold; font-size:140%; text-align: center;">Vytváranie samovyhodnocovacích html testov</p>
+    <table style="border: 1px solid black; border-collapse: collapse; width: 1100px;" border="1">
+      <tbody>
+        <tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 700px;"><span style="font-size: 120%; font-weight: bold;">Názov nástroja</span> </td>
+          <td data-id="2" style="border: 1px solid black; width: 400px;"><span style="font-size: 120%; font-weight: bold;">Vytvorený učebný zdroj - príklad</span> </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td data-id="9" style="border: 1px solid black; width: 700px;"><a href="nastroje/MC_generator_viac_vstupov_ozvucene.html" target="_blank"><b>Html test s ozvučením: Výber odpovedí - zadávanie do polí (generátor)</b></a> </td>
+          <td data-id="10" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/kviz_ozvucene_zvierata_anj_viac_poli.html" target="_blank">Príklad - Zvieratá po anglicky (s ozvučením)</a></td>
+        </tr>
+        <tr style="height: 60px;">
+          <td data-id="11" style="border: 1px solid black; width: 700px;"><a href="nastroje/MC_generator_ozvucene_1_vstup_akt.html" target="_blank"><b>Html test s ozvučením: Výber odpovedí - zadávanie do jedného vstupu cez TAB (generátor)</b></a>
+		  </td>
+          <td data-id="12" style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/kviz_ozvucene_hlav_mesta.html" target="_blank">Príklad - Hlavné mestá (s ozvučením)</a></td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><b><a href="nastroje/MC_generator_viac_vstupov_onsv.html" target="_blank">Html test s výberom odpovedí - zadávanie do polí (generátor)</a></b>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/kviz_zvierata_anj_viac_poli.html" target="_blank">Príklad - Zvieratá po anglicky</a><br><br>
+		  <a href="exportovane/Test_export_MC_testu_viac_poli.pdf" target="_blank">Príklad - vyhodnotenie testu Zvieratá po anglicky (exportovaný súbor)</a><br>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/MC_vlastne_D_cez_TAB_aj_test_aktualizovane.html" target="_blank"><b>Html test s výberom odpovedí - zadávanie do jedného vstupu cez TAB (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Test_MC_vlastne_D_hromadne_priklad.html" target="_blank">Príklad - Dni v týždni (MC)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_test_SA_aktualne.html" target="_blank"><b>Html test s krátkou odpoveďou (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Dni_v_tyzdni_SA_TAB_priklad.html" target="_blank">Príklad - Dni v týždni (SA)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_multi_cloze_test_IA_aktualne.html" target="_blank"><b>Html cloze test - jedna úloha alebo viac úloh (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/c_test_1_uloha_priklad.html" target="_blank">Príklad - Mor ho! (1 úloha)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/c_test_2_ulohy_priklad.html" target="_blank">Príklad - Marína + Mor ho! (2 úlohy)</a>
+          </td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_dopl_do_suv_textu_1_medz_všetko_akt.html" target="_blank"><b>Doplňovanie jedného slova do jednej vety v súvislom texte klikaním - oneskorená odozva (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/9_rocnik__telefonicky_rozhovor_kb_163.html" target="_blank">Príklad - Doplňovanie chýbajúceho slova z viacerých alternatív v dialógu (nemecký jazyk)</a>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_dopl_do_suv_textu_viac_medzier_1_naraz_akt.html" target="_blank"><b>Doplňovanie viacerých slov do jednej vety klikaním - oneskorená odozva (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/cvicenie_preteritum_haben_a_sein_priklad.html" target="_blank">Príklad - Doplňovanie správnych tvarov haben a sein v préterite (nemecký jazyk)</a>
+        </tr>
+		
+		
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/Oznacenie_krizikom_univerzalne_aktualne.html" target="_blank"><b>Html test s označením správnych odpovedí krížikom (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/oznacenie_krizikom_priklad.html" target="_blank">Príklad - Priradenie časovaného tvaru slovesa k osobnému zámenu</a><br><br>
+		  <a href="exportovane/Test_export_oznac_kriz.pdf" target="_blank">Príklad - vyhodnotenie testu Priradenie časovaného tvaru slovesa k osobnému zámenu (exportovaný súbor)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_slovosled_cez_sloty_aktualne.html" target="_blank"><b>Html test na úpravu slovosledu (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Slovosled po spojke deshalb_priklad.html" target="_blank">Príklad - Slovosled po spojke deshalb (nemecký jazyk)</a>
+          </td>
+        </tr>
+		 <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/hra_zoradit_podla_poradia_aktualne.html" target="_blank"><b>Zoradenie položiek (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/polozky_na_zoradenie_priklad.html" target="_blank">Príklad - Položky na zoradenie</a>
+          </td>
+        </tr>
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/zoradenie_dialogu_IA_aktualne.html" target="_blank"><b>Zoradenie viet v dialógu (generátor) - kartičky pod slotmi</b></a>
+		  <br><br>
+		  <a href="nastroje/zoradenie_dialogu_IA_vedla_slotov_akt.html" target="_blank"><b>Zoradenie viet v dialógu (generátor) - kartičky vedľa slotov</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/zoradenie_viet_dialogy_IA_priklad.html" target="_blank">Príklad - Zoradenie viet v dialógoch (interaktívne cvičenie) - kartičky pod slotmi</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/zoradenie_viet_dialogy_IA_v2_priklad.html" target="_blank">Príklad - Zoradenie viet v dialógoch (interaktívne cvičenie) - kartičky vedľa slotov</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/zoradenie_textu_IA_aktualne_TAB.html" target="_blank"><b>Zoradenie viet v súvislom texte (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/zoradenie_viet_text_priklad.html" target="_blank">Príklad - Bola raz jedna trieda (IA cvičenie)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_ten_ta_to_aktualne.html" target="_blank"><b>Triedenie slov podľa rodu v SJ (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/hra_ten_ta_to_ovocie_priklad.html" target="_blank">Príklad - Hra na triedenie slov podľa rodu</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_kategorie_podst_mien_aktualne.html" target="_blank"><b>Určovanie kategórií podstatných mien v SJ (generátor)</b></a> </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/cvicenie_kategorie_priklad.html" target="_blank">Príklad - Určovanie kategórií</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_sj_sklonovania_hromadne_onsv_aktualne.html" target="_blank"><b>Skloňovanie podstatných mien v SJ (sing./plur.) - hromadné zadávanie (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/ulozene_cvicenie_sklonovanie_3slov_2025-11-01_00-12.html" target="_blank">Príklad - Skloňovanie 3 podstatných mien v jednotnom a množnom čísle</a>
+          </td>
+        </tr>
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_casovanie_slovies_aktualne_psv.html" target="_blank"><b>Časovanie slovies - priama spätná väzba s klikaním (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/cvicenie_casovanie_20251029_2309_psv_priklad.html" target="_blank">Príklad - Časovanie slovies spievať a robiť v prítomnom čase - priama spätná väzba</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_casovanie_slovies_aktualne_onsv.html" target="_blank"><b>Časovanie slovies - oneskorená spätná väzba s klikaním (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/cvicenie_casovanie_29102025_2308_onsv_priklad.html" target="_blank">Príklad - Časovanie slovies spievať a robiť v prítomnom čase - oneskorená spätná väzba</a>
+          </td>
+        </tr>
+		
+		 <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_casovanie_dopl_pis_pocet_akt.html" target="_blank"><b>Časovanie slovies s doplňovaním chýbajúcich písmen - zobrazovanie 1 úlohy naraz (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/1._lekcia_-_casovanie_slovies.html" target="_blank">Príklad - Časovanie nemeckých slovies z 1. lekcie v prítomnom čase - oneskorená spätná väzba</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_prirad_alternativ_k_pojmom_aktualne.html" target="_blank"><b>Priradenie z alternatív (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/priradenie_z_alternativ_priklad.html" target="_blank">Príklad - Priradenie z alternatív (čo sa k čomu hodí - nemecký jazyk)</a>
+          </td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_prirad_nadpis_k_textu_aktualne.html" target="_blank"><b>Priradenie nadpisu/otázky k textu (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Priradenie_otazky_k_textu_priklad.html" target="_blank">Príklad - Priradenie otázok k textu (interview s futbalistom)</a>
+          </td>
+        </tr>
+		
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/pravda_nepravda.html" target="_blank"><b>Pravda/nepravda s klikaním (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/dni_v_tyzdni_pravda_nepravda.html" target="_blank">Príklad - Dni v týždni (poradie)</a>
+          </td>
+        </tr>
+		
+		
+		 <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_pism_retazcov_aktualne.html" target="_blank"><b>Tvorenie písmenových reťazcov (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/pismenove_retazce_priklad.html" target="_blank">Príklad - Písmenové reťazce</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_pojmy_k_bodom_akt_velk_pis_ind.html" target="_blank"><b>Priradenie pojmov k častiam obrázka (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/priradenie_pojmov_k_obrazku_jahoda_priklad_nove.html" target="_blank">Príklad - Priradenie pojmov k častiam obrázka (jahoda)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/minuty_na_ciferniku__slovensky_text.html" target="_blank">Príklad - Minúty na ciferníku (slovenský text)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/8_rocnik__analogicke_vyjad_casu_v_nej_ind_x.html" target="_blank">Príklad - Priradenie pojmov k častiam obrázka (analogické vyjadrenie času v nemčine)</a>
+          </td>
+        </tr>
+		
+		</tbody>
+    </table>
+		
+		
+		<br><br>
+		<p style="font-weight: bold; font-size:140%; text-align: center;">Pomôcky na precvičovanie, hry</p>
+    <table style="border: 1px solid black; border-collapse: collapse; width: 1100px;" border="1">
+      <tbody>
+        <tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 700px;"><span style="font-size: 120%; font-weight: bold;">Názov nástroja</span> </td>
+          <td data-id="2" style="border: 1px solid black; width: 400px;"><span style="font-size: 120%; font-weight: bold;">Vytvorená pomôcka/hra</span> </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/Generator_hier_parovanie_akt.html" target="_blank"><b>Párová hra (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Hlavne_mesta__Europa_pary_priklad.html" target="_blank">Príklad - Hlavné mestá</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_hry_s_blokmi_aktualne.html" target="_blank"><b>Hra s blokmi na mriežke (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/casovanie_slovesa_hrat_priklad.html" target="_blank">Príklad - Hra s blokmi (časovanie slovesa hrať)</a>
+          </td>
+        </tr>
+		
+		 <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_edu_hry_hladanie_trojic.html" target="_blank"><b>Hra "Nájdi trojice" s kvízom (generátor s vlastnými obrázkami)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/hra_najdi_trojice_priklad.html" target="_blank">Príklad - Hra "Nájdi trojice" s kvízom s vlastnými obrázkami (časovanie slovesa hrať) </a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_komp_kviz_akt.html" target="_blank"><b>Komplexný kvíz so skupinami (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/LS_osobnost_a_dielo_2025.html" target="_blank">Príklad - Osobnosť a dielo Ľudovíta Štúra - kvíz</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_hry_na_hracom_poli_aktualne.html" target="_blank"><b>Hra na hracom poli s viacerými hráčmi (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/hra_na_hr_poli_ovocie_vyber_priklad.html" target="_blank">Príklad - Ovocie - IA hra na hracom poli (výber z odpovedí)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/hra_na_hr_poli_ovocie_zapisovanie_priklad.html" target="_blank">Príklad - Ovocie - IA hra na hracom poli (zapisovanie odpovedí)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/hra_na_hr_poli_ovocie_vyber_aj_zapis_priklad.html" target="_blank">Príklad - Ovocie - IA hra na hracom poli (výber z odpovedí i zapisovanie odpovedí)</a>
+          </td>
+        </tr>
+		
+		
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/hadanie_slov.html" target="_blank"><b>Hra s písmenami - hádanie slov (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/hadanie_podla_pismen_priklad.html" target="_blank">Príklad - Hádanie podľa definície (s písmenami)</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_IA_viacsmerovka_aktualne.html" target="_blank"><b>Interaktívna viacsmerovka (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/IA_viacsmerovka_priklad.html" target="_blank">Príklad - Interaktívna viacsmerovka</a>
+          </td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_adv_kal_obr_hudba_akt.html" target="_blank"><b>Interaktívny adventný kalendár s kvízom (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/adventny_kalendar_obrazky_hudba_priklad_zdroj.html" target="_blank">Príklad - Interaktívny adventný kalendár s kvízom</a>
+          </td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_pexesa_aktualne.html" target="_blank"><b>Interaktívne PEXESO (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/pexeso_obrazok_obrazok_priklad.html" target="_blank">Príklad - Interaktívne PEXESO - Ovocie (len obrázky)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/pexeso_obrazok_text_priklad.html" target="_blank">Príklad - Interaktívne PEXESO - Ovocie (obrázky a text)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/pexeso_text_text_priklad.html" target="_blank">Príklad - Interaktívne PEXESO - Ovocie (nemecký a slovenský text)</a>
+		  <br><br>
+		  <a href="priklady_pouzitia/pexeso_obrazok_obrazok_vlajky_priklad.html" target="_blank">Príklad - Interaktívne PEXESO - Vlajky Európy (len obrázky)</a>
+          </td>
+        </tr>
+       
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/karticky_na_opakovanie_aktualne.html" target="_blank"><b>Kartičky na opakovanie slov - len zobrazenie (generátor)</b></a>
+			  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/karticky_na_opakovanie_priklad.html" target="_blank">Príklad - Opakovanie anglických slovíčok s možnosťou miešania (s ozvučením)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/vlastny_slovnik_aktualne.html" target="_blank"><b>Vlastný slovník pojmov a definícií s ozvučením (generátor)</b></a>
+          </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/vlastny_slovnik_8_r.html" target="_blank">Príklad - Nemecko-slovenský slovník pre 8. ročník</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/tts_rozne_jazyky_aktualne.html"><b>Ozvučenie textu podľa jazyka (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Cervena_ciapocka_de.html" target="_blank">Príklad - Červená čiapočka po nemecky (ozvučený text)</a>
+          </td>
+        </tr>
+        <tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_zoznam_na_citanie_anj.html" target="_blank"><b>Zoznam na čítanie s ozvučením: AJ-SJ (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/Zakladne_anglicke_frazy_s_ozvucenim_-_vyber_02.html" target="_blank">Príklad - Základné anglické frázy so slovenským prekladom s ozvučením</a>
+          </td>
+        </tr>
+       
+      </tbody>
+    </table>
+	
+	
+	
+	<br><br>
+		<p style="font-weight: bold; font-size:140%; text-align: center;">Iné</p>
+    <table style="border: 1px solid black; border-collapse: collapse; width: 1100px;" border="1">
+      <tbody>
+        <tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 700px;"><span style="font-size: 120%; font-weight: bold;">Názov nástroja</span> </td>
+          <td data-id="2" style="border: 1px solid black; width: 400px;"><span style="font-size: 120%; font-weight: bold;">Vytvorený učebný zdroj - príklad</span> </td>
+        </tr>
+		<tr style="height: 60px;">
+          <td style="border: 1px solid black; width: 700px;"><a href="nastroje/generator_nahodnych_uloh_aktualne.html" target="_blank"><b>Zobrazenie náhodných úloh (generátor)</b></a>
+		  </td>
+          <td style="border: 1px solid black; width: 400px;"><a href="priklady_pouzitia/nahodne_ulohy_priklad.html" target="_blank">Príklad - Náhodné úlohy (otázky) - len zobrazenie</a>
+          </td>
+        </tr>
+		</tbody>
+    </table>
+	
+	<br><br>
+		<p style="font-weight: bold; font-size:140%; text-align: center;">Samostatné zdroje</p>
+	<figure class="table">
+  <table style="border: 1px solid black; border-collapse: collapse; width: 1100px;">
+    <tbody>
+	<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 700px;"><span style="font-size: 120%; font-weight: bold;">Predmet</span> </td>
+          <td data-id="2" style="border: 1px solid black; width: 400px;"><span style="font-size: 120%; font-weight: bold;">Názov zdroja</span> </td>
+        </tr>
+		
+		
+	<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/scitanie_do_20_akt.html" target="_blank"><b>Sčítanie do 20 - doplňovanie</b></a></td>
+        </tr>
+
+<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/odcitanie_do_20_akt.html" target="_blank"><b>Odčítanie do 20 - doplňovanie</b></a></td>
+        </tr>
+		
+		
+	<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/mala_nasobilka_klikanie_akt.html" target="_blank"><b>Precvičovanie malej násobilky - klikanie</b></a></td>
+        </tr>
+	
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/mala_nasobilka_dopl_akt.html" target="_blank"><b>Precvičovanie malej násobilky - doplňovanie</b></a></td>
+        </tr>
+		
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/velka_nasobilka_klikanie_akt.html" target="_blank"><b>Precvičovanie veľkej násobilky - klikanie</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/velka_nasobilka_dopl_akt.html" target="_blank"><b>Precvičovanie veľkej násobilky - doplňovanie</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">MAT</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/offline_sudoku_akt.html" target="_blank"><b>Offline Sudoku</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">GEO</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/krajske_mesta_Slovenska_priklad.html" target="_blank"><b>Krajské mestá Slovenska (priradenie textov k bodom)</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/D_OZ_v_nej.html" target="_blank"><b>Datív osobných zámen (bez prekladu) - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/D_OZ_prekl_v_nej_akt.html" target="_blank"><b>Datív osobných zámen (so slovenským prekladom) - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/A_OZ_v_nej.html" target="_blank"><b>Akuzatív osobných zámen (bez prekladu) - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/A_OZ_prekl_v_nej_akt.html" target="_blank"><b>Akuzatív osobných zámen (so slovenským prekladom) - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/D_a_A_OZ_v_nej.html" target="_blank"><b>Datív a akuzatív osobných zámen (bez prekladu) - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/test_urcity_clen_onsv.html" target="_blank"><b>Skloňovanie určitého člena v nemčine (základný prehľad), oneskorená spätná väzba - klikanie do tabuľky</b></a></td>
+        </tr>
+		
+		<tr style="height: 60px;">
+          <td data-id="1" style="border: 1px solid black; width: 200px;"><span style="font-size: 120%; font-weight: bold;">NEJ</span> </td>
+          <td data-id="1" style="border: 1px solid black; width: 900px;"><a href="samostatne_zdroje/test_neurcity_clen_onsv.html" target="_blank"><b>Skloňovanie neurčitého člena v nemčine (základný prehľad), oneskorená spätná väzba - klikanie do tabuľky</b></a></td>
+        </tr>
+    </tbody>
+  </table>
+</figure>
+	
+	<br><br>
+    <p style="font-weight: bold; text-align:center;">© Mgr. Erika Matyiová (2025 - 2026)</p>
+	<!-- miesto, kde sa zobrazí text -->
+  <div id="last-modified">
+    <span class="label">Posledná zmena:</span>
+    <span class="time">načítavam...</span>
+  </div>
+<br><br>
+  <script>
+    (function() {
+      const timeEl = document.querySelector('#last-modified .time');
+
+      function pad(n) {
+        return n < 10 ? '0' + n : n;
+      }
+
+      function formatDate(d) {
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+      }
+
+      function update() {
+        const lm = document.lastModified;
+        if (!lm) {
+          timeEl.textContent = 'neznámy čas';
+          return;
+        }
+        const date = new Date(lm);
+        if (isNaN(date.getTime())) {
+          timeEl.textContent = 'neznámy čas';
+          return;
+        }
+        timeEl.textContent = formatDate(date);
+      }
+
+      // prvé zobrazenie
+      update();
+
+      // voliteľné: kontrola každé 2 sekundy (po reload-e sa aktualizuje)
+      setInterval(update, 2000);
+    })();
+  </script>
+
+
+  </body>
+</html>
