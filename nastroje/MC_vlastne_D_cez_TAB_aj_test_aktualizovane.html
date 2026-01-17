@@ -2,183 +2,127 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Generátor testu s výberom odpovede s vlastnými distraktormi (TAB)</title>
+  <title>Generátor testu s výberom odpovede (TAB)</title>
   <style>
     body { font-family: Courier bold, monospace; font-size: 120%; padding: 20px; }
-    .question { margin-bottom: 20px; }
-    .question h3 { margin-bottom: 10px; }
-    .answers label { display: block; margin-bottom: 5px; padding: 5px; border-radius: 4px; }
-    .correct { background-color: #c8f7c5; }
-    .incorrect { background-color: #f7c5d1; }
-    .missing { background-color: #ffe6b3; }
-    .feedback { font-weight: bold; margin-top: 5px; }
-    #results { margin-top: 30px; font-size: 1.1em; }
+    textarea { width: 100%; box-sizing: border-box; }
+    input[type="text"], input[type="number"] { padding: 5px; font-size: 100%; }
+    button { cursor: pointer; padding: 10px 20px; font-size: 100%; font-weight: bold; margin-top: 10px; margin-right: 10px; }
+    
+    /* Štýl pre nastavenia v generátore */
+    .settings-group {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+    }
+    .radio-label {
+        margin-right: 20px;
+        cursor: pointer;
+    }
+    .action-bar {
+        margin-bottom: 10px;
+    }
+    .secondary-btn {
+        background-color: #ddd;
+        border: 1px solid #999;
+        font-size: 90%;
+        padding: 8px 15px;
+    }
   </style>
 </head>
 <body>
 <h1>Generátor testu - výber odpovede (vlastné distraktory cez [TAB])</h1>
+  
   <h2>Vstupné údaje</h2>
   <span style="font-size: 122%;"><span style="font-weight: bold; color: blue;">pojem</span>[TAB]<span style="font-weight: bold; color: darkgreen;">definícia</span>[TAB]<span style="font-weight: bold; color: darkred;">distraktor 1</span>[TAB]<span style="font-weight: bold; color: darkred;">distraktor 2</span>[TAB]<span style="font-weight: bold; color: darkred;">distraktor 3</span> (nepovinný)</span>
   <div style="height: 10px;"></div>
-  <textarea id="inputData" rows="10" cols="160" placeholder="pojem[TAB]definícia[TAB]distraktor 1[TAB]distraktor 2[TAB]distraktor 3" style="font-size: 122%;"></textarea>
-  <br><br>
-  <b>Meno žiaka, trieda:</b> <input type="text" id="studentName" style="width:350px;">
-  <br><br>
-  <b>Počet otázok:</b> <input type="number" id="questionCount" min="1">
-  <br><br>
   
+  <div class="action-bar">
+      <button class="secondary-btn" onclick="exportData()">⬇️ Exportovať zadania (záloha)</button>
+      <button class="secondary-btn" onclick="document.getElementById('importFile').click()">⬆️ Importovať zadania</button>
+      <input type="file" id="importFile" style="display:none" onchange="importData(this)">
+  </div>
+
+  <textarea id="inputData" rows="10" placeholder="pojem[TAB]definícia[TAB]distraktor 1[TAB]distraktor 2[TAB]distraktor 3" style="font-size: 122%;"></textarea>
   <br><br>
-<b>Názov súboru:</b> <input type="text" id="fileName" placeholder="napr. test_z_biologie.html" style="width:400px;">
-<br><br>
-<b>Nadpis testu:</b> <input type="text" id="testTitle" placeholder="napr. Test z biológie – 2. ročník" style="width:400px;">
-<br><br>
-<button onclick="saveTestAsHTML()">Uložiť test ako HTML</button>
 
-  <button onclick="generateTest()">Vygenerovať test</button>
-  
-  <div id="testArea"></div>
-  <div id="results"></div>
-  
-  <button onclick="resetTest()">Znova</button>
-  <button onclick="submitTest()">Odoslať odpovede</button>
-  <script>
-    let currentQuestions = [];
+  <div class="settings-group">
+      <h3>Nastavenia testu</h3>
+      
+      <b>Nadpis testu:</b> <input type="text" id="testTitle" placeholder="napr. Test z biológie – 2. ročník" style="width:400px;">
+      <br><br>
+      
+      <b>Číslovanie úloh:</b><br>
+      <label class="radio-label">
+        <input type="radio" name="numbering" value="numeric" checked> 1., 2., 3...
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="numbering" value="alpha"> A., B., C...
+      </label>
+  </div>
 
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
+  <button onclick="saveTestAsHTML()">Uložiť test ako HTML</button>
 
-    function generateTest() {
-      const input = document.getElementById("inputData").value.trim();
-      const lines = input.split("\n");
-      const allQuestions = [];
-
-      for (let line of lines) {
-        const parts = line.split("\t");
-        if (parts.length < 3) continue;
-
-        const term = parts[0];
-        const correct = parts[1];
-        const distractors = parts.slice(2);
-        const allAnswers = shuffle([correct, ...distractors]);
-
-        allQuestions.push({ term, correct, answers: allAnswers });
-      }
-
-      const count = parseInt(document.getElementById("questionCount").value) || allQuestions.length;
-      currentQuestions = shuffle(allQuestions).slice(0, count);
-
-      const testDiv = document.getElementById("testArea");
-      testDiv.innerHTML = "";
-
-      currentQuestions.forEach((q, index) => {
-        const questionDiv = document.createElement("div");
-        questionDiv.className = "question";
-
-        const title = document.createElement("h3");
-        title.textContent = `${index + 1}. ${q.term}`;
-        questionDiv.appendChild(title);
-
-        const answersDiv = document.createElement("div");
-        answersDiv.className = "answers";
-
-        q.answers.forEach((ans, i) => {
-          const label = document.createElement("label");
-          label.setAttribute("data-answer", ans);
-          const radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = `question${index}`;
-          radio.value = ans;
-          label.appendChild(radio);
-          label.appendChild(document.createTextNode(" " + ans));
-          answersDiv.appendChild(label);
-        });
-
-        questionDiv.appendChild(answersDiv);
-        testDiv.appendChild(questionDiv);
-      });
-
-      document.getElementById("results").innerHTML = "";
-    }
+<script>
+// --- Logika Generátora (Import/Export/Uloženie) ---
 
 function normalizeFilename(text) {
   return text
-    .normalize("NFD") // rozdelí znaky na základ + diakritiku
-    .replace(/[\u0300-\u036f]/g, "") // odstráni diakritiku
-    .replace(/[^a-zA-Z0-9-_ ]/g, "") // odstráni špeciálne znaky
-    .replace(/\s+/g, "_"); // nahradí medzery podčiarkovníkom
+    .normalize("NFD") 
+    .replace(/[\u0300-\u036f]/g, "") 
+    .replace(/[^a-zA-Z0-9-_ ]/g, "") 
+    .replace(/\s+/g, "_"); 
 }
 
+// Export obsahu Textarea do JSON súboru
+function exportData() {
+    const data = document.getElementById("inputData").value;
+    if (!data.trim()) { alert("Žiadne dáta na export."); return; }
+    
+    const blob = new Blob([data], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "zaloha_testu_" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
-    function submitTest() {
-      let score = 0;
-      const testDiv = document.getElementById("testArea");
-      const name = document.getElementById("studentName").value || "Nezadané meno";
-      const now = new Date();
-      const dateStr = now.toLocaleString();
+// Import dát zo súboru do Textarea
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById("inputData").value = e.target.result;
+        // Uložiť aj do localStorage
+        localStorage.setItem("inputData", e.target.result);
+        alert("Dáta boli úspešne načítané.");
+    };
+    reader.readAsText(file);
+    input.value = ""; // Reset inputu
+}
 
-      currentQuestions.forEach((q, index) => {
-        const radios = document.getElementsByName(`question${index}`);
-        let selected = null;
-        radios.forEach(r => { if (r.checked) selected = r.value; });
-
-        const labels = radios[0].closest(".answers").querySelectorAll("label");
-        labels.forEach(label => {
-          const val = label.getAttribute("data-answer");
-          if (val === q.correct) {
-            label.classList.add("correct");
-          }
-          if (selected === val && val !== q.correct) {
-            label.classList.add("incorrect");
-          }
-        });
-
-        const feedback = document.createElement("div");
-        feedback.className = "feedback";
-
-        if (selected === q.correct) {
-          score++;
-          feedback.textContent = "✅ Správna odpoveď";
-        } else if (selected === null) {
-          feedback.textContent = "⚠️ Chýbajúca odpoveď";
-          labels.forEach(label => {
-            if (label.getAttribute("data-answer") === q.correct) {
-              label.classList.add("missing");
-            }
-          });
-        } else {
-          feedback.textContent = "❌ Nesprávna odpoveď";
-        }
-
-        radios[0].closest(".question").appendChild(feedback);
-      });
-
-      const percent = ((score / currentQuestions.length) * 100).toFixed(2);
-      document.getElementById("results").innerHTML = `
-        <hr>
-        <h3>Výsledky testu</h3>
-        <p><strong>Meno žiaka:</strong> ${name}</p>
-        <p><strong>Počet získaných bodov:</strong> ${score} / ${currentQuestions.length}</p>
-        <p><strong>Počet percent:</strong> ${percent} %</p>
-        <p><strong>Dátum a čas konania testu:</strong> ${dateStr}</p>
-      `;
-    }
-
-    function resetTest() {
-      document.getElementById("testArea").innerHTML = "";
-      document.getElementById("results").innerHTML = "";
-      generateTest();
-    }
-	
 function saveTestAsHTML() {
-  const testTitle = document.getElementById("testTitle").value.trim() || "Test";
-  const questionCount = parseInt(document.getElementById("questionCount").value) || 10;
+  const testTitleInput = document.getElementById("testTitle").value.trim();
+  const testTitle = testTitleInput || "Test";
   const inputData = document.getElementById("inputData").value.trim();
-  const safeFileName = normalizeFilename(testTitle) + ".html";
+  const numberingType = document.querySelector('input[name="numbering"]:checked').value;
+  
+  // --- Generovanie bezpečného názvu súboru ---
+  let safeFileName;
+  if (testTitleInput) {
+      // Ak je zadaný nadpis: normalizovať (bez diakritiky), medzery na podčiarkovníky
+      safeFileName = normalizeFilename(testTitleInput) + ".html";
+  } else {
+      // Ak nadpis chýba, použiť default
+      safeFileName = "MC_test.html";
+  }
 
   // Parsovanie otázok
   const allQuestions = inputData
@@ -189,6 +133,11 @@ function saveTestAsHTML() {
       return { term: parts[0], correct: parts[1], answers: parts.slice(2) };
     })
     .filter(q => q !== null);
+
+  if (allQuestions.length === 0) {
+      alert("Zadajte prosím aspoň jednu otázku v správnom formáte.");
+      return;
+  }
 
   // Stavba HTML reťazca
   let htmlContent = "";
@@ -205,11 +154,19 @@ function saveTestAsHTML() {
   htmlContent += "    #themeToggle.dark { background:#444; color:#fff; }\n";
   htmlContent += "    .question-block { border:1px solid #ccc; padding:10px; margin:10px 0; border-radius:4px; }\n";
   htmlContent += "    .question-title { font-weight:bold; margin-bottom:5px; }\n";
-  htmlContent += "    .answers label { display:block; margin:4px 0; padding:4px; border-radius:3px; }\n";
+  htmlContent += "    .answers label { display:block; margin:4px 0; padding:4px; border-radius:3px; cursor:pointer; }\n";
   htmlContent += "    .missing { background:#ffe6b3; }\n";
   htmlContent += "    .correct { background:#c8f7c5; }\n";
   htmlContent += "    .incorrect { background:#f7c5d1; }\n";
   htmlContent += "    body.dark-mode .missing, body.dark-mode .correct, body.dark-mode .incorrect { color:#000; }\n";
+  htmlContent += "    /* Start screen styles */\n";
+  htmlContent += "    #startScreen { border: 2px solid #ccc; padding: 20px; border-radius: 8px; max-width: 600px; margin-top: 20px; }\n";
+  htmlContent += "    .start-input { display: block; margin-bottom: 15px; width: 100%; padding: 8px; box-sizing: border-box; font-size: 1rem; }\n";
+  htmlContent += "    #startBtn { padding: 10px 25px; font-size: 1.2rem; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; }\n";
+  htmlContent += "    #startBtn:hover { background-color: #45a049; }\n";
+  htmlContent += "    /* Results styles */\n";
+  htmlContent += "    #results { margin-top:30px; padding:15px; border-top: 2px solid #ccc; }\n";
+  htmlContent += "    .detail-btn { background-color: #008CBA; color: white; border: none; padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 4px; margin-top: 15px; }\n";
   htmlContent += "  </style>\n";
   htmlContent += "</head>\n";
   htmlContent += "<body>\n";
@@ -217,9 +174,19 @@ function saveTestAsHTML() {
   // Prepínač tém
   htmlContent += "  <button id=\"themeToggle\">🌙 Tmavý režim</button>\n";
   htmlContent += "  <h2>" + testTitle + "</h2>\n";
-  htmlContent += "  <form id=\"quizForm\"></form>\n";
 
-  // Skript na motívy a test - opravené pre správne mapovanie zobrazených otázok (qs) pri vyhodnocovaní
+  // Úvodná obrazovka (Start Screen)
+  htmlContent += "  <div id=\"startScreen\">\n";
+  htmlContent += "    <label><b>Meno žiaka, trieda:</b></label>\n";
+  htmlContent += "    <input type=\"text\" id=\"inputName\" class=\"start-input\" placeholder=\"Zadajte vaše meno (nepovinné)\">\n";
+  htmlContent += "    <label><b>Počet otázok (max " + allQuestions.length + "):</b></label>\n";
+  htmlContent += "    <input type=\"number\" id=\"inputCount\" class=\"start-input\" value=\"" + allQuestions.length + "\" min=\"1\" max=\"" + allQuestions.length + "\">\n";
+  htmlContent += "    <button id=\"startBtn\" onclick=\"startTest()\">Štart</button>\n";
+  htmlContent += "  </div>\n";
+
+  // Kontajner na test
+  htmlContent += "  <form id=\"quizForm\" style=\"display:none;\"></form>\n";
+
   htmlContent += "  <script>\n";
   htmlContent += "    document.addEventListener('DOMContentLoaded', function() {\n";
   htmlContent += "      var btn = document.getElementById('themeToggle');\n";
@@ -234,78 +201,186 @@ function saveTestAsHTML() {
   htmlContent += "        btn.textContent = dark ? '☀️ Svetlý režim' : '🌙 Tmavý režim';\n";
   htmlContent += "        localStorage.setItem('theme', dark ? 'dark' : 'light');\n";
   htmlContent += "      });\n";
-  htmlContent += "      var originalQuestions = " + JSON.stringify(allQuestions) + ";\n";
-  htmlContent += "      var questionCount = " + questionCount + ";\n";
-  htmlContent += "      function shuffle(a){ for (var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t;} return a; }\n";
-  htmlContent += "      function pick(a,n){ return shuffle(a.slice()).slice(0,n); }\n";
-  htmlContent += "      // window.qs bude obsahovať presný poriadok a správne odpovede pre zobrazený test\n";
-  htmlContent += "      window.qs = [];\n";
-  htmlContent += "      function renderTest() {\n";
-  htmlContent += "        var form = document.getElementById('quizForm'); form.innerHTML = '';\n";
-  htmlContent += "        window.qs = pick(originalQuestions, Math.min(questionCount, originalQuestions.length))\n";
-  htmlContent += "                  .map(function(q){ return { term: q.term, correct: q.correct, opts: shuffle([q.correct].concat(q.answers)) }; });\n";
-  htmlContent += "        var nameField = document.createElement('input');\n";
-  htmlContent += "        nameField.type = 'text'; nameField.id = 'studentName'; nameField.placeholder = 'Zadajte meno žiaka'; nameField.style.width='350px';\n";
-  htmlContent += "        form.appendChild(nameField);\n";
-  htmlContent += "        window.qs.forEach(function(q,i){\n";
-  htmlContent += "          var block = document.createElement('div'); block.className = 'question-block';\n";
-  htmlContent += "          var title = document.createElement('div'); title.className = 'question-title';\n";
-  htmlContent += "          title.textContent = (i+1) + '. ' + q.term;\n";
-  htmlContent += "          block.appendChild(title);\n";
-  htmlContent += "          var ansContainer = document.createElement('div'); ansContainer.className = 'answers';\n";
-  htmlContent += "          q.opts.forEach(function(opt){\n";
-  htmlContent += "            var lbl = document.createElement('label');\n";
-  htmlContent += "            var rd = document.createElement('input'); rd.type = 'radio'; rd.name = 'q' + i; rd.value = opt;\n";
-  htmlContent += "            lbl.appendChild(rd);\n";
-  htmlContent += "            lbl.appendChild(document.createTextNode(' ' + opt));\n";
-  htmlContent += "            ansContainer.appendChild(lbl);\n";
-  htmlContent += "          });\n";
-  htmlContent += "          block.appendChild(ansContainer);\n";
-  htmlContent += "          form.appendChild(block);\n";
+  htmlContent += "    });\n\n";
+
+  // Dáta a logika testu
+  htmlContent += "    var originalQuestions = " + JSON.stringify(allQuestions) + ";\n";
+  htmlContent += "    var numberingType = '" + numberingType + "';\n";
+  htmlContent += "    var testTitleName = '" + testTitle + "';\n";
+  htmlContent += "    window.qs = [];\n\n";
+  htmlContent += "    // Globálne premenné pre výsledky\n";
+  htmlContent += "    var resultData = { name: '', score: 0, percent: 0, date: '' };\n\n";
+
+  htmlContent += "    function shuffle(a){ for (var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t;} return a; }\n";
+  htmlContent += "    function pick(a,n){ return shuffle(a.slice()).slice(0,n); }\n\n";
+
+  htmlContent += "    function getQuestionPrefix(index) {\n";
+  htmlContent += "       if (numberingType === 'alpha') {\n";
+  htmlContent += "         return String.fromCharCode(65 + index) + '.';\n";
+  htmlContent += "       } else {\n";
+  htmlContent += "         return (index + 1) + '.';\n";
+  htmlContent += "       }\n";
+  htmlContent += "    }\n\n";
+
+  htmlContent += "    function startTest() {\n";
+  htmlContent += "      var nameInput = document.getElementById('inputName').value.trim();\n";
+  htmlContent += "      // Ak nie je meno, použi XY\n";
+  htmlContent += "      resultData.name = nameInput ? nameInput : 'XY';\n";
+  
+  htmlContent += "      var count = parseInt(document.getElementById('inputCount').value);\n";
+  htmlContent += "      if (!count || count < 1) { alert('Počet otázok musí byť aspoň 1.'); return; }\n";
+  htmlContent += "      if (count > originalQuestions.length) count = originalQuestions.length;\n\n";
+
+  htmlContent += "      document.getElementById('startScreen').style.display = 'none';\n";
+  htmlContent += "      var form = document.getElementById('quizForm');\n";
+  htmlContent += "      form.style.display = 'block';\n";
+  htmlContent += "      form.innerHTML = '';\n\n";
+  
+  htmlContent += "      window.qs = pick(originalQuestions, count)\n";
+  htmlContent += "                .map(function(q){ return { term: q.term, correct: q.correct, opts: shuffle([q.correct].concat(q.answers)), userAnswer: null, isCorrect: false }; });\n\n";
+  
+  htmlContent += "      window.qs.forEach(function(q,i){\n";
+  htmlContent += "        var block = document.createElement('div'); block.className = 'question-block';\n";
+  htmlContent += "        var title = document.createElement('div'); title.className = 'question-title';\n";
+  htmlContent += "        title.textContent = getQuestionPrefix(i) + ' ' + q.term;\n";
+  htmlContent += "        block.appendChild(title);\n";
+  htmlContent += "        var ansContainer = document.createElement('div'); ansContainer.className = 'answers';\n";
+  htmlContent += "        q.opts.forEach(function(opt){\n";
+  htmlContent += "          var lbl = document.createElement('label');\n";
+  htmlContent += "          var rd = document.createElement('input'); rd.type = 'radio'; rd.name = 'q' + i; rd.value = opt;\n";
+  htmlContent += "          lbl.appendChild(rd);\n";
+  htmlContent += "          lbl.appendChild(document.createTextNode(' ' + opt));\n";
+  htmlContent += "          ansContainer.appendChild(lbl);\n";
   htmlContent += "        });\n";
-  htmlContent += "        var submitBtn = document.createElement('button');\n";
-  htmlContent += "        submitBtn.type = 'button'; submitBtn.textContent = 'Odoslať odpovede';\n";
-  htmlContent += "        submitBtn.onclick = evaluateTest;\n";
-  htmlContent += "        form.appendChild(submitBtn);\n";
-  htmlContent += "        var resultsDiv = document.createElement('div'); resultsDiv.id = 'results'; form.appendChild(resultsDiv);\n";
-  htmlContent += "      }\n";
-  htmlContent += "      function evaluateTest() {\n";
-  htmlContent += "        var score = 0;\n";
-  htmlContent += "        var blocks = document.getElementsByClassName('question-block');\n";
-  htmlContent += "        Array.from(blocks).forEach(function(block, i){\n";
-  htmlContent += "          var elems = document.getElementsByName('q' + i);\n";
-  htmlContent += "          var selected = Array.from(elems).find(function(r){ return r.checked; });\n";
-  htmlContent += "          Array.from(elems).forEach(function(r){\n";
-  htmlContent += "            var lbl = r.parentNode;\n";
-  htmlContent += "            if (r.value === window.qs[i].correct) lbl.classList.add('correct');\n";
-  htmlContent += "            else if (r.checked) lbl.classList.add('incorrect');\n";
+  htmlContent += "        block.appendChild(ansContainer);\n";
+  htmlContent += "        form.appendChild(block);\n";
+  htmlContent += "      });\n\n";
+
+  htmlContent += "      var submitBtn = document.createElement('button');\n";
+  htmlContent += "      submitBtn.type = 'button'; submitBtn.textContent = 'Odoslať odpovede';\n";
+  htmlContent += "      submitBtn.style.marginTop = '20px';\n";
+  htmlContent += "      submitBtn.onclick = evaluateTest;\n";
+  htmlContent += "      form.appendChild(submitBtn);\n";
+  htmlContent += "      var resultsDiv = document.createElement('div'); resultsDiv.id = 'results'; form.appendChild(resultsDiv);\n";
+  htmlContent += "    }\n\n";
+
+  htmlContent += "    function evaluateTest() {\n";
+  htmlContent += "      var score = 0;\n";
+  htmlContent += "      var blocks = document.getElementsByClassName('question-block');\n";
+  htmlContent += "      var oldFbs = document.querySelectorAll('.feedback-msg');\n";
+  htmlContent += "      oldFbs.forEach(e => e.remove());\n\n";
+  
+  htmlContent += "      Array.from(blocks).forEach(function(block, i){\n";
+  htmlContent += "        var elems = document.getElementsByName('q' + i);\n";
+  htmlContent += "        var selected = Array.from(elems).find(function(r){ return r.checked; });\n";
+  
+  htmlContent += "        // Uloženie odpovede pre detailný prehľad\n";
+  htmlContent += "        window.qs[i].userAnswer = selected ? selected.value : null;\n";
+  htmlContent += "        window.qs[i].isCorrect = (window.qs[i].userAnswer === window.qs[i].correct);\n\n";
+
+  htmlContent += "        Array.from(elems).forEach(function(r){\n";
+  htmlContent += "          r.parentNode.classList.remove('correct', 'incorrect', 'missing');\n";
+  htmlContent += "        });\n";
+  htmlContent += "        block.classList.remove('missing');\n\n";
+  
+  htmlContent += "        var feedback = '';\n";
+  htmlContent += "        if (!selected) {\n";
+  htmlContent += "          block.classList.add('missing'); feedback = '⚠️ chýbajúca odpoveď';\n";
+  htmlContent += "          // Zvýraznenie správnej odpovede aj keď žiak nič neoznačil\n";
+  htmlContent += "          Array.from(elems).forEach(r => { if(r.value === window.qs[i].correct) r.parentNode.classList.add('correct'); });\n";
+  htmlContent += "        } else if (selected.value === window.qs[i].correct) {\n";
+  htmlContent += "          score++; feedback = '✅ správna odpoveď';\n";
+  htmlContent += "          Array.from(elems).forEach(r => { if(r.value === window.qs[i].correct) r.parentNode.classList.add('correct'); });\n";
+  htmlContent += "        } else {\n";
+  htmlContent += "          feedback = '❌ nesprávna odpoveď';\n";
+  htmlContent += "          Array.from(elems).forEach(r => { \n";
+  htmlContent += "             if(r.checked) r.parentNode.classList.add('incorrect');\n";
+  htmlContent += "             if(r.value === window.qs[i].correct) r.parentNode.classList.add('correct');\n";
   htmlContent += "          });\n";
-  htmlContent += "          var feedback = '';\n";
-  htmlContent += "          if (!selected) {\n";
-  htmlContent += "            block.classList.add('missing'); feedback = '⚠️ chýbajúca odpoveď';\n";
-  htmlContent += "          } else if (selected.value === window.qs[i].correct) {\n";
-  htmlContent += "            score++; feedback = '✅ správna odpoveď';\n";
+  htmlContent += "        }\n";
+  htmlContent += "        var fbEl = document.createElement('div'); fbEl.className = 'feedback-msg';\n";
+  htmlContent += "        fbEl.style.fontWeight = 'bold'; fbEl.style.marginTop = '5px'; fbEl.textContent = feedback;\n";
+  htmlContent += "        block.appendChild(fbEl);\n";
+  htmlContent += "      });\n\n";
+  
+  htmlContent += "      resultData.score = score;\n";
+  htmlContent += "      resultData.percent = Math.round(score / (window.qs.length || 1) * 100);\n";
+  htmlContent += "      resultData.date = new Date().toLocaleString();\n\n";
+  
+  htmlContent += "      var out = document.getElementById('results');\n";
+  htmlContent += "      out.innerHTML = `<h3>Prehľad výsledkov</h3>\n";
+  htmlContent += "        <p><strong>Názov testu:</strong> ${testTitleName}</p>\n";
+  htmlContent += "        <p><strong>Meno žiaka:</strong> ${resultData.name}</p>\n";
+  htmlContent += "        <p><strong>Bodové a percentuálne hodnotenie:</strong> ${resultData.score} / ${window.qs.length} (${resultData.percent} %)</p>\n";
+  htmlContent += "        <p><strong>Dátum a čas:</strong> ${resultData.date}</p>`;\n\n";
+  
+  htmlContent += "      var detailBtn = document.createElement('button');\n";
+  htmlContent += "      detailBtn.className = 'detail-btn';\n";
+  htmlContent += "      detailBtn.textContent = 'Detailné výsledky';\n";
+  htmlContent += "      detailBtn.onclick = openDetailedResults;\n";
+  htmlContent += "      out.appendChild(detailBtn);\n";
+  htmlContent += "    }\n\n";
+
+  // Funkcia pre otvorenie detailného prehľadu v novom okne
+  htmlContent += "    function openDetailedResults() {\n";
+  htmlContent += "       var win = window.open('', '_blank');\n";
+  htmlContent += "       var css = `\n";
+  htmlContent += "         body { font-family: Courier bold, monospace; padding: 20px; }\n";
+  htmlContent += "         h2, h3 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }\n";
+  htmlContent += "         table { width: 100%; border-collapse: collapse; margin-top: 20px; }\n";
+  htmlContent += "         th, td { border: 1px solid #999; padding: 10px; text-align: left; vertical-align: top; }\n";
+  htmlContent += "         th { background-color: #eee; }\n";
+  htmlContent += "         .symbol { font-size: 1.5em; font-weight: bold; }\n";
+  htmlContent += "         .correct-ans { color: green; font-weight: bold; }\n";
+  htmlContent += "         .user-wrong { color: red; text-decoration: line-through; }\n";
+  htmlContent += "         .legend { margin-top: 30px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }\n";
+  htmlContent += "         @media print { button { display: none; } body { font-size: 12pt; } }\n";
+  htmlContent += "       `;\n";
+  htmlContent += "       var rows = '';\n";
+  htmlContent += "       window.qs.forEach(function(q, i) {\n";
+  htmlContent += "          var qPrefix = getQuestionPrefix(i);\n";
+  htmlContent += "          var symbol = '';\n";
+  htmlContent += "          var uAns = '';\n";
+  htmlContent += "          if (q.userAnswer === null) {\n";
+  htmlContent += "             symbol = '!';\n";
+  htmlContent += "             uAns = '<span style=\"color:orange\">(bez odpovede)</span>';\n";
+  htmlContent += "          } else if (q.isCorrect) {\n";
+  htmlContent += "             symbol = '✅';\n";
+  htmlContent += "             uAns = q.userAnswer;\n";
   htmlContent += "          } else {\n";
-  htmlContent += "            feedback = '❌ nesprávna odpoveď';\n";
+  htmlContent += "             symbol = '❌';\n";
+  htmlContent += "             uAns = '<span class=\"user-wrong\">' + q.userAnswer + '</span>';\n";
   htmlContent += "          }\n";
-  htmlContent += "          var fbEl = document.createElement('div'); fbEl.style.fontWeight = 'bold'; fbEl.style.marginTop = '5px'; fbEl.textContent = feedback;\n";
-  htmlContent += "          block.appendChild(fbEl);\n";
-  htmlContent += "        });\n";
-  htmlContent += "        var percent = Math.round(score / (window.qs.length || 1) * 100);\n";
-  htmlContent += "        var name = document.getElementById('studentName').value || 'Neznáme meno';\n";
-  htmlContent += "        var now = new Date().toLocaleString();\n";
-  htmlContent += "        var out = document.getElementById('results');\n";
-  htmlContent += "        out.innerHTML = `<h3>📊 Výsledky testu</h3>\n";
-  htmlContent += "          <p><strong>Meno žiaka:</strong> ${name}</p>\n";
-  htmlContent += "          <p><strong>Body:</strong> ${score} / ${window.qs.length}</p>\n";
-  htmlContent += "          <p><strong>Percentá:</strong> ${percent}%</p>\n";
-  htmlContent += "          <p><strong>Dátum a čas:</strong> ${now}</p>`;\n";
-  htmlContent += "        var again = document.createElement('button');\n";
-  htmlContent += "        again.type = 'button'; again.textContent = '🔁 Znova'; again.onclick = renderTest;\n";
-  htmlContent += "        out.appendChild(again);\n";
-  htmlContent += "      }\n";
-  htmlContent += "      renderTest();\n";
-  htmlContent += "    });\n";
+  htmlContent += "          rows += `<tr>\n";
+  htmlContent += "             <td><b>${qPrefix} ${q.term}</b><br><br>Správna odpoveď: <span class=\"correct-ans\">${q.correct}</span></td>\n";
+  htmlContent += "             <td>${uAns}<br><br><span class=\"symbol\">${symbol}</span></td>\n";
+  htmlContent += "          </tr>`;\n";
+  htmlContent += "       });\n\n";
+
+  htmlContent += "       var content = `\n";
+  htmlContent += "         <html><head><title>Detailné výsledky - ${resultData.name}</title><style>${css}</style></head><body>\n";
+  htmlContent += "         <h2>Detailné výsledky</h2>\n";
+  htmlContent += "         <p><strong>Názov testu:</strong> ${testTitleName}</p>\n";
+  htmlContent += "         <p><strong>Meno žiaka:</strong> ${resultData.name}</p>\n";
+  htmlContent += "         <p><strong>Bodové a percentuálne hodnotenie:</strong> ${resultData.score} / ${window.qs.length} (${resultData.percent} %)</p>\n";
+  htmlContent += "         <p><strong>Dátum a čas:</strong> ${resultData.date}</p>\n";
+  htmlContent += "         <h3>Detailný prehľad</h3>\n";
+  htmlContent += "         <table>\n";
+  htmlContent += "           <thead><tr><th style=\"width:60%\">Zadanie a správna odpoveď</th><th>Odpoveď žiaka a hodnotenie</th></tr></thead>\n";
+  htmlContent += "           <tbody>${rows}</tbody>\n";
+  htmlContent += "         </table>\n";
+  htmlContent += "         <div class=\"legend\">\n";
+  htmlContent += "           <b>Legenda symbolov:</b><br>\n";
+  htmlContent += "           ✅ = Správna odpoveď<br>\n";
+  htmlContent += "           ❌ = Nesprávna odpoveď<br>\n";
+  htmlContent += "           ! = Žiak neuviedol odpoveď\n";
+  htmlContent += "         </div>\n";
+  htmlContent += "         <br><button onclick=\"window.print()\" style=\"padding:10px 20px; font-weight:bold; cursor:pointer;\">🖨️ Vytlačiť (Ctrl + P)</button>\n";
+  htmlContent += "         </body></html>\n";
+  htmlContent += "       `;\n";
+  htmlContent += "       win.document.write(content);\n";
+  htmlContent += "       win.document.close();\n";
+  htmlContent += "    }\n";
   htmlContent += "  <\/script>\n";
 
   htmlContent += "  <br><br><b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)<br><br>\n";
@@ -329,11 +404,7 @@ function saveTestAsHTML() {
         const textarea = this;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-
-        // Vlož tabulátor
         textarea.value = textarea.value.substring(0, start) + "\t" + textarea.value.substring(end);
-
-        // Posuň kurzor
         textarea.selectionStart = textarea.selectionEnd = start + 1;
       }
     });
@@ -341,16 +412,12 @@ function saveTestAsHTML() {
 <script>
 // Ukladanie a načítanie obsahu textarea do/z localStorage
 const inputData = document.getElementById("inputData");
-
-// pri načítaní stránky obnov obsah
 window.addEventListener("load", () => {
   const saved = localStorage.getItem("inputData");
   if (saved !== null) {
     inputData.value = saved;
   }
 });
-
-// pri každej zmene ulož obsah
 inputData.addEventListener("input", () => {
   localStorage.setItem("inputData", inputData.value);
 });
