@@ -8,7 +8,14 @@ async function sha256(message) {
 }
 </script>
 
-<script src="config/password.js"></script>
+<script>
+let PASSWORD_HASH = "";
+
+fetch("config/password.txt")
+  .then(r => r.text())
+  .then(t => PASSWORD_HASH = t.trim());
+</script>
+
 
 <style>
   #password-overlay {
@@ -681,3 +688,4 @@ table tr:not(:first-child) td:first-child::before {
   </body>
 
 </html>
+
