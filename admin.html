@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>Zmena hesla</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+  }
+  input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+  }
+  button {
+    cursor: pointer;
+  }
+  #msg {
+    margin-top: 15px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h2>Zmena hesla</h2>
+
+<label>Staré heslo:</label>
+<input type="password" id="oldPass">
+
+<label>Nové heslo:</label>
+<input type="password" id="newPass">
+
+<label>GitHub Token:</label>
+<input type="password" id="token">
+
+<button id="changeBtn">Zmeniť heslo</button>
+
+<div id="msg"></div>
+
+<script>
+// SHA-256 hash
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+document.getElementById("changeBtn").addEventListener("click", async () => {
+  const oldPass = document.getElementById("oldPass").value;
+  const newPass = document.getElementById("newPass").value;
+  const token = document.getElementById("token").value;
+  const msg = document.getElementById("msg");
+
+  msg.textContent = "Prebieha kontrola...";
+
+  // 1. Načítanie aktuálneho hashu
+  const response = await fetch("config/password.txt");
+  const currentHash = (await response.text()).trim();
+
+  // 2. Overenie starého hesla
+  const oldHash = await sha256(oldPass);
+  if (oldHash !== currentHash) {
+    msg.textContent = "Staré heslo nie je správne.";
+    msg.style.color = "red";
+    return;
+  }
+
+  // 3. Hash nového hesla
+  const newHash = await sha256(newPass);
+
+  // 4. Uloženie cez GitHub API
+  const repoOwner = "matyiova";
+  const repoName = "2026-aktualizacne-vzdelavanie-AI-ZS";
+  const filePath = "config/password.txt";
+
+  // Najprv musíme získať SHA existujúceho súboru
+  const fileInfo = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`);
+  const fileData = await fileInfo.json();
+
+  const updateResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: "Update password hash",
+      content: btoa(newHash),
+      sha: fileData.sha
+    })
+  });
+
+  if (updateResponse.ok) {
+    msg.textContent = "Heslo bolo úspešne zmenené.";
+    msg.style.color = "green";
+  } else {
+    msg.textContent = "Nepodarilo sa uložiť nové heslo.";
+    msg.style.color = "red";
+  }
+});
+</script>
+
+</body>
+</html>
