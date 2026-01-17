@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Generátor zoznamu na čítanie podľa jazyka (anglicko-slovenský)</title>
+  <style>
+    body { font-family: Courier bold, monospace; padding: 2rem; max-width: 800px; margin: auto; }
+    textarea { width: 100%; height: 200px; font-family: monospace; margin-bottom: 1rem; }
+    label { display: block; margin-top: 1rem; }
+    select, button { margin-top: 0.5rem; padding: 0.4rem; }
+  </style>
+</head>
+<body>
+  <h1>🗣️ Generátor zoznamu na čítanie podľa jazyka (anglicko-slovenský)</h1>
+  <p>Vložte dvojstĺpcový text oddelený tabulátorom (napr. <code>Hello![TAB]Ahoj!</code>)</p>
+  <textarea id="inputText" placeholder="dog[TAB]pes&#10;How are you?[TAB]Ako sa máš?&#10;Thank you![TAB]Ďakujem!"></textarea>
+
+  <label>
+    Jazyk stĺpca 1:
+    <select id="lang1">
+      <option value="en-US">Angličtina (US)</option>
+      <option value="en-GB">Angličtina (UK)</option>
+      <option value="sk-SK">Slovenčina (sk-SK)</option>
+    </select>
+  </label>
+
+  <label>
+    Jazyk stĺpca 2:
+    <select id="lang2">
+      <option value="sk-SK">Slovenčina (sk-SK)</option>
+      <option value="en-US">Angličtina (US)</option>
+      <option value="en-GB">Angličtina (UK)</option>
+    </select>
+  </label>
+
+  <label>
+    Zvýrazni hrubým písmom:
+    <select id="boldColumn">
+      <option value="1">Stĺpec 1</option>
+      <option value="2">Stĺpec 2</option>
+    </select>
+  </label>
+
+  <label>
+    Nadpis zoznamu:
+    <input type="text" id="titleInput" placeholder="Napr. Anglické frázy" style="width: 100%; padding: 0.4rem; margin-top: 0.5rem;">
+  </label>
+
+  <button onclick="generate()">Generovať zoznam na čítanie</button>
+  <button onclick="downloadHTML()">Uložiť ako súbor HTML</button>
+
+<script>
+/* --- Uloženie a načítanie vstupov z localStorage --- */
+function saveInputs() {
+  localStorage.setItem("inputText", document.getElementById("inputText").value);
+  localStorage.setItem("lang1", document.getElementById("lang1").value);
+  localStorage.setItem("lang2", document.getElementById("lang2").value);
+  localStorage.setItem("boldColumn", document.getElementById("boldColumn").value);
+  localStorage.setItem("titleInput", document.getElementById("titleInput").value);
+}
+
+function loadInputs() {
+  if(localStorage.getItem("inputText")) document.getElementById("inputText").value = localStorage.getItem("inputText");
+  if(localStorage.getItem("lang1")) document.getElementById("lang1").value = localStorage.getItem("lang1");
+  if(localStorage.getItem("lang2")) document.getElementById("lang2").value = localStorage.getItem("lang2");
+  if(localStorage.getItem("boldColumn")) document.getElementById("boldColumn").value = localStorage.getItem("boldColumn");
+  if(localStorage.getItem("titleInput")) document.getElementById("titleInput").value = localStorage.getItem("titleInput");
+}
+
+window.addEventListener("load", loadInputs);
+document.querySelectorAll("#inputText, #lang1, #lang2, #boldColumn, #titleInput")
+  .forEach(el => el.addEventListener("input", saveInputs));
+
+/* --- Generovanie výstupu --- */
+function generate() {
+  const title = document.getElementById('titleInput').value.trim() || 'Čítací zoznam';
+  const text = document.getElementById('inputText').value.trim();
+  const lang1 = document.getElementById('lang1').value;
+  const lang2 = document.getElementById('lang2').value;
+  const boldCol = document.getElementById('boldColumn').value;
+
+  const rate = 1.0;
+  const pitch = 1.0;
+
+  const lines = text.split('\n').map(line => line.split('\t'));
+
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="sk">
+    <head>
+      <meta charset="UTF-8">
+      <title>${title}</title>
+      <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 900px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        td { padding: 0.5rem; border-bottom: 1px solid #ccc; vertical-align: middle; }
+        .bold { font-weight: bold; }
+        .icon { cursor: pointer; margin-right: 0.5rem; color: #0077cc; }
+        .controls { margin-top: 1rem; }
+      </style>
+    </head>
+    <body>
+      <h1>${title}</h1>
+      <div class="controls">
+        <label>Rýchlosť: <input type="range" id="rate" min="0.6" max="1.4" step="0.1" value="${rate}"> <span id="rateVal">${rate}</span></label>
+        <label>Výška: <input type="range" id="pitch" min="0.8" max="1.4" step="0.1" value="${pitch}"> <span id="pitchVal">${pitch}</span></label>
+      </div>
+      <table id="table">
+        ${lines.map(([col1, col2]) => `
+          <tr>
+            <td>
+              <span class="icon" onclick="speak('${col1}', '${lang1}')">🔊</span>
+              <span class="${boldCol === '1' ? 'bold' : ''}">${col1}</span>
+            </td>
+            <td>
+              <span class="icon" onclick="speak('${col2}', '${lang2}')">🔊</span>
+              <span class="${boldCol === '2' ? 'bold' : ''}">${col2}</span>
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+
+      <br><br>
+      <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+      <br><br>
+
+      <script>
+        document.getElementById('rate').addEventListener('input', e => {
+          document.getElementById('rateVal').textContent = e.target.value;
+        });
+        document.getElementById('pitch').addEventListener('input', e => {
+          document.getElementById('pitchVal').textContent = e.target.value;
+        });
+
+        function speak(text, lang) {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = lang;
+          utter.rate = parseFloat(document.getElementById('rate').value);
+          utter.pitch = parseFloat(document.getElementById('pitch').value);
+          speechSynthesis.speak(utter);
+        }
+      <\/script>
+    </body>
+    </html>
+  `);
+  newWindow.document.close();
+}
+</script>
+
+<script>
+/* Tabulátor v textarea */
+const textarea = document.getElementById('inputText');
+textarea.addEventListener('keydown', function(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = this.selectionStart;
+    const end = this.selectionEnd;
+    this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+    this.selectionStart = this.selectionEnd = start + 1;
+  }
+});
+</script>
+
+  <script>
+function downloadHTML() {
+  const title = document.getElementById('titleInput').value.trim() || 'Čítací zoznam';
+  const text = document.getElementById('inputText').value.trim();
+  const lang1 = document.getElementById('lang1').value;
+  const lang2 = document.getElementById('lang2').value;
+  const boldCol = document.getElementById('boldColumn').value;
+
+  const rate = 1.0;
+  const pitch = 1.0;
+
+  const lines = text.split('\n').map(line => line.split('\t'));
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: Courier bold, monospace; padding: 2rem; max-width: 900px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    td { padding: 0.5rem; border-bottom: 1px solid #ccc; vertical-align: middle; }
+    .bold { font-weight: bold; }
+    .icon { cursor: pointer; margin-right: 0.5rem; color: #0077cc; }
+    .controls { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <div class="controls">
+    <label>Rýchlosť: <input type="range" id="rate" min="0.6" max="1.4" step="0.1" value="${rate}"> <span id="rateVal">${rate}</span></label>
+    <label>Výška: <input type="range" id="pitch" min="0.8" max="1.4" step="0.1" value="${pitch}"> <span id="pitchVal">${pitch}</span></label>
+  </div>
+  <table id="table">
+    ${lines.map(([col1, col2]) => `
+      <tr>
+        <td>
+          <span class="icon" onclick="speak('${col1}', '${lang1}')">🔊</span>
+          <span class="${boldCol === '1' ? 'bold' : ''}">${col1}</span>
+        </td>
+        <td>
+          <span class="icon" onclick="speak('${col2}', '${lang2}')">🔊</span>
+          <span class="${boldCol === '2' ? 'bold' : ''}">${col2}</span>
+        </td>
+      </tr>
+    `).join('')}
+  </table>
+
+  <br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+  <br><br>
+
+  <script>
+    document.getElementById('rate').addEventListener('input', e => {
+      document.getElementById('rateVal').textContent = e.target.value;
+    });
+    document.getElementById('pitch').addEventListener('input', e => {
+      document.getElementById('pitchVal').textContent = e.target.value;
+    });
+
+    function speak(text, lang) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang;
+      utter.rate = parseFloat(document.getElementById('rate').value);
+      utter.pitch = parseFloat(document.getElementById('pitch').value);
+      speechSynthesis.speak(utter);
+    }
+  <\/script>
+</body>
+</html>
+`;
+
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/\s+/g, '_')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+
+<br><br>
+<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+<br><br>
+</body>
+</html>

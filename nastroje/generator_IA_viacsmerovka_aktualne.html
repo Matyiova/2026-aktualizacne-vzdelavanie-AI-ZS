@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generátor viacsmeroviek</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --danger: #e74c3c;
+            --success: #27ae60;
+        }
+        body { 
+            font-family: Courier bold, monospace; 
+            background: #f4f7f6; 
+            color: #333; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+        }
+        
+        .panel { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        
+        h1 { grid-column: 1 / -1; text-align: center; color: var(--primary); }
+        h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        
+        label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input[type="text"], input[type="number"], textarea, select { 
+            width: 100%; padding: 8px; margin-bottom: 15px; 
+            border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; 
+        }
+        textarea { height: 150px; resize: vertical; font-family: monospace; }
+        
+        .checkbox-group { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 15px; 
+        }
+        @media (min-width: 600px) {
+             .checkbox-group { grid-template-columns: repeat(4, 1fr); }
+        }
+        .checkbox-group label { font-weight: normal; cursor: pointer; display: flex; align-items: center; }
+        .checkbox-group input { margin-right: 5px; }
+
+        .btn { 
+            display: block; width: 100%; padding: 12px; border: none; border-radius: 4px; 
+            cursor: pointer; font-size: 16px; color: white; margin-bottom: 10px; 
+            font-weight: bold; text-align: center;
+        }
+        .btn-gen { background: var(--accent); }
+        .btn-gen:hover { background: #2980b9; }
+        .btn-down { background: var(--success); }
+        .btn-down:hover { background: #219150; }
+
+        /* Preview Grid */
+        #preview-container { overflow: auto; display: flex; justify-content: center; }
+        .word-search-grid { 
+            display: grid; gap: 1px; background: #333; border: 2px solid #333; 
+        }
+        .cell { 
+            width: 25px; height: 25px; background: white; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: normal; font-family: 'Verdana', sans-serif; 
+        }
+        
+        .message-box { 
+            padding: 10px; margin-top: 10px; border-radius: 4px; display: none; 
+            background: #fadbd8; color: var(--danger); border: 1px solid var(--danger);
+        }
+
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <h1>Generátor interaktívnych viacsmeroviek</h1>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Nastavenia</h2>
+            
+            <label>Názov:</label>
+            <input type="text" id="title" value="Moja viacsmerovka">
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Riadky:</label>
+                    <input type="number" id="rows" value="17" min="5" max="25">
+                </div>
+                <div style="flex: 1;">
+                    <label>Stĺpce:</label>
+                    <input type="number" id="cols" value="17" min="5" max="25">
+                </div>
+            </div>
+
+            <label>Smery hľadania:</label>
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="dir-chk" value="0" checked> → Vpravo</label>
+                <label><input type="checkbox" class="dir-chk" value="4" checked> ← Vľavo</label>
+                <label><input type="checkbox" class="dir-chk" value="2" checked> ↓ Dole</label>
+                <label><input type="checkbox" class="dir-chk" value="6" checked> ↑ Hore</label>
+                <label><input type="checkbox" class="dir-chk" value="1" checked> ↘ Vpravo-Dole</label>
+                <label><input type="checkbox" class="dir-chk" value="3" checked> ↙ Vľavo-Dole</label>
+                <label><input type="checkbox" class="dir-chk" value="7" checked> ↗ Vpravo-Hore</label>
+                <label><input type="checkbox" class="dir-chk" value="5" checked> ↖ Vľavo-Hore</label>
+            </div>
+
+            <label>Slová (každé na nový riadok):</label>
+            <textarea id="wordList" placeholder="Sem napíšte slová."></textarea>
+
+            <label>Vyplňujúce znaky (vždy bez diakritiky):</label>
+            <select id="fillType">
+                <option value="LOWER">Iba malé písmená (a-z)</option>
+				<option value="UPPER">Iba veľké písmená (A-Z)</option>
+                <option value="MIXED">Mix (podľa mriežky)</option>
+            </select>
+
+            <button class="btn btn-gen" onclick="generatePreview()">Vygenerovať náhľad</button>
+            <button class="btn btn-down" onclick="downloadHTML()">Stiahnuť hru (HTML)</button>
+
+            <div id="errorMsg" class="message-box"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Náhľad</h2>
+            <div id="preview-container">
+                <p style="color: #7f8c8d;">Kliknite na tlačidlo "Vygenerovať náhľad"</p>
+            </div>
+            <div id="words-status" style="margin-top: 15px; font-size: 0.9em;"></div>
+        </div>
+    </div>
+
+<script>
+    // --- 1. Inicializácia a LocalStorage ---
+    const wordInput = document.getElementById('wordList');
+    if(localStorage.getItem('myWordSearchWords')) {
+        wordInput.value = localStorage.getItem('myWordSearchWords');
+    }
+    wordInput.addEventListener('input', () => {
+        localStorage.setItem('myWordSearchWords', wordInput.value);
+    });
+
+    let currentGrid = [];
+    let placedWordsInfo = [];
+    
+    const directionsMap = [
+        [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]
+    ];
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    // --- 2. Logika generovania mriežky ---
+    function generatePreview() {
+        document.getElementById('errorMsg').style.display = 'none';
+
+        const rows = parseInt(document.getElementById('rows').value);
+        const cols = parseInt(document.getElementById('cols').value);
+        const rawText = document.getElementById('wordList').value;
+        const fillType = document.getElementById('fillType').value;
+        
+        const allowedDirs = Array.from(document.querySelectorAll('.dir-chk:checked')).map(cb => parseInt(cb.value));
+        
+        if (allowedDirs.length === 0) {
+            showError("Vyberte aspoň jeden smer hľadania.");
+            return;
+        }
+        if (!rawText.trim()) {
+            showError("Zadajte aspoň jedno slovo.");
+            return;
+        }
+
+        let words = rawText.split('\n')
+            .map(w => w.trim())
+            .filter(w => w.length > 0)
+            .map(w => ({
+                original: w,
+                clean: w.replace(/\s+/g, '')
+            }));
+
+        words.sort((a, b) => b.clean.length - a.clean.length);
+
+        let grid = Array(rows).fill(null).map(() => Array(cols).fill(''));
+        let placed = [];
+        let notPlaced = [];
+
+        for (let wordObj of words) {
+            let fitted = false;
+            let attempts = 0;
+            while (!fitted && attempts < 150) {
+                const dir = allowedDirs[Math.floor(Math.random() * allowedDirs.length)];
+                const [dr, dc] = directionsMap[dir];
+                const len = wordObj.clean.length;
+                
+                const rStart = Math.floor(Math.random() * rows);
+                const cStart = Math.floor(Math.random() * cols);
+                
+                const rEnd = rStart + (len - 1) * dr;
+                const cEnd = cStart + (len - 1) * dc;
+
+                if (rEnd >= 0 && rEnd < rows && cEnd >= 0 && cEnd < cols) {
+                    let match = true;
+                    for (let i = 0; i < len; i++) {
+                        const rr = rStart + i * dr;
+                        const cc = cStart + i * dc;
+                        const cell = grid[rr][cc];
+                        if (cell !== '' && cell !== wordObj.clean[i]) {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    if (match) {
+                        for (let i = 0; i < len; i++) {
+                            grid[rStart + i * dr][cStart + i * dc] = wordObj.clean[i];
+                        }
+                        placed.push({
+                            ...wordObj,
+                            r: rStart,
+                            c: cStart
+                        });
+                        fitted = true;
+                    }
+                }
+                attempts++;
+            }
+            if (!fitted) notPlaced.push(wordObj.original);
+        }
+
+        const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const lower = "abcdefghijklmnopqrstuvwxyz";
+        
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (grid[r][c] === '') {
+                    let char = '';
+                    if (fillType === 'UPPER') char = upper[Math.floor(Math.random() * upper.length)];
+                    else if (fillType === 'LOWER') char = lower[Math.floor(Math.random() * lower.length)];
+                    else char = (Math.random() > 0.5 ? upper : lower)[Math.floor(Math.random() * upper.length)];
+                    grid[r][c] = char;
+                }
+            }
+        }
+
+        currentGrid = grid;
+        placedWordsInfo = placed;
+        renderPreview(grid, placed, notPlaced);
+    }
+
+    function renderPreview(grid, placed, notPlaced) {
+        const container = document.getElementById('preview-container');
+        const status = document.getElementById('words-status');
+        
+        container.innerHTML = '';
+        
+        const rLen = grid.length;
+        const cLen = grid[0].length;
+        
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'word-search-grid';
+        gridDiv.style.gridTemplateColumns = `repeat(${cLen}, 25px)`;
+
+        for(let r=0; r<rLen; r++){
+            for(let c=0; c<cLen; c++){
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.textContent = grid[r][c];
+                gridDiv.appendChild(cell);
+            }
+        }
+        container.appendChild(gridDiv);
+
+        let html = `<strong>Vložené:</strong> ${placed.length}<br>`;
+        if(notPlaced.length > 0) {
+            html += `<span style="color:var(--danger)"><strong>Nevmestili sa:</strong> ${notPlaced.join(', ')}</span>`;
+        } else {
+            html += `<span style="color:var(--success)">Všetky slová boli vložené.</span>`;
+        }
+        status.innerHTML = html;
+    }
+
+    // --- 3. Generovanie a stiahnutie súboru ---
+    function downloadHTML() {
+        if (currentGrid.length === 0) {
+            showError("Najprv vygenerujte mriežku.");
+            return;
+        }
+
+        const title = document.getElementById('title').value;
+        const rows = currentGrid.length;
+        const cols = currentGrid[0].length;
+        
+        const dataWords = JSON.stringify(placedWordsInfo.map(w => ({
+            display: w.original, 
+            clean: w.clean,      
+            r: w.r,              
+            c: w.c
+        })));
+        
+        const dataGrid = JSON.stringify(currentGrid);
+
+        const fileContent = `<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body { 
+            font-family: Courier bold, monospace; 
+            background-color: #f9f9f9; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* Hlavný kontajner */
+        #game-layout {
+            display: flex;
+            flex-wrap: wrap; /* Umožní zalomenie na mobile */
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+            max-width: 1400px;
+        }
+
+        /* Ľavý stĺpec: Nadpis + Mriežka */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+        }
+
+        /* Pravý stĺpec: Tlačidlá + Zoznam slov */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            /* Nastavením max-width zaistíme, že panel nebude príliš široký, 
+               ale stále sa zmestia 2 stĺpce slov */
+            width: 320px; 
+            padding-top: 20px;
+        }
+
+        h1 { 
+            color: #2c3e50; 
+            margin: 0 0 20px 0; 
+            text-align: center;
+        }
+
+        /* Mriežka */
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(${cols}, 35px); 
+            gap: 2px; 
+            background: #2c3e50; 
+            border: 2px solid #2c3e50;
+            border-radius: 5px;
+            padding: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .cell { 
+            width: 35px; height: 35px; 
+            background: #fff; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 20px; 
+            font-weight: normal; 
+            font-family: 'Courier bold', Comic Sans MS, monospace;
+            cursor: pointer; 
+            transition: all 0.1s;
+        }
+        
+        .cell:hover { background: #ecf0f1; }
+        .cell.selected { background: #f1c40f; color: #fff; transform: scale(1.05); }
+        .cell.found { background: #2ecc71 !important; color: white; animation: pop 0.4s; }
+        
+        .cell.hint-flash { animation: flash 0.3s 6 alternate; background: #e74c3c; color: white; }
+        @keyframes flash { from { background: #e74c3c; } to { background: white; color: black; } }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* ZOZNAM SLOV */
+        #word-list {
+            display: grid;
+            /* Tu definujeme 3 stĺpce pre slová v pravom paneli */
+            grid-template-columns: 1fr 1fr 1fr; 
+            gap: 8px;
+            width: 100%;
+        }
+
+        .word-item { 
+            padding: 6px 8px; 
+            background: white; border-radius: 4px; 
+            border-left: 4px solid #3498db; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+            word-break: break-word; /* Zalomí dlhé slová */
+        }
+        .word-item.done { 
+            text-decoration: line-through; opacity: 0.6; 
+            border-left-color: #2ecc71; background: #e8f5e9; 
+        }
+
+        button { 
+            padding: 12px 20px; border: none; border-radius: 5px; 
+            cursor: pointer; font-size: 16px; font-weight: bold; color: white; margin-top: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-hint { background: #3498db; width: 100%; margin-bottom: 20px; }
+        .btn-hint:hover { background: #2980b9; }
+
+        #success-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .success-box {
+            background: white; padding: 40px; border-radius: 10px; text-align: center;
+            border-bottom: 5px solid #2ecc71;
+        }
+        .btn-reset { background: #2ecc71; }
+
+        @media (max-width: 600px) {
+            #grid { grid-template-columns: repeat(${cols}, 8vw); }
+            .cell { width: 8vw; height: 8vw; font-size: 14px; }
+            .left-column { width: 100%; }
+            .right-column { width: 100%; padding-top: 0; }
+            /* Na mobile dáme slová pod seba do 3 stĺpcov */
+            #word-list { grid-template-columns: 1fr 1fr 1fr; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-layout">
+        <div class="left-column">
+            <h1>${title}</h1>
+            <div id="grid"></div>
+        </div>
+
+        <div class="right-column">
+            <button class="btn-hint" onclick="game.showHint()">💡 Ukáž nápovedu</button>
+            <div id="word-list"></div>
+        </div>
+			<br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+  <br><br>
+    </div>
+
+    <div id="success-overlay">
+        <div class="success-box">
+            <h2 style="color: #2ecc71; margin-top:0;">Gratulujeme!</h2>
+            <p>Našli ste všetky slová.</p>
+            <button class="btn-reset" onclick="location.reload()">Hrať znova</button>
+        </div>
+    </div>
+
+    <script>
+        const GameData = {
+            grid: ${dataGrid},
+            words: ${dataWords}
+        };
+
+        class WordSearch {
+            constructor(data) {
+                this.grid = data.grid;
+                this.words = data.words;
+                this.foundCount = 0;
+                this.isSelecting = false;
+                this.startCell = null;
+                this.selectedCells = [];
+                this.gridEl = document.getElementById('grid');
+                this.listEl = document.getElementById('word-list');
+                this.init();
+            }
+
+            init() {
+                this.grid.forEach((row, r) => {
+                    row.forEach((char, c) => {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.textContent = char;
+                        cell.dataset.r = r;
+                        cell.dataset.c = c;
+                        cell.addEventListener('mousedown', (e) => this.startSel(r, c, e));
+                        cell.addEventListener('mouseenter', () => this.updateSel(r, c));
+                        cell.addEventListener('mouseup', () => this.endSel());
+                        cell.addEventListener('touchstart', (e) => { e.preventDefault(); this.startSel(r, c); });
+                        this.gridEl.appendChild(cell);
+                    });
+                });
+
+                this.gridEl.addEventListener('touchmove', (e) => {
+                    if(!this.isSelecting) return;
+                    e.preventDefault();
+                    const t = e.touches[0];
+                    const el = document.elementFromPoint(t.clientX, t.clientY);
+                    if(el && el.classList.contains('cell')) {
+                        const r = parseInt(el.dataset.r);
+                        const c = parseInt(el.dataset.c);
+                        this.updateSel(r, c);
+                    }
+                });
+                document.addEventListener('touchend', () => { if(this.isSelecting) this.endSel(); });
+                document.addEventListener('mouseup', () => { if(this.isSelecting) this.endSel(); });
+
+                this.words.forEach((w, i) => {
+                    const el = document.createElement('div');
+                    el.className = 'word-item';
+                    el.textContent = w.display;
+                    el.id = 'word-' + i;
+                    this.listEl.appendChild(el);
+                });
+            }
+
+            startSel(r, c, e) {
+                if(e && e.button !== 0) return;
+                this.isSelecting = true;
+                this.startCell = { r, c };
+                this.updateSel(r, c);
+            }
+
+            updateSel(r, c) {
+                if(!this.isSelecting) return;
+                document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
+                this.selectedCells = [];
+                const r1 = this.startCell.r;
+                const c1 = this.startCell.c;
+                const dr = r - r1;
+                const dc = c - c1;
+                if (dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc)) {
+                    const steps = Math.max(Math.abs(dr), Math.abs(dc));
+                    const stepR = dr === 0 ? 0 : dr / steps;
+                    const stepC = dc === 0 ? 0 : dc / steps;
+                    for(let i=0; i<=steps; i++) {
+                        const nr = r1 + Math.round(i * stepR);
+                        const nc = c1 + Math.round(i * stepC);
+                        const cell = document.querySelector(\`.cell[data-r="\${nr}"][data-c="\${nc}"]\`);
+                        if(cell) {
+                            cell.classList.add('selected');
+                            this.selectedCells.push({ r: nr, c: nc, char: cell.textContent });
+                        }
+                    }
+                }
+            }
+
+            endSel() {
+                this.isSelecting = false;
+                const text = this.selectedCells.map(c => c.char).join('');
+                const textRev = this.selectedCells.map(c => c.char).reverse().join('');
+                this.checkWord(text, textRev);
+                document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
+            }
+
+            checkWord(str, strRev) {
+                let foundId = -1;
+                this.words.forEach((w, i) => {
+                    if(!w.found && (w.clean === str || w.clean === strRev)) {
+                        foundId = i;
+                    }
+                });
+                if(foundId !== -1) {
+                    this.words[foundId].found = true;
+                    document.getElementById('word-' + foundId).classList.add('done');
+                    this.selectedCells.forEach(p => {
+                        const cell = document.querySelector(\`.cell[data-r="\${p.r}"][data-c="\${p.c}"]\`);
+                        cell.classList.add('found');
+                    });
+                    this.foundCount++;
+                    if(this.foundCount === this.words.length) {
+                        document.getElementById('success-overlay').style.display = 'flex';
+                    }
+                }
+            }
+
+            showHint() {
+                const available = this.words.filter(w => !w.found);
+                if(available.length === 0) return;
+                const rand = available[Math.floor(Math.random() * available.length)];
+                const cell = document.querySelector(\`.cell[data-r="\${rand.r}"][data-c="\${rand.c}"]\`);
+                if(cell) {
+                    cell.classList.add('hint-flash');
+                    setTimeout(() => cell.classList.remove('hint-flash'), 1800);
+                }
+            }
+        }
+        const game = new WordSearch(GameData);
+    <\/script>
+
+</body>
+</html>`;
+        
+        const blob = new Blob([fileContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+	<br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+  <br><br>
+</body>
+</html>

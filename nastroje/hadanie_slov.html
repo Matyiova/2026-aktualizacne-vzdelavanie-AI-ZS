@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Hádanie slov podľa písmen</title>
+  <style>
+    body { font-family: Courier bold, monospace; font weight: 600; font-size: 17px; padding: 20px; }
+    textarea { width: 100%; height: 150px; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
+    .game-area { margin-top: 30px; }
+    .definition { font-size: 20px; margin-bottom: 10px; }
+    .word-display { font-size: 24px; letter-spacing: 10px; margin-bottom: 20px; }
+   .alphabet { display: block; }
+	.alphabet-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+    .alphabet button { padding: 10px; font-size: 18px; width: 40px; }
+    .score { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+  <h1>Generátor hry s písmenami (hádanie slov)</h1>
+  <p><b>Zadajte definície a slová (oddelené klávesou TAB):</b></p>
+  <textarea id="inputArea" style="font-size: 110%;"placeholder="napr.:&#10;mesto na Slovensku[TAB]Košice"></textarea>
+  <button onclick="generateGame()">Generovať hru</button>
+  <button onclick="downloadGame()">Stiahnuť hru ako HTML</button>
+
+
+  <div class="game-area" id="gameArea" style="display:none;">
+    <div class="definition" id="definitionText"></div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="alphabet" id="alphabetButtons"></div>
+    <div class="score" id="scoreDisplay"></div>
+  </div>
+
+  <script>
+  let tasks = [];
+  let usedIndices = [];
+  let currentWord = '';
+  let currentDefinition = '';
+  let guessedLetters = [];
+  let guessedLettersNormalized = []; // normalizované znaky na porovnávanie
+  let score = 0;
+  let maxScore = 0;
+  let currentMaxScore = 0;
+  let currentScore = 0;
+
+  // Normalizácia znakov (bez alternatívy "ss")
+  function normChar(ch) {
+    if (ch === 'ẞ') return 'ß'; // veľké Eszett -> malé ß
+    return ch.toLowerCase();
+  }
+
+  document.getElementById('inputArea').addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = this;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      textarea.value = textarea.value.substring(0, start) + '\t' + textarea.value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 1;
+    }
+  });
+
+  function generateGame() {
+    const input = document.getElementById('inputArea').value.trim();
+    const lines = input.split('\n');
+    tasks = lines.map(line => {
+      const [def, word] = line.split('\t');
+      return { definition: def.trim(), word: word.trim() };
+    }).filter(task => task.definition && task.word);
+
+    usedIndices = [];
+    score = 0;
+    document.getElementById('scoreDisplay').textContent = '';
+    document.getElementById('gameArea').style.display = 'block';
+    nextTask();
+  }
+
+  function nextTask() {
+    if (usedIndices.length === tasks.length) {
+      document.getElementById('definitionText').textContent = '🎉 Hra sa skončila! Celkové skóre: ' + score;
+      document.getElementById('wordDisplay').textContent = '';
+      document.getElementById('alphabetButtons').innerHTML = '';
+      return;
+    }
+
+    let index;
+    do {
+      index = Math.floor(Math.random() * tasks.length);
+    } while (usedIndices.includes(index));
+    usedIndices.push(index);
+
+    const task = tasks[index];
+    currentWord = task.word; // zachovať originál (vrátane ß), bez toUpperCase
+    currentDefinition = task.definition;
+    currentMaxScore = currentWord.length;
+    currentScore = currentMaxScore;
+    guessedLetters = [];
+    guessedLettersNormalized = [];
+    maxScore = currentWord.length;
+
+    document.getElementById('definitionText').textContent = `${currentDefinition}`;
+    updateWordDisplay();
+    renderAlphabet();
+    updateScoreDisplay();
+  }
+
+  function updateWordDisplay() {
+    const wordDisplayElement = document.getElementById('wordDisplay');
+    const display = currentWord.split('').map(letter => {
+      if (letter === ' ') {
+        return '<span style="margin-right: 30px;"></span>'; // vizuálna medzera
+      } else if (guessedLettersNormalized.includes(normChar(letter))) {
+        return letter; // zobraz originál (vrátane ß)
+      } else {
+        return '_';
+      }
+    }).join(' ');
+
+    wordDisplayElement.innerHTML = display; // použijeme innerHTML kvôli <span>
+  }
+
+  function renderAlphabet() {
+  // definuj si riadky písmen
+  const rows = [
+    'ABCDEFGHIJKLM',
+    'NOPQRSTUVWXYZ',
+    'ÁČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ',
+	'ÄÖÜß'
+  ];
+
+  const container = document.getElementById('alphabetButtons');
+  container.innerHTML = '';  // vymaž predchádzajúce tlačidlá
+
+  // pre každý riadok vytvor nový div a vlož doň tlačidlá
+  rows.forEach(letters => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.display = 'flex';
+    rowDiv.style.gap = '5px';
+    rowDiv.style.marginBottom = '10px';
+
+    letters.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.textContent = letter;
+      btn.style.fontWeight = 'bold';
+      btn.onclick = () => handleGuess(letter);
+      btn.disabled = guessedLetters.includes(letter);
+      rowDiv.appendChild(btn);
+    });
+
+    container.appendChild(rowDiv);
+  });
+}
+  function handleGuess(letter) {
+    guessedLetters.push(letter);
+    guessedLettersNormalized.push(normChar(letter));
+
+    // Bez alternatívy "ss": porovnávanie cez normChar
+    const hasLetter = currentWord.split('').some(l => normChar(l) === normChar(letter));
+
+    if (hasLetter) {
+      updateWordDisplay();
+
+      // Skontroluj, či sú všetky písmená (okrem medzier) uhádnuté
+      const allGuessed = currentWord.split('').every(l =>
+        l === ' ' || guessedLettersNormalized.includes(normChar(l))
+      );
+
+      if (allGuessed) {
+        score += currentScore;
+        updateScoreDisplay();
+        setTimeout(nextTask, 1000); // posun na ďalšiu definíciu po 1 sekunde
+      }
+    } else {
+      currentScore = Math.max(0, currentScore - 1); // zníženie skóre pri zlej odpovedi
+      updateScoreDisplay();
+    }
+
+    renderAlphabet(); // aktualizácia tlačidiel
+  }
+
+  function updateScoreDisplay() {
+    document.getElementById('scoreDisplay').textContent =
+      `Skóre: ${score} | Aktuálne: ${currentScore} / ${currentMaxScore}`;
+  }
+</script>
+
+<script>
+function downloadGame() {
+  const input = document.getElementById('inputArea').value.trim();
+  const lines = input.split('\n');
+  const tasksArray = lines.map(line => {
+    const [def, word] = line.split('\t');
+    return { definition: def.trim(), word: word.trim() };
+  }).filter(task => task.definition && task.word);
+
+  const tasksJSON = JSON.stringify(tasksArray);
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Hra s písmenami</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .game-area { margin-top: 30px; }
+    .definition { font-size: 20px; margin-bottom: 10px; }
+    .word-display { font-size: 24px; letter-spacing: 10px; margin-bottom: 20px; }
+.alphabet { display: block; }
+	.alphabet-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+    .alphabet button { padding: 10px; font-size: 18px; width: 40px; }
+    .score { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Hra s písmenami</h1>
+  <div class="game-area" id="gameArea">
+    <div class="definition" id="definitionText"></div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="alphabet" id="alphabetButtons"></div>
+    <div class="score" id="scoreDisplay"></div>
+  </div>
+
+  <script>
+    let tasks = ${tasksJSON};
+    let usedIndices = [];
+    let currentWord = '';
+    let currentDefinition = '';
+    let guessedLetters = [];
+    let guessedLettersNormalized = [];
+    let score = 0;
+    let currentMaxScore = 0;
+    let currentScore = 0;
+
+    function normChar(ch) {
+      if (ch === 'ẞ') return 'ß';
+      return ch.toLowerCase();
+    }
+
+    function nextTask() {
+      if (usedIndices.length === tasks.length) {
+        document.getElementById('definitionText').textContent = '🎉 Hra sa skončila! Celkové skóre: ' + score;
+        document.getElementById('wordDisplay').textContent = '';
+        document.getElementById('alphabetButtons').innerHTML = '';
+        return;
+      }
+
+      let index;
+      do {
+        index = Math.floor(Math.random() * tasks.length);
+      } while (usedIndices.includes(index));
+      usedIndices.push(index);
+
+      const task = tasks[index];
+      currentWord = task.word; // ponechať originál (vrátane ß)
+      currentDefinition = task.definition;
+      guessedLetters = [];
+      guessedLettersNormalized = [];
+      currentMaxScore = currentWord.length;
+      currentScore = currentMaxScore;
+
+      document.getElementById('definitionText').textContent = currentDefinition;
+      updateWordDisplay();
+      renderAlphabet();
+      updateScoreDisplay();
+    }
+
+    function updateWordDisplay() {
+      const wordDisplayElement = document.getElementById('wordDisplay');
+      const display = currentWord.split('').map(letter => {
+        if (letter === ' ') {
+          return '<span style="margin-right: 30px;"></span>'; // vizuálna medzera
+        } else if (guessedLettersNormalized.includes(normChar(letter))) {
+          return letter; // zobraz originál (vrátane ß)
+        } else {
+          return '_';
+        }
+      }).join(' ');
+
+      wordDisplayElement.innerHTML = display; // použijeme innerHTML kvôli <span>
+    }
+
+   function renderAlphabet() {
+  // definuj si riadky písmen
+  const rows = [
+    'ABCDEFGHIJKLM',
+    'NOPQRSTUVWXYZ',
+    'ÁČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ',
+	'ÄÖÜß'
+  ];
+
+  const container = document.getElementById('alphabetButtons');
+  container.innerHTML = '';  // vymaž predchádzajúce tlačidlá
+
+  // pre každý riadok vytvor nový div a vlož doň tlačidlá
+  rows.forEach(letters => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.display = 'flex';
+    rowDiv.style.gap = '5px';
+    rowDiv.style.marginBottom = '10px';
+
+    letters.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.textContent = letter;
+      btn.style.fontWeight = 'bold';
+      btn.onclick = () => handleGuess(letter);
+      btn.disabled = guessedLetters.includes(letter);
+      rowDiv.appendChild(btn);
+    });
+
+    container.appendChild(rowDiv);
+  });
+}
+    function handleGuess(letter) {
+      guessedLetters.push(letter);
+      guessedLettersNormalized.push(normChar(letter));
+
+      const hasLetter = currentWord.split('').some(l => normChar(l) === normChar(letter));
+
+      if (hasLetter) {
+        updateWordDisplay();
+
+        const allGuessed = currentWord.split('').every(l =>
+          l === ' ' || guessedLettersNormalized.includes(normChar(l))
+        );
+
+        if (allGuessed) {
+          score += currentScore;
+          updateScoreDisplay();
+          setTimeout(nextTask, 1000);
+        }
+      } else {
+        currentScore = Math.max(0, currentScore - 1);
+        updateScoreDisplay();
+      }
+
+      renderAlphabet();
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('scoreDisplay').textContent =
+        \`Skóre: \${score} | Aktuálne: \${currentScore} / \${currentMaxScore}\`;
+    }
+
+    window.onload = nextTask;
+  <\/script>
+</body>
+</html>
+`;
+
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'hra.html';
+  link.click();
+}
+</script>
+
+ <br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+  <br><br>
+</body>
+</html>
