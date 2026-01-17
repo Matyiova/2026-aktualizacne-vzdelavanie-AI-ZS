@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ovocie</title>
+<style>
+    :root { --card-back: #44b635; --gap: 10px; }
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #fffbe6; display: flex; flex-direction: column; align-items: center; }
+    h1 { margin-bottom: 5px; text-align: center; }
+    .author { font-style: italic; color: #666; margin-bottom: 20px; font-size: 1.1em; }
+    .game-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); width: 100%; max-width: 900px; }
+    .card-slot { position: relative; aspect-ratio: 4/3; background: #f0f0f0; border-radius: 8px; }
+    .slot-number { position: absolute; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; font-size: 2em; color: #ddd; font-weight: bold; }
+    .show-numbers .slot-number { display: flex; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; z-index: 2; }
+    .card.flipped { transform: rotateY(180deg); }
+    .card.matched { display: none !important; }
+    .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .front { background-color: var(--card-back); transform: rotateY(0deg); }
+    .card-num-overlay { font-size: 2.5em; color: rgba(255,255,255,0.4); font-weight: bold; display: none; }
+    .show-numbers .card-num-overlay { display: block; }
+    .back { background-color: white; transform: rotateY(180deg); border: 2px solid var(--card-back); padding: 5px; box-sizing: border-box; }
+    .card-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .card-text { text-align: center; font-weight: bold; color: #333; width: 100%; padding: 5px; box-sizing: border-box; word-wrap: break-word; }
+    .controls { margin-bottom: 20px; display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; }
+    .settings { margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; color: #555; font-size: 0.9em; }
+    .hidden { display: none !important; }
+    #successOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+    #successText { font-size: 10vw; color: green; font-weight: bold; margin: 0; text-align: center; z-index: 2; padding: 20px; }
+    canvas#fireworks { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+    .restart-btn { margin-top: 20px; padding: 15px 30px; font-size: 1.5em; cursor: pointer; background: green; color: white; border: none; border-radius: 10px; z-index: 3; }
+</style>
+</head>
+<body>
+<h1>Ovocie (nemecký a slovenský text)</h1>
+<div class="author">Autor: Mgr. Erika Matyiová</div>
+
+<div class="controls">
+    <div id="timerBox">Čas: <span id="time">00:00</span></div>
+    <div id="movesBox">Ťahy: <span id="moves">0</span></div>
+</div>
+<div class="game-board" id="board"></div>
+<div class="settings">
+    <label><input type="checkbox" id="toggleTimer" checked> Čas</label>
+    <label><input type="checkbox" id="toggleMoves" checked> Ťahy</label>
+    <label><input type="checkbox" id="toggleNumbers"> Čísla</label>
+    <button onclick="location.reload()">Reštartovať</button>
+</div>
+<div id="successOverlay">
+    <canvas id="fireworks"></canvas>
+    <h2 id="successText">Super!</h2>
+    <button class="restart-btn" onclick="location.reload()">Hrať znova</button>
+</div>
+<script>
+    const pairsData = [{"type1":"text","content1":"der Apfel","bg1":"#ebebeb","type2":"text","content2":"jablko","bg2":"#ffffff"},{"type1":"text","content1":"die Banane","bg1":"#ebebeb","type2":"text","content2":"banán","bg2":"#ffffff"},{"type1":"text","content1":"die Birne","bg1":"#ebebeb","type2":"text","content2":"hruška","bg2":"#ffffff"},{"type1":"text","content1":"die Erdbeere","bg1":"#ebebeb","type2":"text","content2":"jahoda","bg2":"#ffffff"},{"type1":"text","content1":"die Himbeere","bg1":"#ebebeb","type2":"text","content2":"malina","bg2":"#ffffff"},{"type1":"text","content1":"die Kirsche","bg1":"#ebebeb","type2":"text","content2":"čerešňa","bg2":"#ffffff"},{"type1":"text","content1":"die Kiwi","bg1":"#ebebeb","type2":"text","content2":"kivi","bg2":"#ffffff"},{"type1":"text","content1":"der Pfirsich","bg1":"#ebebeb","type2":"text","content2":"broskyňa","bg2":"#ffffff"},{"type1":"text","content1":"die Pflaume","bg1":"#ebebeb","type2":"text","content2":"slivka","bg2":"#ffffff"},{"type1":"text","content1":"die Zitrone","bg1":"#ebebeb","type2":"text","content2":"citrón","bg2":"#ffffff"}];
+    let firstCard, secondCard, lockBoard = false, moves = 0, seconds = 0, gameStarted = false, timerInterval;
+
+    function init() {
+        const board = document.getElementById('board');
+        let deck = [];
+        pairsData.forEach((p, i) => {
+            // Pridane citanie farby pozadia (p.bg1/bg2), default je biela
+            deck.push({ id: i, type: p.type1, content: p.content1, bg: p.bg1 || 'white' });
+            deck.push({ id: i, type: p.type2, content: p.content2, bg: p.bg2 || 'white' });
+        });
+        deck.sort(() => 0.5 - Math.random());
+        deck.forEach((item, i) => {
+            const slot = document.createElement('div');
+            slot.classList.add('card-slot');
+            const sn = document.createElement('div'); sn.className = 'slot-number'; sn.innerText = i + 1; slot.appendChild(sn);
+            const card = document.createElement('div'); card.className = 'card'; card.dataset.id = item.id;
+            const f = document.createElement('div'); f.className = 'face front';
+            const ov = document.createElement('span'); ov.className = 'card-num-overlay'; ov.innerText = i + 1; f.appendChild(ov);
+            
+            // Aplikacia farby pozadia
+            const b = document.createElement('div'); b.className = 'face back';
+            b.style.backgroundColor = item.bg;
+
+            if(item.type === 'img') {
+                const img = document.createElement('img'); img.src = item.content; img.className = 'card-image'; b.appendChild(img);
+            } else {
+                const txt = document.createElement('div'); txt.className = 'card-text'; txt.innerText = item.content; b.appendChild(txt);
+            }
+            card.appendChild(f); card.appendChild(b);
+            card.addEventListener('click', flipCard);
+            slot.appendChild(card); board.appendChild(slot);
+        });
+        setTimeout(fitAllTexts, 100);
+    }
+
+    function flipCard() {
+        if (lockBoard || this === firstCard) return;
+        if (!gameStarted) {
+            gameStarted = true;
+            timerInterval = setInterval(() => {
+                seconds++;
+                const m = Math.floor(seconds/60).toString().padStart(2,'0');
+                const s = (seconds%60).toString().padStart(2,'0');
+                document.getElementById('time').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+        this.classList.add('flipped');
+        if (!firstCard) { firstCard = this; return; }
+        secondCard = this;
+        moves++; document.getElementById('moves').innerText = moves;
+        if (firstCard.dataset.id === secondCard.dataset.id) {
+            lockBoard = true;
+            setTimeout(() => { firstCard.classList.add('matched'); secondCard.classList.add('matched'); checkWin(); reset(); }, 800);
+        } else {
+            lockBoard = true;
+            setTimeout(() => { firstCard.classList.remove('flipped'); secondCard.classList.remove('flipped'); reset(); }, 1200);
+        }
+    }
+
+    function reset() { [firstCard, secondCard, lockBoard] = [null, null, false]; }
+
+    function checkWin() {
+        if (document.querySelectorAll('.card:not(.matched)').length === 0) {
+            clearInterval(timerInterval);
+            setTimeout(() => {
+                document.getElementById('successOverlay').style.display = 'flex';
+                startFireworks();
+            }, 500);
+        }
+    }
+
+    function fitAllTexts() {
+        document.querySelectorAll('.card-text').forEach(el => {
+            let fs = 24; el.style.fontSize = fs + 'px';
+            const p = el.parentElement;
+            while ((el.scrollWidth > p.clientWidth - 10 || el.scrollHeight > p.clientHeight - 10) && fs > 7) { 
+                fs--; el.style.fontSize = fs + 'px'; 
+            }
+        });
+    }
+
+    function startFireworks() {
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let particles = [];
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.velocity = { x: (Math.random()-0.5)*10, y: (Math.random()-0.5)*10 };
+                this.alpha = 1; this.friction = 0.95;
+            }
+            draw() {
+                ctx.globalAlpha = this.alpha; ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
+                ctx.fillStyle = this.color; ctx.fill();
+            }
+            update() {
+                this.velocity.x *= this.friction; this.velocity.y *= this.friction;
+                this.x += this.velocity.x; this.y += this.velocity.y; this.alpha -= 0.012;
+            }
+        }
+        function animate() {
+            if (document.getElementById('successOverlay').style.display !== 'flex') return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (Math.random() < 0.08) {
+                const x = Math.random() * canvas.width; const y = Math.random() * canvas.height * 0.7;
+                const color = `hsl(${Math.random()*360}, 70%, 50%)`;
+                for(let i=0; i<40; i++) particles.push(new Particle(x, y, color));
+            }
+            particles.forEach((p, i) => { if(p.alpha <= 0) particles.splice(i, 1); else { p.update(); p.draw(); } });
+        }
+        animate();
+    }
+
+    document.getElementById('toggleTimer').addEventListener('change', e => document.getElementById('timerBox').classList.toggle('hidden', !e.target.checked));
+    document.getElementById('toggleMoves').addEventListener('change', e => document.getElementById('movesBox').classList.toggle('hidden', !e.target.checked));
+    document.getElementById('toggleNumbers').addEventListener('change', e => document.getElementById('board').classList.toggle('show-numbers', e.target.checked));
+
+    init();
+</script>
+</body>
+</html>
