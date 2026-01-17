@@ -1,3 +1,15 @@
+<script>
+// Funkcia na výpočet SHA-256 hashu
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+</script>
+
+<script src="config/password.js"></script>
+
 <style>
   #password-overlay {
     position: fixed;
@@ -53,8 +65,6 @@
 </div>
 
 <script>
-  const correctPassword = "ucitelkossuth2026"; // sem daj svoje heslo
-
   const input = document.getElementById("password-input");
   const button = document.getElementById("password-button");
   const overlay = document.getElementById("password-overlay");
@@ -72,10 +82,12 @@
     }
   });
 
-  // kontrola hesla
-  button.addEventListener("click", () => {
-    if (input.value === correctPassword) {
-      overlay.style.display = "none"; // skryje okno a zobrazí stránku
+  // kontrola hesla cez hash
+  button.addEventListener("click", async () => {
+    const enteredHash = await sha256(input.value);
+
+    if (enteredHash === PASSWORD_HASH) {
+      overlay.style.display = "none";
     } else {
       errorMsg.style.display = "block";
     }
@@ -667,4 +679,5 @@ table tr:not(:first-child) td:first-child::before {
 
 
   </body>
+
 </html>
