@@ -1,0 +1,1 @@
+// SHA-256 hash tvojho hesla const PASSWORD_HASH = "6474b51071254098f8fb21d480708f4cce683b22bb8df3b5e4ea1949db9253b7";
