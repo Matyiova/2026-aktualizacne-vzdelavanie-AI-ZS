@@ -1,0 +1,1 @@
+# 2026-aktualizacne-vzdelavanie-AI-ZS
