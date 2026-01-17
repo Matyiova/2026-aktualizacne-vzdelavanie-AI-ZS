@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Hra s písmenami</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .game-area { margin-top: 30px; }
+    .definition { font-size: 20px; margin-bottom: 10px; }
+    .word-display { font-size: 24px; letter-spacing: 10px; margin-bottom: 20px; }
+    .alphabet { display: flex; flex-wrap: wrap; gap: 5px; }
+    .alphabet button { padding: 10px; font-size: 18px; width: 40px; }
+    .score { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Hra s písmenami</h1>
+  <div class="game-area" id="gameArea">
+    <div class="definition" id="definitionText"></div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="alphabet" id="alphabetButtons"></div>
+    <div class="score" id="scoreDisplay"></div>
+  </div>
+
+  <script>
+    let tasks = [{"definition":"rastlinný tuk","word":"olej"},{"definition":"pohorie na Slovensku","word":"Vysoké Tatry"},{"definition":"slúži na písanie","word":"pero"}];
+    let usedIndices = [];
+    let currentWord = '';
+    let currentDefinition = '';
+    let guessedLetters = [];
+    let score = 0;
+    let currentMaxScore = 0;
+    let currentScore = 0;
+
+    function nextTask() {
+      if (usedIndices.length === tasks.length) {
+        document.getElementById('definitionText').textContent = '🎉 Hra sa skončila! Celkové skóre: ' + score;
+        document.getElementById('wordDisplay').textContent = '';
+        document.getElementById('alphabetButtons').innerHTML = '';
+        return;
+      }
+
+      let index;
+      do {
+        index = Math.floor(Math.random() * tasks.length);
+      } while (usedIndices.includes(index));
+      usedIndices.push(index);
+
+      const task = tasks[index];
+      currentWord = task.word.toUpperCase();
+      currentDefinition = task.definition;
+      guessedLetters = [];
+      currentMaxScore = currentWord.length;
+      currentScore = currentMaxScore;
+
+      document.getElementById('definitionText').textContent = currentDefinition;
+      updateWordDisplay();
+      renderAlphabet();
+      updateScoreDisplay();
+    }
+
+ function updateWordDisplay() {
+  const wordDisplayElement = document.getElementById('wordDisplay');
+  const display = currentWord.split('').map(letter => {
+    if (letter === ' ') {
+      return '<span style="margin-right: 30px;"></span>'; // vizuálna medzera
+    } else if (guessedLetters.includes(letter)) {
+      return letter;
+    } else {
+      return '_';
+    }
+  }).join(' ');
+
+  wordDisplayElement.innerHTML = display; // použijeme innerHTML kvôli <span>
+}
+
+
+   function renderAlphabet() {
+  const row1Letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const row2Letters = 'ÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ';
+
+  const container = document.getElementById('alphabetButtons');
+  container.innerHTML = '';
+
+  const row1 = document.createElement('div');
+  const row2 = document.createElement('div');
+
+  // Štýly pre riadky
+  [row1, row2].forEach(row => {
+    row.style.display = 'flex';
+    row.style.flexWrap = 'wrap';
+    row.style.gap = '5px';
+    row.style.marginBottom = '10px';
+  });
+
+  // Funkcia na vytvorenie tlačidiel
+  function createButtons(letters, row) {
+    letters.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.textContent = letter;
+      btn.style.fontWeight = 'bold';
+      btn.onclick = () => handleGuess(letter);
+      btn.disabled = guessedLetters.includes(letter);
+      row.appendChild(btn);
+    });
+  }
+
+  createButtons(row1Letters, row1);
+  createButtons(row2Letters, row2);
+
+  container.appendChild(row1);
+  container.appendChild(row2);
+}
+
+
+
+    function handleGuess(letter) {
+  guessedLetters.push(letter);
+
+  if (currentWord.includes(letter)) {
+    updateWordDisplay();
+
+    // Skontroluj, či sú všetky písmená (okrem medzier) uhádnuté
+    const allGuessed = currentWord.split('').every(l => l === ' ' || guessedLetters.includes(l));
+
+    if (allGuessed) {
+      score += currentScore;
+      updateScoreDisplay();
+      setTimeout(nextTask, 1000); // posun na ďalšiu definíciu po 1 sekunde
+    }
+  } else {
+    currentScore = Math.max(0, currentScore - 1); // zníženie skóre pri zlej odpovedi
+    updateScoreDisplay();
+  }
+
+  renderAlphabet(); // aktualizácia tlačidiel
+}
+
+
+   function updateScoreDisplay() {
+      document.getElementById('scoreDisplay').textContent =
+        `Skóre: ${score} | Aktuálne: ${currentScore} / ${currentMaxScore}`;
+    }
+
+    window.onload = nextTask;
+  </script>
+</body>
+</html>
