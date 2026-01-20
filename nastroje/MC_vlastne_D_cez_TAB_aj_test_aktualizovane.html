@@ -51,6 +51,11 @@
   <div class="settings-group">
       <h3>Nastavenia testu</h3>
       
+      <b>Autor testu:</b> <input type="text" id="testAuthor" placeholder="napr. Mgr. Ján Novák" style="width:400px;">
+      <br><br>
+      <b>Rok:</b> <input type="text" id="testYear" placeholder="2025" style="width:100px;">
+      <br><br>
+
       <b>Nadpis testu:</b> <input type="text" id="testTitle" placeholder="napr. Test z biológie – 2. ročník" style="width:400px;">
       <br><br>
       
@@ -111,16 +116,19 @@ function importData(input) {
 function saveTestAsHTML() {
   const testTitleInput = document.getElementById("testTitle").value.trim();
   const testTitle = testTitleInput || "Test";
+  
+  // Načítanie Autora a Roku
+  const testAuthor = document.getElementById("testAuthor").value.trim();
+  const testYear = document.getElementById("testYear").value.trim();
+
   const inputData = document.getElementById("inputData").value.trim();
   const numberingType = document.querySelector('input[name="numbering"]:checked').value;
   
   // --- Generovanie bezpečného názvu súboru ---
   let safeFileName;
   if (testTitleInput) {
-      // Ak je zadaný nadpis: normalizovať (bez diakritiky), medzery na podčiarkovníky
       safeFileName = normalizeFilename(testTitleInput) + ".html";
   } else {
-      // Ak nadpis chýba, použiť default
       safeFileName = "MC_test.html";
   }
 
@@ -175,6 +183,15 @@ function saveTestAsHTML() {
   htmlContent += "  <button id=\"themeToggle\">🌙 Tmavý režim</button>\n";
   htmlContent += "  <h2>" + testTitle + "</h2>\n";
 
+  // Vloženie Autora a Roku pod nadpis
+  if (testAuthor || testYear) {
+      let metaText = "";
+      if (testAuthor) metaText += "Autor: " + testAuthor;
+      if (testAuthor && testYear) metaText += " | ";
+      if (testYear) metaText += "Rok: " + testYear;
+      htmlContent += "  <div style=\"margin-top:-15px; margin-bottom:20px; font-style:italic; opacity:0.8;\">" + metaText + "</div>\n";
+  }
+
   // Úvodná obrazovka (Start Screen)
   htmlContent += "  <div id=\"startScreen\">\n";
   htmlContent += "    <label><b>Meno žiaka, trieda:</b></label>\n";
@@ -224,7 +241,6 @@ function saveTestAsHTML() {
 
   htmlContent += "    function startTest() {\n";
   htmlContent += "      var nameInput = document.getElementById('inputName').value.trim();\n";
-  htmlContent += "      // Ak nie je meno, použi XY\n";
   htmlContent += "      resultData.name = nameInput ? nameInput : 'XY';\n";
   
   htmlContent += "      var count = parseInt(document.getElementById('inputCount').value);\n";
@@ -256,11 +272,22 @@ function saveTestAsHTML() {
   htmlContent += "        form.appendChild(block);\n";
   htmlContent += "      });\n\n";
 
+  // --- TU JE ZMENA TLAČIDLA ---
   htmlContent += "      var submitBtn = document.createElement('button');\n";
-  htmlContent += "      submitBtn.type = 'button'; submitBtn.textContent = 'Odoslať odpovede';\n";
+  htmlContent += "      submitBtn.type = 'button';\n";
+  htmlContent += "      submitBtn.textContent = 'Vyhodnotiť';\n"; // Nový text
   htmlContent += "      submitBtn.style.marginTop = '20px';\n";
+  htmlContent += "      submitBtn.style.padding = '15px 30px';\n"; // Zväčšenie
+  htmlContent += "      submitBtn.style.fontSize = '1.3rem';\n"; // Väčší font
+  htmlContent += "      submitBtn.style.backgroundColor = '#4CAF50';\n"; // Zelená
+  htmlContent += "      submitBtn.style.color = 'white';\n"; // Biela
+  htmlContent += "      submitBtn.style.border = 'none';\n";
+  htmlContent += "      submitBtn.style.borderRadius = '5px';\n";
+  htmlContent += "      submitBtn.style.cursor = 'pointer';\n";
   htmlContent += "      submitBtn.onclick = evaluateTest;\n";
   htmlContent += "      form.appendChild(submitBtn);\n";
+  // --- KONIEC ZMENY ---
+
   htmlContent += "      var resultsDiv = document.createElement('div'); resultsDiv.id = 'results'; form.appendChild(resultsDiv);\n";
   htmlContent += "    }\n\n";
 
@@ -274,7 +301,6 @@ function saveTestAsHTML() {
   htmlContent += "        var elems = document.getElementsByName('q' + i);\n";
   htmlContent += "        var selected = Array.from(elems).find(function(r){ return r.checked; });\n";
   
-  htmlContent += "        // Uloženie odpovede pre detailný prehľad\n";
   htmlContent += "        window.qs[i].userAnswer = selected ? selected.value : null;\n";
   htmlContent += "        window.qs[i].isCorrect = (window.qs[i].userAnswer === window.qs[i].correct);\n\n";
 
@@ -286,7 +312,6 @@ function saveTestAsHTML() {
   htmlContent += "        var feedback = '';\n";
   htmlContent += "        if (!selected) {\n";
   htmlContent += "          block.classList.add('missing'); feedback = '⚠️ chýbajúca odpoveď';\n";
-  htmlContent += "          // Zvýraznenie správnej odpovede aj keď žiak nič neoznačil\n";
   htmlContent += "          Array.from(elems).forEach(r => { if(r.value === window.qs[i].correct) r.parentNode.classList.add('correct'); });\n";
   htmlContent += "        } else if (selected.value === window.qs[i].correct) {\n";
   htmlContent += "          score++; feedback = '✅ správna odpoveď';\n";
@@ -321,7 +346,6 @@ function saveTestAsHTML() {
   htmlContent += "      out.appendChild(detailBtn);\n";
   htmlContent += "    }\n\n";
 
-  // Funkcia pre otvorenie detailného prehľadu v novom okne
   htmlContent += "    function openDetailedResults() {\n";
   htmlContent += "       var win = window.open('', '_blank');\n";
   htmlContent += "       var css = `\n";
@@ -343,7 +367,7 @@ function saveTestAsHTML() {
   htmlContent += "          var uAns = '';\n";
   htmlContent += "          if (q.userAnswer === null) {\n";
   htmlContent += "             symbol = '!';\n";
-  htmlContent += "             uAns = '<span style=\"color:orange\">(bez odpovede)</span>';\n";
+  htmlContent += "             uAns = '<span style=\"color:#c27e00\">(bez odpovede)</span>';\n";
   htmlContent += "          } else if (q.isCorrect) {\n";
   htmlContent += "             symbol = '✅';\n";
   htmlContent += "             uAns = q.userAnswer;\n";
