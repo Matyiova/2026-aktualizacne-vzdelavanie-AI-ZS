@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Dni v týždni, mesiace v roku - Test s výberom z viacerých odpovedí</title>
+  <title>Orientácia v čase - test s výberom odpovede</title>
   <style>
     :root { --bg-light:#fff; --text-light:#000; --bg-dark:#001f3f; --text-dark:#fff; }
     body { font-family:Courier bold,monospace; font-size:120%; padding:20px; margin:0; background:var(--bg-light); color:var(--text-light); transition:0.3s; }
@@ -28,7 +28,8 @@
 </head>
 <body>
   <button id="themeToggle">🌙 Tmavý režim</button>
-  <h2>Dni v týždni, mesiace v roku - Test s výberom z viacerých odpovedí</h2>
+  <h2>Orientácia v čase - test s výberom odpovede</h2>
+  <div style="margin-top:-15px; margin-bottom:20px; font-style:italic; opacity:0.8;">Autor: Mgr. Erika Matyiová | Rok: 2026</div>
   <div id="startScreen">
     <label><b>Meno žiaka, trieda:</b></label>
     <input type="text" id="inputName" class="start-input" placeholder="Zadajte vaše meno (nepovinné)">
@@ -55,7 +56,7 @@
 
     var originalQuestions = [{"term":"pondelok je","correct":"1. deň v týždni","answers":["7. deň v týždni","3. deň v týždni"]},{"term":"utorok je","correct":"2. deň v týždni","answers":["6. deň v týždni","4. deň v týždni"]},{"term":"streda je","correct":"3. deň v týždni","answers":["1. deň v týždni","5. deň v týždni"]},{"term":"štvrtok je","correct":"4. deň v týždni","answers":["2. deň v týždni","3. deň v týždni"]},{"term":"piatok je","correct":"5. deň v týždni","answers":["2. deň v týždni","3. deň v týždni"]},{"term":"sobota je","correct":"6. deň v týždni","answers":["2. deň v týždni","7. deň v týždni"]},{"term":"nedeľa je","correct":"7. deň v týždni","answers":["5. deň v týždni","2. deň v týždni"]},{"term":"január je","correct":"1. mesiac v roku","answers":["3. mesiac v roku","5. mesiac v roku"]},{"term":"február je","correct":"2. mesiac v roku","answers":["1. mesiac v roku","6. mesiac v roku"]},{"term":"marec je","correct":"3. mesiac v roku","answers":["5. mesiac v roku","8. mesiac v roku"]},{"term":"apríl je","correct":"4. mesiac v roku","answers":["9. mesiac v roku","2. mesiac v roku"]},{"term":"máj je","correct":"5. mesiac v roku","answers":["10. mesiac v roku","12. mesiac v roku"]},{"term":"jún je","correct":"6. mesiac v roku","answers":["5. mesiac v roku","1. mesiac v roku"]},{"term":"júl je","correct":"7. mesiac v roku","answers":["4. mesiac v roku","10. mesiac v roku"]},{"term":"august je","correct":"8. mesiac v roku","answers":["3. mesiac v roku","2. mesiac v roku"]},{"term":"september je","correct":"9. mesiac v roku","answers":["7. mesiac v roku","4. mesiac v roku"]},{"term":"október je","correct":"10. mesiac v roku","answers":["8. mesiac v roku","1. mesiac v roku"]},{"term":"november je","correct":"11. mesiac v roku","answers":["2. mesiac v roku","7. mesiac v roku"]},{"term":"december je","correct":"12. mesiac v roku","answers":["1. mesiac v roku","4. mesiac v roku"]}];
     var numberingType = 'alpha';
-    var testTitleName = 'Dni v týždni - Test s výberom z viacerých odpovedí';
+    var testTitleName = 'Orientácia v čase - test s výberom odpovede';
     window.qs = [];
 
     // Globálne premenné pre výsledky
@@ -74,7 +75,6 @@
 
     function startTest() {
       var nameInput = document.getElementById('inputName').value.trim();
-      // Ak nie je meno, použi XY
       resultData.name = nameInput ? nameInput : 'XY';
       var count = parseInt(document.getElementById('inputCount').value);
       if (!count || count < 1) { alert('Počet otázok musí byť aspoň 1.'); return; }
@@ -106,8 +106,16 @@
       });
 
       var submitBtn = document.createElement('button');
-      submitBtn.type = 'button'; submitBtn.textContent = 'Odoslať odpovede';
+      submitBtn.type = 'button';
+      submitBtn.textContent = 'Vyhodnotiť';
       submitBtn.style.marginTop = '20px';
+      submitBtn.style.padding = '15px 30px';
+      submitBtn.style.fontSize = '1.3rem';
+      submitBtn.style.backgroundColor = '#4CAF50';
+      submitBtn.style.color = 'white';
+      submitBtn.style.border = 'none';
+      submitBtn.style.borderRadius = '5px';
+      submitBtn.style.cursor = 'pointer';
       submitBtn.onclick = evaluateTest;
       form.appendChild(submitBtn);
       var resultsDiv = document.createElement('div'); resultsDiv.id = 'results'; form.appendChild(resultsDiv);
@@ -122,7 +130,6 @@
       Array.from(blocks).forEach(function(block, i){
         var elems = document.getElementsByName('q' + i);
         var selected = Array.from(elems).find(function(r){ return r.checked; });
-        // Uloženie odpovede pre detailný prehľad
         window.qs[i].userAnswer = selected ? selected.value : null;
         window.qs[i].isCorrect = (window.qs[i].userAnswer === window.qs[i].correct);
 
@@ -134,7 +141,6 @@
         var feedback = '';
         if (!selected) {
           block.classList.add('missing'); feedback = '⚠️ chýbajúca odpoveď';
-          // Zvýraznenie správnej odpovede aj keď žiak nič neoznačil
           Array.from(elems).forEach(r => { if(r.value === window.qs[i].correct) r.parentNode.classList.add('correct'); });
         } else if (selected.value === window.qs[i].correct) {
           score++; feedback = '✅ správna odpoveď';
@@ -190,7 +196,7 @@
           var uAns = '';
           if (q.userAnswer === null) {
              symbol = '!';
-             uAns = '<span style="color:orange">(bez odpovede)</span>';
+             uAns = '<span style="color:#c27e00">(bez odpovede)</span>';
           } else if (q.isCorrect) {
              symbol = '✅';
              uAns = q.userAnswer;
