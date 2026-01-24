@@ -26,7 +26,7 @@
         .btn-main { background-color: var(--accent); color: white; flex: 2; font-size: 18px; }
         .btn-sec { background-color: #3498db; color: white; flex: 1; }
         .btn-warn { background-color: #e67e22; color: white; flex: 1; }
-        .btn-reload { background-color: #8e44ad; color: white; flex: 1; } /* Nové tlačidlo */
+        .btn-reload { background-color: #8e44ad; color: white; flex: 1; } 
         
         .note { background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #ffc107; color: #856404; font-size: 0.95rem; }
     </style>
@@ -325,7 +325,7 @@
         padding: 4px; text-align: center; font-weight: 600; font-size: 14px;
         overflow: hidden; word-wrap: break-word; line-height: 1.1;
     }
-    /* Upravená časť: pridané font-weight: 800 pre sivé pole */
+    
     .half[data-type="term"] { background-color: #d0d0d0; color: #000; font-weight: 800; }
     .half[data-type="def"]  { background-color: #fff; color: #000; }
     .domino > .half:first-child { border-right: 1px solid #444; }
@@ -430,6 +430,10 @@
         <div id="deck-header">
             <strong>Zásobník</strong>
             <span id="cards-count">0</span>
+        </div>
+        <div style="padding: 12px; font-size: 0.9rem; color: #333; background: #fffbe6; border-bottom: 1px solid #eee; line-height: 0.9;">
+            Umiestni postupne všetky kartičky na hraciu plochu tak, aby sa vždy jedna strana dotýkala svojho páru. 
+            Po umiestnení na hraciu plochu môžeš kartičky kliknutím otočiť, a to vždy o 90 stupňov.
         </div>
         <div id="deck"></div>
     </div>
