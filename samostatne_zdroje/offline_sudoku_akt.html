@@ -97,6 +97,8 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            /* UPRAVENÉ: Centrovanie obsahu (boardu), aby pri 4x4 nebol na kraji */
+            align-items: center; 
         }
 
         #sudoku-board {
@@ -105,6 +107,8 @@
             border: 3px solid var(--border-thick);
             user-select: none;
             gap: 0; 
+            /* UPRAVENÉ: Board sa prispôsobí obsahu, nebude sa rozťahovať */
+            width: fit-content; 
         }
 
         .cell {
@@ -123,9 +127,11 @@
             color: var(--fixed-text);
         }
 
-        .grid-9 { grid-template-columns: repeat(9, 1fr); }
-        .grid-6 { grid-template-columns: repeat(6, 1fr); }
-        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+        /* UPRAVENÉ: Namiesto 1fr (flexibilná šírka) používame fixných 40px */
+        /* To zabezpečí, že pri 4x4 a 6x6 budú bunky nalepené na sebe */
+        .grid-9 { grid-template-columns: repeat(9, 40px); }
+        .grid-6 { grid-template-columns: repeat(6, 40px); }
+        .grid-4 { grid-template-columns: repeat(4, 40px); }
 
         .grid-9 .cell:nth-child(9n+3), .grid-9 .cell:nth-child(9n+6) { border-right: 2px solid var(--border-thick); }
         .grid-9 .cell:nth-child(9n) { border-right: none; }
@@ -177,6 +183,10 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
+            /* UPRAVENÉ: Tlačidlá budú mať maximálnu šírku zhruba ako 9x9 tabuľka */
+            /* Tým sa zabezpečí, že pri 4x4 sa "nerozlejú" príliš, ale ostane miesto na text */
+            width: 100%;
+            max-width: 370px; 
         }
 
         .bottom-actions button {
