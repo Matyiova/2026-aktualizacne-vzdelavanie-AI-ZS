@@ -87,7 +87,7 @@
         padding: 4px; text-align: center; font-weight: 600; font-size: 14px;
         overflow: hidden; word-wrap: break-word; line-height: 1.1;
     }
-    /* Upravená časť: pridané font-weight: 800 pre sivé pole */
+    
     .half[data-type="term"] { background-color: #d0d0d0; color: #000; font-weight: 800; }
     .half[data-type="def"]  { background-color: #fff; color: #000; }
     .domino > .half:first-child { border-right: 1px solid #444; }
@@ -193,12 +193,16 @@
             <strong>Zásobník</strong>
             <span id="cards-count">0</span>
         </div>
+        <div style="padding: 12px; font-size: 0.9rem; color: #333; background: #fffbe6; border-bottom: 1px solid #eee; line-height: 0.9;">
+            Umiestni postupne všetky kartičky na hraciu plochu tak, aby sa vždy jedna strana dotýkala svojho páru. 
+            Po umiestnení na hraciu plochu môžeš kartičky kliknutím otočiť, a to vždy o 90 stupňov.
+        </div>
         <div id="deck"></div>
     </div>
 </div>
 
 <script>
-    const cardsData = [{"sideA":{"text":"Katze","type":"term"},"sideB":{"text":"mačka","type":"def"},"id":1},{"sideA":{"text":"králik","type":"def"},"sideB":{"text":"Ente","type":"term"},"id":10},{"sideA":{"text":"Huhn","type":"term"},"sideB":{"text":"kura","type":"def"},"id":6},{"sideA":{"text":"Ente","type":"term"},"sideB":{"text":"kačka","type":"def"},"id":4},{"sideA":{"text":"kačka","type":"def"},"sideB":{"text":"Gans","type":"term"},"id":11},{"sideA":{"text":"myš","type":"def"},"sideB":{"text":"Kaninchen","type":"term"},"id":9},{"sideA":{"text":"kura","type":"def"},"sideB":{"text":"Hund","type":"term"},"id":13},{"sideA":{"text":"mačka","type":"def"},"sideB":{"text":"Maus","type":"term"},"id":8},{"sideA":{"text":"Gans","type":"term"},"sideB":{"text":"hus","type":"def"},"id":5},{"sideA":{"text":"Kaninchen","type":"term"},"sideB":{"text":"králik","type":"def"},"id":3},{"sideA":{"text":"pes","type":"def"},"sideB":{"text":"Katze","type":"term"},"id":7},{"sideA":{"text":"Hund","type":"term"},"sideB":{"text":"pes","type":"def"},"id":0},{"sideA":{"text":"Maus","type":"term"},"sideB":{"text":"myš","type":"def"},"id":2},{"sideA":{"text":"hus","type":"def"},"sideB":{"text":"Huhn","type":"term"},"id":12}];
+    const cardsData = [{"sideA":{"text":"Hund","type":"term"},"sideB":{"text":"pes","type":"def"},"id":0},{"sideA":{"text":"hus","type":"def"},"sideB":{"text":"Huhn","type":"term"},"id":12},{"sideA":{"text":"Katze","type":"term"},"sideB":{"text":"mačka","type":"def"},"id":1},{"sideA":{"text":"kačka","type":"def"},"sideB":{"text":"Gans","type":"term"},"id":11},{"sideA":{"text":"Gans","type":"term"},"sideB":{"text":"hus","type":"def"},"id":5},{"sideA":{"text":"pes","type":"def"},"sideB":{"text":"Katze","type":"term"},"id":7},{"sideA":{"text":"mačka","type":"def"},"sideB":{"text":"Maus","type":"term"},"id":8},{"sideA":{"text":"Ente","type":"term"},"sideB":{"text":"kačka","type":"def"},"id":4},{"sideA":{"text":"Maus","type":"term"},"sideB":{"text":"myš","type":"def"},"id":2},{"sideA":{"text":"kura","type":"def"},"sideB":{"text":"Hund","type":"term"},"id":13},{"sideA":{"text":"Kaninchen","type":"term"},"sideB":{"text":"králik","type":"def"},"id":3},{"sideA":{"text":"Huhn","type":"term"},"sideB":{"text":"kura","type":"def"},"id":6},{"sideA":{"text":"myš","type":"def"},"sideB":{"text":"Kaninchen","type":"term"},"id":9},{"sideA":{"text":"králik","type":"def"},"sideB":{"text":"Ente","type":"term"},"id":10}];
     const pairsData = [{"term":"Hund","def":"pes"},{"term":"Katze","def":"mačka"},{"term":"Maus","def":"myš"},{"term":"Kaninchen","def":"králik"},{"term":"Ente","def":"kačka"},{"term":"Gans","def":"hus"},{"term":"Huhn","def":"kura"}];
     const GRID_SIZE = 80;
 
