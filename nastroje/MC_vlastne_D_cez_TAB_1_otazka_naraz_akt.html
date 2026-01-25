@@ -89,7 +89,7 @@ function saveTestAsHTML() {
   const testYear = document.getElementById("testYear").value.trim();
   const inputData = document.getElementById("inputData").value.trim();
   
-  // Nastavené napevno na numerické číslovanie (1., 2., 3...), keďže výber bol odstránený
+  // Hardcoded numeric numbering as requested previously
   const numberingType = "numeric";
   
   let safeFileName = testTitleInput ? normalizeFilename(testTitleInput) + ".html" : "MC_test.html";
@@ -157,7 +157,8 @@ function saveTestAsHTML() {
         grid-template-columns: 1fr 1fr;
         gap: 15px;
         width: 100%;
-        margin-bottom: 10px; /* Reduced margin */
+        max-width: 600px; /* FIX: Added max-width to prevent stretching */
+        margin: 0 auto 10px auto; /* FIX: Center the grid */
     }
     @media (max-width: 600px) { .options-grid { grid-template-columns: 1fr; } }
 
@@ -186,7 +187,7 @@ function saveTestAsHTML() {
     }
     body.dark-mode .opt-btn.selected { background: #152a3d; color: #64b5f6; }
 
-    /* Navigation Bar - Modified */
+    /* Navigation Bar */
     .nav-bar {
         display: flex;
         flex-wrap: wrap;
@@ -194,7 +195,6 @@ function saveTestAsHTML() {
         gap: 6px;
         padding-top: 5px;
         margin-bottom: 20px;
-        /* Border removed */
     }
     .nav-btn {
         width: 35px;
@@ -492,7 +492,7 @@ function saveTestAsHTML() {
     };
 <\/script>
 <div style="margin-top:auto; padding: 20px; text-align: center; opacity: 0.6; font-size: 0.8rem;">
-  Spracované pomocou UI: Mgr. Erika Matyiová (2026)
+  Spracované pomocou UI | Pôvodný koncept: Mgr. Erika Matyiová (2025)
 </div>
 </body>
 </html>`;
