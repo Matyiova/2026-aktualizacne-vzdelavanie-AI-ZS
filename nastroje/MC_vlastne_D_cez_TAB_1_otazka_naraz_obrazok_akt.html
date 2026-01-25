@@ -360,7 +360,8 @@ function saveTestAsHTML() {
         grid-template-columns: 1fr 1fr;
         gap: 15px;
         width: 100%;
-        margin-bottom: 10px;
+        max-width: 600px; /* FIX: Added max-width */
+        margin: 0 auto 10px auto; /* FIX: Center the grid */
     }
     @media (max-width: 600px) { .options-grid { grid-template-columns: 1fr; } }
 
