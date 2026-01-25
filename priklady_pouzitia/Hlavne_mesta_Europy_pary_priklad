@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Hlavné mestá (Európa)</title>
+<title>Hlavné mestá Európy</title>
 <style>
 :root{
   --bg: #ffffff; --fg: #111827; --card: #f0f0f0; --border: #999999;
@@ -29,6 +29,7 @@ body{ margin:0; padding:24px; font-family: Courier, monospace; background:var(--
   text-align:center; box-shadow:2px 2px 8px rgba(0,0,0,0.12); color:var(--fg); 
   font-family: 'Segoe UI', sans-serif; font-weight: bold; line-height: 1.15; padding: 4px; overflow: hidden;
 }
+.card img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
 .card.matched{ visibility:hidden; }
 .card.selected{ background:var(--active); color:var(--fg); }
 .card.correct{ background: #c8f7c5 !important; }
@@ -39,16 +40,18 @@ body{ margin:0; padding:24px; font-family: Courier, monospace; background:var(--
 body.dark-mode .card:not(.selected).term { background: #112409; color: var(--fg); font-weight: 800; }
 body.dark-mode .card:not(.selected).definition { background: #1d3d0f; color: var(--fg); font-weight: 500; }
 #board{ display:flex; flex-wrap:wrap; justify-content:center; max-width:1200px; margin:18px auto; }
-#endMessage{ display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:800; background:var(--end-bg); color:var(--end-fg); padding:18px 26px; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.25); z-index:999; pointer-events:none; text-align:center; }
+#endMessage{ display:none; flex-direction: column; align-items: center; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:800; background:var(--end-bg); color:var(--end-fg); padding:18px 26px; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.25); z-index:999; pointer-events:auto; text-align:center; }
 .controls{ margin-bottom:12px; }
 button, input, select{ padding:8px 10px; margin:6px; background:var(--control-bg); color:var(--control-fg); border:1px solid var(--border); border-radius:6px; }
+.replay-btn { margin-top: 15px; padding: 12px 24px; font-size: 1.2rem; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+.replay-btn:hover { background-color: #45a049; }
 @media(max-width:900px){ :root{ --card-width: 220px; --card-height: 150px; --card-gap: 10px; } #board{ max-width:980px; } }
 @media(max-width:700px){ :root{ --card-width: 46%; --card-height: 110px; --card-gap: 8px; } #endMessage{ font-size:1.8rem; padding:14px 18px; } }
 </style>
 </head>
 <body >
   <label class="controls"><input type="checkbox" id="darkToggle"> Tmavý režim</label>
-  <h1>Hlavné mestá (Európa)</h1>
+  <h1>Hlavné mestá Európy</h1>
   <div class="controls">
     <label><input type="checkbox" id="toggleTimer"> Aktivovať časovač</label><br>
     <span id="timerDisplay">Čas: 0.00 s</span><br>
@@ -59,22 +62,15 @@ button, input, select{ padding:8px 10px; margin:6px; background:var(--control-bg
   <div id="endMessage"></div>
 <script>
 (function(){
-  const RAW_LINES = ["Francúzsko\tParíž","Nemecko\tBerlín","Dánsko\tKodaň","Fínsko\tHelsinki","Nórsko\tOslo","Švédsko\tStockholm","Holandsko\tAmsterdam","Belgicko\tBrusel","Slovensko\tBratislava","Česká republika\tPraha","Poľsko\tVaršava","Maďarsko\tBudapešť","Rakúsko\tViedeň"];
+  const EXPORT_PAIRS = [["Francúzsko","Paríž"],["Nemecko","Berlín"],["Dánsko","Kodaň"],["Fínsko","Helsinki"],["Nórsko","Oslo"],["Švédsko","Stockholm"],["Holandsko","Amsterdam"],["Belgicko","Brusel"],["Slovensko","Bratislava"],["Česká republika","Praha"],["Poľsko","Varšava"],["Maďarsko","Budapešť"],["Rakúsko","Viedeň"],["Španielsko","Madrid"],["Rumunsko","Bukurešť"],["Taliansko","Rím"]];
   const PAIR_COUNT = 6;
   const HIGHLIGHT = "term";
   const END_MESSAGES = ["Super! 🙂","Úžasné! 🙂","Výborne! 🙂","Kto vie, ten vie 🙂","Si šikovný/á 🙂","Cvičenie robí majstra 🙂","Zaslúžiš si odmenu 🙂"];
   
-  function parsePairs(lines){
-    const pairs = [];
-    for(const rawLine of lines){
-      if(!rawLine) continue;
-      const parts = rawLine.split(/\t| - | : |;/).map(s => s.trim()).filter(Boolean);
-      if(parts.length === 2) pairs.push([parts[0], parts[1]]);
-    }
-    return pairs;
-  }
   function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
   function allPairsFound(){ return document.querySelectorAll('.card:not(.matched)').length === 0; }
+  
+  // Timer & UI Logic
   const BEST_KEY = 'matchGameBestTime_export';
   let timerInterval = null, startTime = null;
   const toggleTimer = document.getElementById('toggleTimer');
@@ -82,38 +78,49 @@ button, input, select{ padding:8px 10px; margin:6px; background:var(--control-bg
   const recordDisplay = document.getElementById('recordDisplay');
   const endMessageEl = document.getElementById('endMessage');
   const DARK_KEY = 'exportGameDarkMode';
+  
   (function restoreDarkMode() { try { const saved = localStorage.getItem(DARK_KEY); const darkOn = saved === '1'; document.body.classList.toggle('dark-mode', darkOn); const dt = document.getElementById('darkToggle'); if (dt) dt.checked = darkOn; } catch (e) {} })();
   const dtEl = document.getElementById('darkToggle');
   if (dtEl) { dtEl.addEventListener('change', function () { try { localStorage.setItem(DARK_KEY, this.checked ? '1' : '0'); } catch (e) {} document.body.classList.toggle('dark-mode', this.checked); }); }
+  
   function refreshBest(){ const raw = localStorage.getItem(BEST_KEY); if(!raw){ recordDisplay.textContent = 'Rekord: –'; return; } try{ const r=JSON.parse(raw); recordDisplay.textContent = 'Rekord: ' + r.time.toFixed(2) + ' s ('+r.date+' '+r.timeOfDay+')'; }catch(e){ recordDisplay.textContent = 'Rekord: –'; } }
   refreshBest();
   function startTimer(){ stopTimer(); startTime = performance.now(); timerInterval = setInterval(()=>{ const elapsed = (performance.now()-startTime)/1000; timerDisplay.textContent = 'Čas: ' + elapsed.toFixed(2) + ' s'; if(allPairsFound()){ stopTimer(); saveIfBetter(elapsed); showEnd(); refreshBest(); } }, 100); }
   function stopTimer(){ clearInterval(timerInterval); timerInterval=null; }
   toggleTimer.addEventListener('change', ()=>{ if(toggleTimer.checked) startTimer(); else { stopTimer(); timerDisplay.textContent='Čas: 0.00 s'; } });
+  
   const TIMER_KEY = 'exportGameTimerOn';
   (function restoreTimerToggle() { try { const saved = localStorage.getItem(TIMER_KEY); const timerOn = saved === '1'; if (toggleTimer) { toggleTimer.checked = timerOn; if (timerOn) { if (typeof startTimer === 'function') { startTimer(); } else { Promise.resolve().then(() => { if (typeof startTimer === 'function') startTimer(); }); } } } } catch (e) {} })();
   if (toggleTimer) { toggleTimer.addEventListener('change', function () { try { localStorage.setItem(TIMER_KEY, this.checked ? '1' : '0'); } catch (e) {} try { if (this.checked) startTimer(); else stopTimer(); } catch (e) {} }); }
 
-  function saveIfBetter(elapsed){ const raw = localStorage.getItem(BEST_KEY); let isNew = false; if(!raw) isNew = true; else { try{ const p = JSON.parse(raw); if(elapsed < p.time) isNew = true; }catch(e){} } if(isNew){ const now=new Date(); localStorage.setItem(BEST_KEY, JSON.stringify({time: elapsed, date: now.toLocaleDateString(), timeOfDay: now.toLocaleTimeString()})); } }
-  function showEnd(){ const msg = END_MESSAGES[Math.floor(Math.random()*END_MESSAGES.length)]; endMessageEl.textContent = msg; endMessageEl.style.display = 'block'; endMessageEl.style.opacity = '1'; setTimeout(()=>{ endMessageEl.style.transition='opacity 700ms ease'; endMessageEl.style.opacity='0'; setTimeout(()=>{ endMessageEl.style.display='none'; endMessageEl.style.transition=''; endMessageEl.style.opacity='1'; },700); },1500); }
+  function saveIfBetter(elapsed){ const raw = localStorage.getItem(BEST_KEY); let isNew = false; if(!raw) isNew = true; else { try{ const p = JSON.parse(raw); if(elapsed < p.time) isNew = true; }catch(e){} } if(isNew){ const now=new Date(); try { localStorage.setItem(BEST_KEY, JSON.stringify({time: elapsed, date: now.toLocaleDateString(), timeOfDay: now.toLocaleTimeString()})); } catch(e){} } }
+  
+  function showEnd(){ 
+      const msg = END_MESSAGES[Math.floor(Math.random()*END_MESSAGES.length)]; 
+      endMessageEl.innerHTML = '<div>' + msg + '</div><button class="replay-btn" onclick="location.reload()">Hraj znova</button>'; 
+      endMessageEl.style.display = 'flex'; 
+      endMessageEl.style.opacity = '1'; 
+  }
 
   function formatCardText(text){
     if(!text) return "";
+    if(text.startsWith("data:image")) return '<img src="'+text+'">';
     if(text.includes(' ') && text.length < 50) return text.replace(/\s+/g, '<br>');
     return text;
   }
   function autoFitText(element) {
+    if(element.querySelector("img")) return;
     let size = 34; const minSize = 10; element.style.fontSize = size + "px";
     while ((element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth) && size > minSize) {
         size--; element.style.fontSize = size + "px";
     }
   }
 
-  const pairs = parsePairs(RAW_LINES);
-  const pick = shuffle(pairs.slice()).slice(0, Math.min(PAIR_COUNT, pairs.length));
+  const pick = shuffle(EXPORT_PAIRS.slice()).slice(0, Math.min(PAIR_COUNT, EXPORT_PAIRS.length));
   let cards = [];
   pick.forEach((p,i)=>{ cards.push({id:i,text:p[0],type:'term'}); cards.push({id:i,text:p[1],type:'definition'}); });
   shuffle(cards);
+  
   const board = document.getElementById('board');
   board.innerHTML = '';
   cards.forEach(c=>{
@@ -126,12 +133,11 @@ button, input, select{ padding:8px 10px; margin:6px; background:var(--control-bg
     d.addEventListener('click', ()=> onClick(d));
     autoFitText(d);
   });
+  
   let first=null, second=null;
   function onClick(el){ if(el.classList.contains('matched') || el.classList.contains('selected')) return; el.classList.add('selected'); if(!first){ first = el; return; } second = el; 
-  // OPRAVA: Použitie ID namiesto porovnávania textu pre správne fungovanie viacslovných pojmov
   const isMatch = first.dataset.pairId === second.dataset.pairId; 
   if(isMatch && first !== second){ first.classList.add('correct'); second.classList.add('correct'); setTimeout(()=>{ first.classList.add('matched'); second.classList.add('matched'); first.classList.remove('correct','selected'); second.classList.remove('correct','selected'); first=second=null; if(toggleTimer.checked){} else if(!document.querySelector('.card:not(.matched)')) showEnd(); },120); } else { first.classList.add('wrong'); second.classList.add('wrong'); setTimeout(()=>{ first.classList.remove('wrong','selected'); second.classList.remove('wrong','selected'); first=second=null; },300); } }
-  document.getElementById('darkToggle').addEventListener('change', function(){ document.body.classList.toggle('dark-mode', this.checked); });
   document.getElementById('restartBtn').addEventListener('click', function(){ location.reload(); });
 })();
 </script>
