@@ -2,12 +2,12 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Generátor MC testu - Obrázkové zadania</title>
+  <title>Generátor MC testu - Obrázkové zadania s textom</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; color: #333; }
     h1, h2, h3 { color: #2c3e50; }
     
-    input[type="text"], input[type="number"] { padding: 8px; font-size: 100%; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="text"], input[type="number"], textarea { padding: 8px; font-size: 100%; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
     button { cursor: pointer; padding: 10px 20px; font-size: 100%; font-weight: bold; margin-top: 5px; border-radius: 4px; border: 1px solid #888; background: #e0e0e0; }
     button:hover { background: #d0d0d0; }
     
@@ -68,23 +68,28 @@
         min-width: 300px;
     }
     .input-row { margin-bottom: 10px; }
-    .input-row label { display: inline-block; width: 140px; font-weight: bold; }
-    .input-row input { width: calc(100% - 160px); }
+    .input-row label { display: block; font-weight: bold; margin-bottom: 5px;}
+    .input-row input { width: 95%; }
+    .input-row textarea { width: 95%; resize: vertical; }
     
     .correct-label { color: darkgreen; }
     .distractor-label { color: darkred; }
+    .instruction-label { color: #004085; }
+    
+    .html-hint { font-size: 0.8em; color: #666; margin-top: 2px; font-weight: normal; }
+    .html-tag { background: #eee; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
 
   </style>
 </head>
 <body>
-<h1>Generátor MC testu (Obrázkové zadania)</h1>
+<h1>Generátor MC testu (Obrázky + HTML text)</h1>
   
   <h2>Vstupné údaje</h2>
   <div style="background: #eef; padding: 15px; border-radius: 5px; margin-bottom: 15px; font-size: 0.95em;">
       <strong>Inštrukcie:</strong><br>
-      1. Nahrajte obrázok (bude zobrazený namiesto textového zadania).<br>
-      2. Vyplňte správnu odpoveď a 1 až 3 nesprávne možnosti (distraktory).<br>
-      3. Novú otázku pridáte tlačidlom na konci zoznamu.
+      1. Vyplňte textové zadanie (voliteľné) - podporuje HTML značky.<br>
+      2. Nahrajte obrázok (bude zobrazený pod textom).<br>
+      3. Vyplňte správnu odpoveď a 1 až 3 nesprávne možnosti.<br>
   </div>
   
   <div class="action-bar">
@@ -135,11 +140,13 @@ function addQuestionRow(data = null) {
     // Default values
     let imgSrc = "";
     let correct = "";
+    let instruction = "";
     let d1 = "", d2 = "", d3 = "";
 
     if (data) {
         imgSrc = data.image || "";
         correct = data.correct || "";
+        instruction = data.instruction || "";
         const dists = data.answers || [];
         d1 = dists[0] || "";
         d2 = dists[1] || "";
@@ -154,6 +161,12 @@ function addQuestionRow(data = null) {
             <input type="hidden" class="base64-input" id="base64_${id}" value="${imgSrc}">
         </div>
         <div class="inputs-section">
+            <div class="input-row">
+                <label class="instruction-label">Textové zadanie / Inštrukcia (HTML):</label>
+                <textarea class="inp-instruction" rows="2" placeholder='Napr.: Vyberte &lt;b&gt;správny&lt;/b&gt; názov pre...'>${instruction}</textarea>
+                <div class="html-hint">Povolené: <span class="html-tag">&lt;b&gt;</span> <span class="html-tag">&lt;i&gt;</span> <span class="html-tag">&lt;u&gt;</span> <span class="html-tag">&lt;span style="..."&gt;</span></div>
+            </div>
+            <hr style="border-top: 1px dashed #ccc; margin: 10px 0;">
             <div class="input-row">
                 <label class="correct-label">Správna odpoveď:</label>
                 <input type="text" class="inp-correct" value="${correct}" placeholder="napr. Dub letný">
@@ -177,7 +190,6 @@ function addQuestionRow(data = null) {
     `;
     
     container.appendChild(div);
-    // Auto scroll to the new question slightly
     div.scrollIntoView({behavior: "smooth", block: "center"});
 }
 
@@ -203,6 +215,7 @@ function gatherData() {
     
     cards.forEach(card => {
         const image = card.querySelector(".base64-input").value;
+        const instruction = card.querySelector(".inp-instruction").value;
         const correct = card.querySelector(".inp-correct").value.trim();
         const d1 = card.querySelector(".inp-d1").value.trim();
         const d2 = card.querySelector(".inp-d2").value.trim();
@@ -213,6 +226,7 @@ function gatherData() {
         if (correct) { 
             extractedData.push({
                 image: image,
+                instruction: instruction,
                 correct: correct,
                 answers: answers
             });
@@ -238,7 +252,7 @@ function exportData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; 
-    a.download = "zaloha_obrazkovy_test_" + new Date().toISOString().slice(0,10) + ".json";
+    a.download = "zaloha_test_" + new Date().toISOString().slice(0,10) + ".json";
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
@@ -271,8 +285,6 @@ function saveTestAsHTML() {
   const testTitle = testTitleInput || "Test";
   const testAuthor = document.getElementById("testAuthor").value.trim();
   const testYear = document.getElementById("testYear").value.trim();
-  
-  // Napevno nastavené číslovanie (požiadavka na odstránenie výberu)
   const numberingType = "numeric";
   
   const allQuestions = gatherData();
@@ -282,11 +294,6 @@ function saveTestAsHTML() {
       return;
   }
   
-  const missingImages = allQuestions.filter(q => !q.image).length;
-  if(missingImages > 0) {
-      if(!confirm(`Upozornenie: ${missingImages} otázok nemá nahratý obrázok. Budú sa zobrazovať prázdne. Chcete pokračovať?`)) return;
-  }
-
   let safeFileName = testTitleInput ? normalizeFilename(testTitleInput) + ".html" : "MC_test_obrazky.html";
 
   // --- HTML CONTENT ---
@@ -305,20 +312,16 @@ function saveTestAsHTML() {
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding:0; margin:0; background:var(--bg-light); color:var(--text-light); transition:0.3s; display: flex; flex-direction: column; min-height: 100vh; }
     body.dark-mode { background:var(--bg-dark); color:var(--text-dark); }
     
-    /* Top Bar */
     .top-bar { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); }
     #themeToggle { padding:6px 12px; border:none; border-radius:4px; background:#ddd; cursor:pointer; }
     
-    /* Main Layout */
     .container { max-width: 800px; margin: 0 auto; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
     
-    /* Start Screen */
     #startScreen { text-align: center; margin-top: 50px; }
     .start-input { display: block; margin: 15px auto; width: 80%; max-width: 300px; padding: 10px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 5px; }
     #startBtn { padding: 15px 40px; font-size: 1.3rem; background-color: var(--accent); color: white; border: none; cursor: pointer; border-radius: 50px; transition: transform 0.1s; }
     #startBtn:hover { transform: scale(1.05); }
 
-    /* Question Display */
     #quizInterface { display: none; flex-direction: column; height: 100%; }
     
     .question-area {
@@ -330,13 +333,19 @@ function saveTestAsHTML() {
         margin-bottom: 20px;
     }
     
-    .q-number { font-size: 1.2rem; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .q-number { font-size: 1.2rem; color: #888; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* Image Container with 3:2 Aspect Ratio */
+    .q-instruction {
+        margin: 10px 0 15px 0;
+        font-size: 1.15rem;
+        max-width: 700px;
+        line-height: 1.5;
+    }
+
     .image-container {
         width: 100%;
         max-width: 600px;
-        aspect-ratio: 3 / 2;
+        min-height: 200px; /* Aby element neskakoval ak nie je obrazok */
         background: #f0f0f0;
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -350,7 +359,7 @@ function saveTestAsHTML() {
     
     .q-image {
         width: 100%;
-        height: 100%;
+        max-height: 400px;
         object-fit: contain;
         display: block;
     }
@@ -360,8 +369,8 @@ function saveTestAsHTML() {
         grid-template-columns: 1fr 1fr;
         gap: 15px;
         width: 100%;
-        max-width: 600px; /* FIX: Added max-width */
-        margin: 0 auto 10px auto; /* FIX: Center the grid */
+        max-width: 600px; 
+        margin: 0 auto 10px auto; 
     }
     @media (max-width: 600px) { .options-grid { grid-template-columns: 1fr; } }
 
@@ -390,7 +399,6 @@ function saveTestAsHTML() {
     }
     body.dark-mode .opt-btn.selected { background: #152a3d; color: #64b5f6; }
 
-    /* Navigation Bar - Moved closer */
     .nav-bar {
         display: flex;
         flex-wrap: wrap;
@@ -421,7 +429,6 @@ function saveTestAsHTML() {
     }
     body.dark-mode .nav-btn.active { border-color: #fff; }
 
-    /* Submit Button */
     .submit-container { width: 100%; text-align: center; margin-top: 10px; height: 60px; }
     #submitBtn {
         background-color: #28a745;
@@ -436,13 +443,12 @@ function saveTestAsHTML() {
     }
     #submitBtn:hover { background-color: #218838; }
 
-    /* Results */
     #resultsScreen { display: none; padding: 20px; }
     .detail-btn { background-color: #008CBA; color: white; border: none; padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 4px; margin-top: 15px; }
 
-    /* Print/Detail styles */
     .user-wrong { color: red; text-decoration: line-through; }
     .correct-ans { color: green; font-weight: bold; }
+    .keyboard-hint { font-size: 0.8rem; color: #888; margin-top: 10px; text-align: center;}
   </style>
 </head>
 <body>
@@ -473,7 +479,10 @@ function saveTestAsHTML() {
       <div id="quizInterface">
           <div class="question-area">
               <div class="q-number" id="qNumberDisplay">Otázka 1</div>
-              <div class="image-container">
+              
+              <div id="qInstructionDisplay" class="q-instruction"></div>
+
+              <div class="image-container" id="imgContainer">
                   <img id="qImageDisplay" class="q-image" src="" alt="Zadanie">
               </div>
           </div>
@@ -487,6 +496,8 @@ function saveTestAsHTML() {
           <div class="submit-container">
              <button id="submitBtn" onclick="evaluateTest()">Vyhodnotiť test</button>
           </div>
+          
+          <div class="keyboard-hint">Tip: Na prepínanie otázok môžete použiť šípky ⬅️ a ➡️ na klávesnici.</div>
       </div>
 
       <div id="resultsScreen"></div>
@@ -528,6 +539,7 @@ function saveTestAsHTML() {
             const opts = shuffle([q.correct, ...q.answers]);
             return {
                 image: q.image,
+                instruction: q.instruction, 
                 correct: q.correct,
                 opts: opts,
                 userAnswer: null
@@ -538,6 +550,19 @@ function saveTestAsHTML() {
         document.getElementById('quizInterface').style.display = 'flex';
         renderNav();
         loadQuestion(0);
+        
+        // Setup Keyboard Navigation
+        document.addEventListener('keydown', handleKeyboardNav);
+    }
+    
+    function handleKeyboardNav(e) {
+        if (document.getElementById('quizInterface').style.display === 'none') return;
+        
+        if (e.key === "ArrowRight") {
+            if (currentQIndex < questions.length - 1) loadQuestion(currentQIndex + 1);
+        } else if (e.key === "ArrowLeft") {
+            if (currentQIndex > 0) loadQuestion(currentQIndex - 1);
+        }
     }
 
     function loadQuestion(index) {
@@ -545,7 +570,26 @@ function saveTestAsHTML() {
         const q = questions[index];
         
         document.getElementById('qNumberDisplay').textContent = "Úloha " + (index + 1) + " / " + questions.length;
-        document.getElementById('qImageDisplay').src = q.image;
+        
+        // Render Text instruction with HTML
+        const instrEl = document.getElementById('qInstructionDisplay');
+        if (q.instruction) {
+            instrEl.innerHTML = q.instruction;
+            instrEl.style.display = 'block';
+        } else {
+            instrEl.innerHTML = '';
+            instrEl.style.display = 'none';
+        }
+
+        // Render Image
+        const imgEl = document.getElementById('qImageDisplay');
+        const imgCont = document.getElementById('imgContainer');
+        if (q.image) {
+            imgEl.src = q.image;
+            imgCont.style.display = 'flex';
+        } else {
+            imgCont.style.display = 'none';
+        }
 
         const container = document.getElementById('optionsContainer');
         container.innerHTML = '';
@@ -604,6 +648,9 @@ function saveTestAsHTML() {
     }
 
     function evaluateTest() {
+        // Remove listener so arrows dont work on results
+        document.removeEventListener('keydown', handleKeyboardNav);
+        
         document.getElementById('quizInterface').style.display = 'none';
         const resScreen = document.getElementById('resultsScreen');
         resScreen.style.display = 'block';
@@ -648,8 +695,11 @@ function saveTestAsHTML() {
              symbol = '❌'; uAns = '<span class="user-wrong">' + q.userAnswer + '</span>';
           }
           
+          let imgHTML = q.image ? \`<img src="\${q.image}" style="max-width:150px; max-height:100px; margin-top:5px;">\` : '';
+          let instrHTML = q.instruction ? \`<div style="font-style:italic; margin-bottom:5px;">\${q.instruction}</div>\` : '';
+
           rows += \`<tr>
-             <td><b>\${qPrefix}</b><br><img src="\${q.image}" style="max-width:150px; max-height:100px; margin-top:5px;"><br><br>Správna odpoveď: <span class="correct-ans">\${q.correct}</span></td>
+             <td><b>\${qPrefix}</b><br>\${instrHTML}\${imgHTML}<br><br>Správna odpoveď: <span class="correct-ans">\${q.correct}</span></td>
              <td>\${uAns}<br><br><span style="font-size:1.5em">\${symbol}</span></td>
           </tr>\`;
        });
@@ -696,7 +746,7 @@ function saveTestAsHTML() {
     };
 <\/script>
 <div style="margin-top:auto; padding: 20px; text-align: center; opacity: 0.6; font-size: 0.8rem;">
-  Spracované pomocou UI | Pôvodný koncept: Mgr. Erika Matyiová (2025)
+  Spracované pomocou UI: Mgr. Erika Matyiová (2026)
 </div>
 </body>
 </html>`;
@@ -715,9 +765,5 @@ window.addEventListener("load", () => {
 });
 
 </script>
-
-<br><br>
-<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025 - 2026)
-<br><br>
 </body>
 </html>
