@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <title>Generátor slovného domina</title>
+    <title>Generátor slovného domina (Rozdielna hrúbka písma)</title>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #ecf0f1; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: var(--bg); max-width: 900px; margin: 0 auto; color: #333; }
@@ -99,7 +99,6 @@
                     if (!silent) alert("Dáta boli úspešne načítané z pamäte prehliadača.");
                 } else {
                     if (!silent) alert("V pamäti sa nenašli žiadne uložené dáta.");
-                    // Defaultné hodnoty len ak je to prvý load a nič nie je uložené
                     if (silent && document.getElementById('input-data').value === "") {
                          document.getElementById('input-data').value = "Hund\tpes\nKatze\tmačka\nMaus\tmyš\nKaninchen\tkrálik\nEnte\tkačka\nGans\thus\nHuhn\tkura";
                     }
@@ -111,7 +110,7 @@
         }
         
         function manualLoad() {
-            loadData(false); // False = ukáže alert s výsledkom
+            loadData(false);
         }
 
         // --- 2. IMPORT / EXPORT LOGIC ---
@@ -156,7 +155,6 @@
             reader.readAsText(file);
         }
 
-        // Bezpečné spustenie po načítaní stránky
         document.addEventListener('DOMContentLoaded', function() {
             loadData(true);
         });
@@ -196,7 +194,6 @@
             let dominoCards = [];
             let cardId = 0;
 
-            // 1. Priame páry
             validPairs.forEach(pair => {
                 dominoCards.push({
                     sideA: { text: pair.term, type: 'term' },
@@ -205,7 +202,6 @@
                 });
             });
 
-            // 2. Prepojené páry (reťaz)
             for (let i = 0; i < validPairs.length; i++) {
                 const currentPair = validPairs[i];
                 const nextPair = validPairs[(i + 1) % validPairs.length];
@@ -244,7 +240,8 @@
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>
 <style>
     :root {
-        --card-size: 80px;
+        /* VEĽKOSŤ KARTY: 120px */
+        --card-size: 120px;
         --card-w: calc(var(--card-size) * 2);
         --card-h: var(--card-size);
         --bg-color: #f0f2f5;
@@ -322,12 +319,30 @@
 
     .half {
         flex: 1; display: flex; align-items: center; justify-content: center;
-        padding: 4px; text-align: center; font-weight: 600; font-size: 14px;
-        overflow: hidden; word-wrap: break-word; line-height: 1.1;
+        /* Monospace font + väčšie písmo + word-break */
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 18px; 
+        line-height: 1.2;
+        padding: 5px; 
+        text-align: center; 
+        overflow: hidden; 
+        word-break: break-word; 
     }
     
-    .half[data-type="term"] { background-color: #d0d0d0; color: #000; font-weight: 800; }
-    .half[data-type="def"]  { background-color: #fff; color: #000; }
+    /* UPRAVENÉ: Sivé pozadie (Pojem) = Tučné písmo */
+    .half[data-type="term"] { 
+        background-color: #d0d0d0; 
+        color: #000; 
+        font-weight: bold; 
+    }
+
+    /* UPRAVENÉ: Biele pozadie (Definícia) = Normálne písmo */
+    .half[data-type="def"]  { 
+        background-color: #fff; 
+        color: #000; 
+        font-weight: normal; 
+    }
+    
     .domino > .half:first-child { border-right: 1px solid #444; }
 
     /* Rotácie */
@@ -350,7 +365,8 @@
 
     /* Sidebar Deck */
     #deck-container {
-        width: 240px; background: white; border-left: 4px solid #ddd; 
+        width: 280px; 
+        background: white; border-left: 4px solid #ddd; 
         display: flex; flex-direction: column; flex-shrink: 0; z-index: 100;
         box-shadow: -5px 0 15px rgba(0,0,0,0.05); height: 100%;
     }
@@ -442,7 +458,9 @@
 <script>
     const cardsData = __CARDS_JSON__;
     const pairsData = __PAIRS_JSON__;
-    const GRID_SIZE = 80;
+    
+    // GRID_SIZE musí sedieť s CSS
+    const GRID_SIZE = 120;
 
     const gameArea = document.getElementById('game-area');
     const container = document.getElementById('container');
@@ -490,33 +508,25 @@
         victoryModal.style.display = 'none';
     }
     
-    // --- VICTORY CHECK LOGIC ---
     function checkVictoryCondition() {
         if (gameFinished) return;
         
         const deckCount = deck.children.length;
-        // 1. Podmienka: Zásobník musí byť prázdny
         if (deckCount > 0) return;
 
-        // 2. Podmienka: Všetky karty na ploche musia byť "connected" (zelené)
-        // To znamená, že aj posledná karta musí byť pripojená k niečomu.
         const allPlacedCards = Array.from(gameArea.children);
-        
-        // Ak z nejakého dôvodu nie sú žiadne karty na ploche (nemalo by nastať pri prázdnom decku)
         if (allPlacedCards.length === 0) return;
 
         const allConnected = allPlacedCards.every(card => card.classList.contains('connected'));
 
         if (allConnected) {
              gameFinished = true;
-             // Malé oneskorenie pre efekt
              setTimeout(() => {
                  victoryModal.style.display = 'flex';
              }, 300);
         }
     }
 
-    // --- EXPORT TO IMAGE ---
     function exportGameArea() {
         if (typeof html2canvas === 'undefined') {
             alert("Na uloženie obrázka je potrebné pripojenie na internet (načítanie knižnice).");
@@ -539,8 +549,6 @@
             alert("Chyba pri vytváraní obrázka.");
         });
     }
-
-    // --- DRAG & DROP & LOGIC ---
 
     let dragItem = null;
     let startX, startY, initialLeft, initialTop;
@@ -603,7 +611,6 @@
             if (dragItem.parentElement === gameArea) {
                 snapToGrid(dragItem);
                 checkAllConnections();
-                // Kontrola víťazstva až po kontrole spojení
                 checkVictoryCondition();
             }
             updateDeckStatus();
@@ -629,7 +636,6 @@
         el.style.top = (gridY * GRID_SIZE) + 'px';
     }
 
-    // --- GRID MANIPULATION ---
     function modifyGrid(side, direction) {
         const style = window.getComputedStyle(gameArea);
         let currentW = parseInt(style.width);
@@ -669,7 +675,6 @@
         });
     }
 
-    // --- VALIDATION ---
     function checkAllConnections() {
         document.querySelectorAll('.half').forEach(h => h.classList.remove('correct-match'));
         document.querySelectorAll('.domino').forEach(d => d.classList.remove('connected'));
