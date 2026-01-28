@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Generátor náhodných úloh s manuálnym hodnotením učiteľa</title>
   <style>
+    /* Centrovanie stránky (zachované z minulej úpravy) */
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px auto; max-width: 1000px; background-color: #f9f9f9; color: #333; }
     h1 { color: #2c3e50; }
     .container { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -118,7 +119,6 @@
       localStorage.setItem('gen_instr1', instr1Field.value);
       localStorage.setItem('gen_instr2', instr2Field.value);
     } catch (e) {
-      // ZMENA: Ak je kvóta plná, iba vypíšeme varovanie do konzoly, ale neobťažujeme používateľa alertom
       if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
         console.warn("LocalStorage je plné. Automatické ukladanie pozastavené.");
       } else {
@@ -168,18 +168,13 @@
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        // ZMENA: Ošetrenie BOM znakov a kontrola HTML obsahu
         let content = evt.target.result.trim();
-        
-        // Odstránenie prípadného BOM znaku na začiatku
         if (content.charCodeAt(0) === 0xFEFF) {
             content = content.substr(1);
         }
-
         if (content.startsWith('<')) {
            throw new Error("Pravdepodobne ste sa pokúsili nahrať vygenerovaný HTML test namiesto súboru s nastaveniami (.json). Prosím, vyberte správny súbor.");
         }
-
         const data = JSON.parse(content);
         
         if(data.title !== undefined) titleField.value = data.title;
@@ -189,11 +184,7 @@
         if(data.instr1 !== undefined) instr1Field.value = data.instr1;
         if(data.instr2 !== undefined) instr2Field.value = data.instr2;
         
-        // Pokus o uloženie (ak zlyhá kvôli veľkosti, už nevyhodí chybu)
         saveToStorage();
-        
-        // Voliteľné: Oznámenie o úspechu
-        // alert('Dáta boli načítané.');
       } catch (err) {
         alert('Chyba pri importe údajov:\n' + err.message);
         console.error(err);
@@ -205,7 +196,6 @@
 
   // --- Generator Logic ---
   function escapeForJs(s){
-    // Escapes backticks and backslashes for JS string safety
     return s.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$').replace(/\r/g,'');
   }
 
@@ -541,11 +531,24 @@
 </body>
 </html>`;
       
+      // ZMENA: Generovanie názvu súboru podľa zadania
+      let fileNameToSave = 'test_ustna_odpoved.html'; // Predvolený názov
+      const currentTitle = titleField.value.trim();
+
+      if (currentTitle) {
+          // 1. Normalizácia (oddelenie diakritiky) a jej odstránenie
+          let safeName = currentTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          // 2. Nahradenie medzier podčiarkovníkom
+          safeName = safeName.replace(/\s+/g, '_');
+          // 3. Pridanie prípony
+          fileNameToSave = safeName + '.html';
+      }
+
       const blob = new Blob([fileContent], {type: 'text/html;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'vygenerovany_test.html';
+      a.download = fileNameToSave; // Použitie dynamického názvu
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
