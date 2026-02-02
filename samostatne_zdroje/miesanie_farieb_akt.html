@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vymiešaj si svoju farbu</title>
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --text-color: #333;
+            --card-bg: #fff;
+            --success: #28a745;
+            --error: #dc3545;
+            --primary: #007bff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #4a4a4a;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .author {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        /* Sekcia pre vstup mena */
+        #intro-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 80%;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        /* Herná sekcia */
+        #game-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .task-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .target-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .color-sample {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .feedback-msg {
+            height: 30px;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        /* Mriežka kariet - UPRAVENÉ */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .color-card {
+            /* Farba pozadia sa nastavuje cez JS */
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px; /* Výška karty */
+            position: relative;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            user-select: none;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* Štýl pre vybranú kartu */
+        .color-card.selected {
+            border: 4px solid #333; /* Výrazný okraj pri výbere */
+            transform: scale(0.95);
+            box-shadow: none;
+        }
+
+        /* Vyhodnotenie */
+        #evaluation-section {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stats-box {
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        #detail-results {
+            display: none;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f1f1f1;
+        }
+
+        .attempt-row {
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .symbol {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-left: 10px;
+        }
+
+        .symbol.correct { color: var(--success); }
+        .symbol.wrong { color: var(--error); }
+
+        /* Responzivita */
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Tlač */
+        @media print {
+            body { background: white; padding: 0; }
+            #intro-section, #game-section, .no-print { display: none !important; }
+            #evaluation-section, #detail-results { display: block !important; box-shadow: none; padding: 0; }
+            h1, .author { display: block; text-align: center; }
+            button { display: none; }
+            .color-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Vymiešaj si svoju farbu</h1>
+    <div class="author">Mgr. Erika Matyiová, 2026</div>
+
+    <div id="intro-section">
+        <h3>Meno žiaka</h3>
+        <input type="text" id="studentName" placeholder="Zadaj svoje meno." autocomplete="off">
+        <br>
+        <button onclick="startGame()">Začať hru</button>
+    </div>
+
+    <div id="game-section">
+        <div class="task-container">
+            <h2 id="question-text">Ktoré 2 farby musíš pomiešať?</h2>
+            <div class="target-display">
+                <div id="target-color-box" class="color-sample"></div>
+            </div>
+            <div id="feedback" class="feedback-msg"></div>
+        </div>
+
+        <div class="cards-grid" id="cards-container">
+            </div>
+    </div>
+
+    <div id="evaluation-section">
+        <h2>Vyhodnotenie</h2>
+        <div class="stats-box">
+            <p><strong>Meno žiaka:</strong> <span id="eval-name"></span></p>
+            <p><strong>Dátum a čas:</strong> <span id="eval-date"></span></p>
+            <p><strong>Počet bodov:</strong> <span id="eval-score"></span></p>
+            <p><strong>Úspešnosť:</strong> <span id="eval-percent"></span></p>
+        </div>
+        
+        <button onclick="showDetails()" class="no-print">Detailné výsledky</button>
+        
+        <div id="detail-results">
+            <h3>Priebeh riešenia</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%">Zadaná farba</th>
+                        <th>Tvoje odpovede</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body">
+                    </tbody>
+            </table>
+            <p style="margin-top: 20px; font-size: 0.9em;">
+                Legenda: <span class="symbol correct">✔</span> = Správne, <span class="symbol wrong">✘</span> = Nesprávne
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurácia farieb pre zadania
+        const targets = [
+            { name: "sivá", hex: "#808080", needs: ["biela", "čierna"] },
+            { name: "oranžová", hex: "#ff7b00", needs: ["červená", "žltá"] },
+			{ name: "svetložltá", hex: "#ffff8a", needs: ["žltá", "biela"] },
+			{ name: "svetlozelená", hex: "#47ff47", needs: ["zelená", "biela"] },
+            { name: "ružová", hex: "#FFC0CB", needs: ["červená", "biela"] },
+            { name: "fialová", hex: "#4B0082", needs: ["modrá", "červená"] },
+			{ name: "svetlomodrá", hex: "#75bfff", needs: ["modrá", "biela"] },
+            { name: "zelená", hex: "#008000", needs: ["modrá", "žltá"] },
+			{ name: "svetlohnedá", hex: "#ad6500", needs: ["hnedá", "biela"] },
+            { name: "hnedá", hex: "#422700", needs: ["červená", "zelená"] }
+        ];
+
+        // Konfigurácia kartičiek - pridali sme isLight pre farbu textu
+        const ingredients = [
+            { name: "červená", hex: "#FF0000", text: "white" },
+            { name: "modrá", hex: "#0000FF", text: "white" },
+            { name: "žltá", hex: "#FFFF00", text: "black" },
+            { name: "biela", hex: "#FFFFFF", text: "black", border: "#ddd" },
+            { name: "čierna", hex: "#000000", text: "white" },
+            { name: "zelená", hex: "#008000", text: "white" },
+            { name: "béžová", hex: "#F5DEB3", text: "black" },
+            { name: "oranžová", hex: "#ff7b00", text: "black" },
+            { name: "ružová", hex: "#FFC0CB", text: "black" },
+            { name: "hnedá", hex: "#422700", text: "white" },
+            { name: "sivá", hex: "#808080", text: "white" },
+            { name: "tyrkysová", hex: "#40E0D0", text: "black" }
+        ];
+
+        let gameState = {
+            studentName: "",
+            queue: [],
+            currentTaskIndex: 0,
+            score: 0,
+            history: [], 
+            selectedCards: []
+        };
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById("studentName").value.trim();
+            gameState.studentName = nameInput === "" ? "XY" : nameInput;
+            
+            gameState.queue = shuffle([...targets]);
+            gameState.currentTaskIndex = 0;
+            gameState.score = 0;
+            gameState.history = [];
+            
+            document.getElementById("intro-section").style.display = "none";
+            document.getElementById("game-section").style.display = "flex";
+            
+            renderCards();
+            loadTask();
+        }
+
+        function renderCards() {
+            const container = document.getElementById("cards-container");
+            container.innerHTML = "";
+            
+            ingredients.forEach(color => {
+                const card = document.createElement("div");
+                card.className = "color-card";
+                card.onclick = () => selectCard(color.name, card);
+                
+                // Nastavenie farby pozadia celej karty
+                card.style.backgroundColor = color.hex;
+                card.style.color = color.text; // Čierna alebo biela podľa kontrastu
+                
+                if(color.border) card.style.border = `2px solid ${color.border}`;
+
+                const label = document.createElement("span");
+                label.innerText = color.name;
+
+                card.appendChild(label);
+                container.appendChild(card);
+            });
+        }
+
+        function loadTask() {
+            const currentTask = gameState.queue[gameState.currentTaskIndex];
+            
+            document.getElementById("question-text").innerText = `Ktoré 2 farby musíš pomiešať, aby si získal/a túto farbu?\n\n ${currentTask.name}`;
+            document.getElementById("target-color-box").style.backgroundColor = currentTask.hex;
+            document.getElementById("feedback").innerText = "";
+            document.getElementById("feedback").className = "feedback-msg";
+            
+            gameState.selectedCards = [];
+            document.querySelectorAll(".color-card").forEach(c => c.classList.remove("selected"));
+        }
+
+        function selectCard(colorName, cardElement) {
+            if (document.getElementById("feedback").innerText === "Správne!") return;
+
+            if (gameState.selectedCards.includes(colorName)) {
+                gameState.selectedCards = gameState.selectedCards.filter(c => c !== colorName);
+                cardElement.classList.remove("selected");
+                return;
+            }
+
+            if (gameState.selectedCards.length < 2) {
+                gameState.selectedCards.push(colorName);
+                cardElement.classList.add("selected");
+            }
+
+            if (gameState.selectedCards.length === 2) {
+                evaluateAttempt();
+            }
+        }
+
+        function evaluateAttempt() {
+            const currentTask = gameState.queue[gameState.currentTaskIndex];
+            const selection = gameState.selectedCards.sort();
+            const required = [...currentTask.needs].sort();
+            
+            const isCorrect = JSON.stringify(selection) === JSON.stringify(required);
+            const feedbackEl = document.getElementById("feedback");
+
+            gameState.history.push({
+                task: currentTask.name,
+                attempt: [...selection],
+                correct: isCorrect
+            });
+
+            if (isCorrect) {
+                feedbackEl.innerText = "Správne!";
+                feedbackEl.style.color = "var(--success)";
+                
+                const attemptsForThisTask = gameState.history.filter(h => h.task === currentTask.name);
+                if (attemptsForThisTask.length === 1) {
+                    gameState.score++;
+                }
+
+                setTimeout(() => {
+                    nextTask();
+                }, 1500);
+            } else {
+                feedbackEl.innerText = "Nesprávne. Skús to znova.";
+                feedbackEl.style.color = "var(--error)";
+                
+                setTimeout(() => {
+                    if(feedbackEl.innerText !== "Správne!") {
+                        gameState.selectedCards = [];
+                        document.querySelectorAll(".color-card").forEach(c => c.classList.remove("selected"));
+                    }
+                }, 1000);
+            }
+        }
+
+        function nextTask() {
+            gameState.currentTaskIndex++;
+            if (gameState.currentTaskIndex < gameState.queue.length) {
+                loadTask();
+            } else {
+                showEvaluationScreen();
+            }
+        }
+
+        function showEvaluationScreen() {
+            document.getElementById("game-section").style.display = "none";
+            document.getElementById("evaluation-section").style.display = "block";
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('sk-SK') + " " + now.toLocaleTimeString('sk-SK');
+            const total = targets.length;
+            const percentage = Math.round((gameState.score / total) * 100);
+
+            document.getElementById("eval-name").innerText = gameState.studentName;
+            document.getElementById("eval-date").innerText = dateStr;
+            document.getElementById("eval-score").innerText = `${gameState.score} z ${total}`;
+            document.getElementById("eval-percent").innerText = `${percentage}%`;
+        }
+
+        function showDetails() {
+            const container = document.getElementById("detail-results");
+            const tbody = document.getElementById("results-table-body");
+            container.style.display = "block";
+            tbody.innerHTML = "";
+
+            let previousTask = "";
+            let currentRow = null;
+            let currentAnswersCell = null;
+
+            // Prechádzame históriu
+            gameState.history.forEach(log => {
+                
+                // Ak je to nová úloha (alebo prvá), vytvoríme nový riadok
+                if (log.task !== previousTask) {
+                    previousTask = log.task;
+                    currentRow = document.createElement("tr");
+                    
+                    const tdTask = document.createElement("td");
+                    tdTask.innerHTML = `<strong>${log.task}</strong>`;
+                    
+                    currentAnswersCell = document.createElement("td");
+                    
+                    currentRow.appendChild(tdTask);
+                    currentRow.appendChild(currentAnswersCell);
+                    tbody.appendChild(currentRow);
+                }
+
+                // Pridanie pokusu do bunky odpovedí
+                const attemptDiv = document.createElement("div");
+                attemptDiv.className = "attempt-row";
+                
+                const symbol = log.correct ? "✔" : "✘";
+                const symClass = log.correct ? "correct" : "wrong";
+                
+                attemptDiv.innerHTML = `${log.attempt.join(" + ")} <span class="symbol ${symClass}">${symbol}</span>`;
+                currentAnswersCell.appendChild(attemptDiv);
+            });
+
+            document.querySelector("#evaluation-section button").style.display = "none";
+        }
+    </script>
+</body>
+</html>

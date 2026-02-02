@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farebné obrazce - štvorec, kruh, trojuholník</title>
+    <style>
+        :root {
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .author {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        #setup-screen {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        input[type="text"] {
+            padding: 10px 15px;
+            font-size: 1.2rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            width: 300px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 1.2rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #45a049; }
+
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .instruction { font-size: 1.2rem; margin-bottom: 20px; }
+
+        #current-task {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 40px; 
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .feedback-success { color: green; }
+        .feedback-error { color: red; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            grid-template-rows: repeat(2, 1fr);    
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 50px;
+            min-height: 300px; /* Rezervované miesto pre obrazce/tlačidlo */
+        }
+
+        .shape-card {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: transform 0.2s;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .shape-card:hover { transform: scale(1.05); border-color: #ccc; }
+        .shape-card.hidden { visibility: hidden; pointer-events: none; }
+
+        svg { width: 80%; height: 80%; display: block; }
+        .shape-path { stroke: black; stroke-width: 0.5px; vector-effect: non-scaling-stroke; }
+
+        #results-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .result-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+        }
+
+        .score-big { font-size: 2.5rem; font-weight: bold; color: #2196F3; margin: 20px 0; }
+
+        #details-section { display: none; margin-top: 30px; width: 100%; text-align: left; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+
+        .symbol-check { color: green; font-weight: bold; font-size: 1.2rem; }
+        .symbol-cross { color: red; font-weight: bold; font-size: 1.2rem; }
+
+        .btn-group { margin-top: 20px; display: flex; gap: 15px; justify-content: center; }
+        .btn-secondary { background-color: #2196F3; }
+
+        @media print {
+            body { 
+                background-color: white; 
+                padding: 0;
+            }
+            button, .btn-group, #setup-screen, #game-screen { display: none !important; }
+            
+            /* Zabezpečí zobrazenie výsledkov pri tlači */
+            #results-screen { display: flex !important; }
+            
+            /* DÔLEŽITÉ: Zmena na display: block zabezpečí, že elementy budú pod sebou */
+            #details-section { display: block !important; }
+            
+            .result-box { 
+                box-shadow: none; 
+                border: none; 
+                padding: 0; 
+                text-align: left; 
+                width: 100%;
+            }
+
+            .result-box h1 {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+                text-align: left;
+            }
+
+            .score-big {
+                font-size: 1rem; 
+                font-weight: normal;
+                color: #333;
+                margin: 5px 0;
+            }
+
+            .result-box p {
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1>Farebné obrazce - štvorec, kruh, trojuholník</h1>
+        <div class="author">Autor: Mgr. Erika Matyiová, 2026</div>
+        <input type="text" id="student-name" placeholder="Zadaj svoje meno">
+        <br>
+        <button id="start-btn" onclick="startGame()">Spustiť hru</button>
+    </div>
+
+    <div id="game-screen">
+        <h1>Farebné obrazce</h1>
+        <div class="author">Autor: Mgr. Erika Matyiová, 2026</div>
+        <div class="instruction">Prečítaj si pozorne druh a farbu obrazca. Kliknutím označ správny obrazec.</div>
+        <div id="current-task"></div>
+        <div id="feedback"></div>
+        <div class="grid-container" id="grid"></div>
+    </div>
+
+    <div id="results-screen">
+        <div class="result-box">
+            <h1>Farebné obrazce - Vyhodnotenie</h1>
+            <p><strong>Žiak:</strong> <span id="res-name"></span></p>
+            <p><strong>Dátum a čas:</strong> <span id="res-date"></span></p>
+            <div class="score-big"><strong>Body:</strong> <span id="res-score"></span> / 12 (<span id="res-percent"></span>%)</div>
+            <div class="btn-group">
+                <button class="btn-secondary" onclick="showDetails()">Detailné výsledky</button>
+                <button onclick="window.print()">Tlačiť výsledky (Ctrl+P)</button>
+                <button onclick="location.reload()">Nová hra</button>
+            </div>
+            <div id="details-section">
+                <h3>Prehľad odpovedí</h3>
+                <table id="details-table">
+                    <thead>
+                        <tr>
+                            <th>Poradie</th>
+                            <th>Zadanie</th>
+                            <th>Tvoja odpoveď</th>
+                            <th>Výsledok</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p style="font-size: 0.9rem; font-style: italic; margin-top: 10px;">
+                    Legenda: <span class="symbol-check">✔</span> = správna odpoveď na prvý pokus, 
+                    <span class="symbol-cross">✘</span> = nesprávna voľba pri prvom pokuse.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const shapes = [
+            { id: 'square', name: 'štvorec', draw: (color) => `<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" fill="${color}" class="shape-path" /></svg>` },
+            { id: 'circle', name: 'kruh', draw: (color) => `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="${color}" class="shape-path" /></svg>` },
+            { id: 'triangle', name: 'trojuholník', draw: (color) => `<svg viewBox="0 0 100 100"><polygon points="50,15 85,85 15,85" fill="${color}" class="shape-path" /></svg>` }
+        ];
+
+        const colors = [
+            { id: 'white', nameM: 'biely', hex: '#FFFFFF' },
+            { id: 'gray', nameM: 'sivý', hex: '#808080' },
+            { id: 'black', nameM: 'čierny', hex: '#000000' },
+            { id: 'yellow', nameM: 'žltý', hex: '#FFFF00' },
+            { id: 'orange', nameM: 'oranžový', hex: '#ff7b00' },
+            { id: 'red', nameM: 'červený', hex: '#FF0000' },
+            { id: 'pink', nameM: 'ružový', hex: '#FFC0CB' },
+            { id: 'purple', nameM: 'fialový', hex: '#4B0082' },
+            { id: 'blue', nameM: 'modrý', hex: '#0000FF' },
+            { id: 'green', nameM: 'zelený', hex: '#008000' },
+            { id: 'brown', nameM: 'hnedý', hex: '#804a00' },
+            { id: 'beige', nameM: 'béžový', hex: '#F5DEB3' }
+        ];
+
+        let gameState = { studentName: "", items: [], taskQueue: [], currentTaskIndex: 0, score: 0, history: [], attemptedCurrent: false, firstWrongChoice: "" };
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function generateGameItems() {
+            let all = [];
+            colors.forEach(c => shapes.forEach(s => all.push({ shape: s, color: c })));
+            let selection;
+            while (true) {
+                selection = shuffle([...all]).slice(0, 12);
+                const ids = selection.map(x => x.shape.id);
+                if (ids.includes('square') && ids.includes('circle') && ids.includes('triangle')) break;
+            }
+            return selection;
+        }
+
+        function startGame() {
+            const name = document.getElementById('student-name').value.trim();
+            gameState.studentName = name === "" ? "XY" : name;
+            gameState.items = generateGameItems();
+            gameState.taskQueue = shuffle([...Array(12).keys()]);
+            gameState.currentTaskIndex = 0;
+            gameState.score = 0;
+            gameState.history = [];
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            // Obnova mriežky (ak by bola prepnutá na vyhodnocovací stred)
+            const grid = document.getElementById('grid');
+            grid.style.display = 'grid';
+            grid.style.justifyContent = 'initial';
+            grid.style.alignItems = 'initial';
+
+            renderGrid();
+            presentTask();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            gameState.items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'shape-card';
+                div.id = `card-${index}`;
+                div.innerHTML = item.shape.draw(item.color.hex);
+                div.onclick = () => handleCardClick(index);
+                grid.appendChild(div);
+            });
+        }
+
+        function presentTask() {
+            gameState.attemptedCurrent = false;
+            gameState.firstWrongChoice = "";
+            const item = gameState.items[gameState.taskQueue[gameState.currentTaskIndex]];
+            document.getElementById('current-task').textContent = `${item.color.nameM} ${item.shape.name}`;
+            document.getElementById('feedback').textContent = "";
+        }
+
+        function handleCardClick(idx) {
+            const targetIdx = gameState.taskQueue[gameState.currentTaskIndex];
+            const feedback = document.getElementById('feedback');
+            const clickedItem = gameState.items[idx];
+
+            if (idx === targetIdx) {
+                feedback.textContent = "Správne!";
+                feedback.className = "feedback-success";
+                if (!gameState.attemptedCurrent) {
+                    gameState.score++;
+                    gameState.history.push({ task: document.getElementById('current-task').textContent, result: true, choice: "Správna odpoveď" });
+                } else {
+                    gameState.history.push({ task: document.getElementById('current-task').textContent, result: false, choice: gameState.firstWrongChoice });
+                }
+                document.getElementById(`card-${idx}`).classList.add('hidden');
+                setTimeout(() => {
+                    gameState.currentTaskIndex++;
+                    if (gameState.currentTaskIndex < 12) presentTask();
+                    else showEvaluationBtn();
+                }, 1000);
+            } else {
+                feedback.textContent = "Nesprávne. Skús to znova.";
+                feedback.className = "feedback-error";
+                if (!gameState.attemptedCurrent) {
+                    gameState.attemptedCurrent = true;
+                    gameState.firstWrongChoice = `${clickedItem.color.nameM} ${clickedItem.shape.name}`;
+                }
+            }
+        }
+
+        function showEvaluationBtn() {
+            document.getElementById('current-task').textContent = "Hotovo!";
+            document.getElementById('feedback').textContent = "";
+            
+            const grid = document.getElementById('grid');
+            // Zmena štýlu mriežky na vycentrovaný flex kontajner
+            grid.style.display = 'flex';
+            grid.style.justifyContent = 'center';
+            grid.style.alignItems = 'center';
+            grid.innerHTML = `<button onclick="showResults()" style="font-size: 1.8rem; padding: 25px 50px; font-weight: bold;">Vyhodnotiť</button>`;
+        }
+
+        function showResults() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('results-screen').style.display = 'flex';
+            document.getElementById('res-name').textContent = gameState.studentName;
+            document.getElementById('res-date').textContent = new Date().toLocaleString('sk-SK');
+            document.getElementById('res-score').textContent = gameState.score;
+            document.getElementById('res-percent').textContent = Math.round((gameState.score / 12) * 100);
+            const tbody = document.querySelector('#details-table tbody');
+            tbody.innerHTML = '';
+            gameState.history.forEach((rec, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${i+1}.</td><td>${rec.task}</td><td>${rec.choice}</td><td>${rec.result ? '<span class="symbol-check">✔</span>' : '<span class="symbol-cross">✘</span>'}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showDetails() { 
+            document.getElementById('details-section').style.display = 'block'; 
+            document.getElementById('details-section').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
