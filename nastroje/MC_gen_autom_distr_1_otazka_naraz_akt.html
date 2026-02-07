@@ -62,6 +62,8 @@
       <b>Rok:</b> <input type="text" id="testYear" value="2026" style="width:100px;"><br><br>
       <b>Názov testu:</b> <input type="text" id="testTitle" placeholder="Názov testu" style="width:400px;"><br><br>
       
+      <b>Pokyn pre žiaka:</b> <input type="text" id="testInstruction" value="Zvoľ správny preklad." style="width:400px;" placeholder="Napr. Zvoľ správny preklad"><br><br>
+      
       <button class="primary-btn" onclick="saveTestAsHTML()">Uložiť test ako HTML</button>
   </div>
 
@@ -117,6 +119,7 @@ function saveProject() {
         title: document.getElementById("testTitle").value,
         author: document.getElementById("testAuthor").value,
         year: document.getElementById("testYear").value,
+        instruction: document.getElementById("testInstruction").value, // Uloženie pokynu
         content: document.getElementById("inputData").value
     };
     
@@ -147,6 +150,7 @@ function loadProject(input) {
             if(data.title !== undefined) document.getElementById("testTitle").value = data.title;
             if(data.author !== undefined) document.getElementById("testAuthor").value = data.author;
             if(data.year !== undefined) document.getElementById("testYear").value = data.year;
+            if(data.instruction !== undefined) document.getElementById("testInstruction").value = data.instruction; // Načítanie pokynu
             if(data.content !== undefined) document.getElementById("inputData").value = data.content;
             
             // 4. Pokus o uloženie do localStorage (v oddelenom bloku, aby nezastavil skript)
@@ -201,6 +205,7 @@ function saveTestAsHTML() {
   const title = document.getElementById("testTitle").value.trim() || "Test";
   const author = document.getElementById("testAuthor").value.trim();
   const year = document.getElementById("testYear").value.trim();
+  const instruction = document.getElementById("testInstruction").value.trim(); // Získanie pokynu
   const questions = parseInputData();
 
   if (questions.length < 4) {
@@ -208,7 +213,8 @@ function saveTestAsHTML() {
   }
 
   const jsonQ = JSON.stringify(questions);
-  const jsonMeta = JSON.stringify({ title, author, year });
+  // Pridanie inštrukcie do metadát
+  const jsonMeta = JSON.stringify({ title, author, year, instruction });
 
   let html = `<!DOCTYPE html>
 <html lang="sk">
@@ -233,6 +239,7 @@ function saveTestAsHTML() {
   /* Quiz Screen */
   #quizScreen { display: none; flex-direction: column; height: 100%; }
   .q-box { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 20vh; margin-bottom: 20px; }
+  .q-inst { color: #666; font-style: italic; margin-bottom: 15px; font-size: 1.1rem; }
   .q-num { color: #888; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
   .q-txt { font-size: 1.8rem; font-weight: bold; }
   
@@ -323,6 +330,7 @@ function saveTestAsHTML() {
 
   <div id="quizScreen">
     <div class="q-box">
+      <div class="q-inst" id="qInst"></div>
       <div class="q-num" id="qNum"></div>
       <div class="q-txt" id="qTxt"></div>
     </div>
@@ -396,6 +404,9 @@ function loadQ(idx) {
   currIdx = idx;
   var q = testData[idx];
   
+  // Vloženie pokynu pre žiaka
+  document.getElementById('qInst').innerText = META.instruction;
+  
   document.getElementById('qNum').innerText = 'Otázka ' + (idx+1) + ' / ' + testData.length;
   document.getElementById('qTxt').innerText = q.term;
   
@@ -459,7 +470,7 @@ function evalTest() {
 function showDetails() {
   var w = window.open('', '_blank');
   var rows = '';
-  var now = new Date().toLocaleString('sk-SK'); // Získa dátum a čas v slovenskom formáte
+  var now = new Date().toLocaleString('sk-SK'); 
   testData.forEach((q, i) => {
     var status = '';
     var uVal = '';
@@ -486,7 +497,7 @@ function showDetails() {
   page += '</head><body>';
   page += '<h2>Detailný prehľad: ' + META.title + '</h2>';
   page += '<p>Žiak: ' + result.name + '</p>';
-  page += '<p>Dátum a čas: ' + now + '</p>'; // Tento riadok pridajte
+  page += '<p>Dátum a čas: ' + now + '</p>';
   page += '<table><thead><tr><th>Otázka</th><th>Vaša odpoveď</th></tr></thead><tbody>' + rows + '</tbody></table>';
   page += '<br><button onclick="window.print()">Vytlačiť</button>';
   page += '</body></html>';
