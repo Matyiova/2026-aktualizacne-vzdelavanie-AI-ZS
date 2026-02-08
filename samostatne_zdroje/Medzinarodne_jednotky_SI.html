@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medzinárodné jednotky SI</title>
+<style>
+  body { font-family: 'Monaco', monospace; background: #fdfdfd; color: #333; margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
+  body.dark { background: #1a1a1a; color: #f0f0f0; }
+  .top-bar { background: rgba(0,0,0,0.05); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+  button { cursor: pointer; }
+  #themeBtn { padding: 5px 10px; border: none; background: #ccc; border-radius: 4px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
+  
+  /* Start Screen */
+  #startScreen { text-align: center; margin-top: 40px; }
+  input.inp { padding: 10px; width: 80%; max-width: 300px; margin: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; }
+  #btnStart { background: #4CAF50; color: white; border: none; padding: 15px 40px; font-size: 1.2rem; border-radius: 50px; margin-top: 20px; }
+  #btnStart:hover { transform: scale(1.05); }
+
+  /* Quiz Screen */
+  #quizScreen { display: none; flex-direction: column; height: 100%; }
+  .q-box { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 20vh; margin-bottom: 20px; }
+  .q-inst { color: #666; font-style: italic; margin-bottom: 15px; font-size: 1.1rem; }
+  .q-num { color: #888; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
+  .q-txt { font-size: 1.8rem; font-weight: bold; }
+  
+.opts { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 15px; 
+  width: 100%; 
+  max-width: 1550px; 
+  margin: 0 auto; 
+}
+  @media(max-width:600px){ .opts { grid-template-columns: 1fr; } }
+  
+  .opt-btn { 
+    background: #fff; 
+    border: 2px solid #ddd; 
+    padding: 25px 10px;
+	font-family: 'Monaco', monospace;
+    font-size: 1.4rem;
+    border-radius: 8px; 
+    color: #333; 
+    transition: 0.2s; 
+	width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 100px;
+  word-wrap: break-word; 
+  overflow-wrap: anywhere; 
+  white-space: normal;
+  line-height: 1.2;
+  }
+  body.dark .opt-btn { background: #333; border-color: #555; color: #fff; }
+  .opt-btn:hover { background: #eee; }
+  body.dark .opt-btn:hover { background: #444; }
+  .opt-btn.sel { background: #e3f2fd; border-color: #2196F3; color: #1565c0; font-weight: bold; }
+  body.dark .opt-btn.sel { background: #1a3b5c; border-color: #4dabf5; color: #fff; }
+
+  /* Nav */
+  .nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; margin-top: 20px; }
+  
+  .nav-btn { 
+    width: 30px; 
+    height: 30px; 
+    border: 1px solid #ccc; 
+    background: #eee; 
+    border-radius: 4px; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  body.dark .nav-btn { color: #000; }
+  .nav-btn.done { background: #b3e5fc; border-color: #81d4fa; }
+  .nav-btn.act { border: 2px solid #333; transform: scale(1.15); font-weight: bold; }
+  body.dark .nav-btn.act { border-color: #fff; }
+
+  #btnEval { display: none; margin: 20px auto; background: #28a745; color: white; border: none; padding: 15px 40px; font-size: 1.2rem; border-radius: 5px; }
+
+  /* Results */
+  #resScreen { display: none; text-align: center; padding: 20px; }
+  .score-big { font-size: 3rem; margin: 20px; font-weight: bold; }
+  .good { color: green; } .bad { color: red; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
+  th, td { border: 1px solid #aaa; padding: 8px; }
+  .wrong-ans { text-decoration: line-through; color: red; }
+  .right-ans { color: green; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div><strong>Medzinárodné jednotky SI</strong>, Mgr. Erika Matyiová 2026</div>
+  <button id="themeBtn" onclick="toggleTheme()">Tmavý režim</button>
+</div>
+
+<div class="container">
+  <div id="startScreen">
+    <h1>Vitajte v teste</h1>
+    <input type="text" id="pName" class="inp" placeholder="Vaše meno">
+    <br>
+    <label>Počet otázok (max <span id="maxQ"></span>): </label>
+    <input type="number" id="pCount" class="inp" style="width: 60px;" min="1" value="1">
+    <br>
+    <button id="btnStart" onclick="startTest()">Spustiť test</button>
+  </div>
+
+  <div id="quizScreen">
+    <div class="q-box">
+      <div class="q-inst" id="qInst"></div>
+      <div class="q-num" id="qNum"></div>
+      <div class="q-txt" id="qTxt"></div>
+    </div>
+    <div class="opts" id="optsBox"></div>
+    <div class="nav" id="navBox"></div>
+    <button id="btnEval" onclick="evalTest()">Vyhodnotiť test</button>
+  </div>
+
+  <div id="resScreen"></div>
+</div>
+
+<script>
+// DATA INJECTED BY GENERATOR
+var DB = [{"term":"jednotka dĺžky (základná jednotka SI)","correct":"meter","group":0},{"term":"jednotka hmotnosti (základná jednotka SI)","correct":"kilogram","group":0},{"term":"jednotka času (základná jednotka SI)","correct":"sekunda","group":0},{"term":"jednotka elektrického prúdu (základná jednotka SI)","correct":"ampér","group":0},{"term":"jednotka termodynamickej teploty (základná jednotka SI)","correct":"kelvin","group":0},{"term":"jednotka látkového množstva (základná jednotka SI)","correct":"mol","group":0},{"term":"jednotka svietivosti (základná jednotka SI)","correct":"kandela","group":0},{"term":"jednotka sily (odvodená jednotka SI)","correct":"newton","group":1},{"term":"jednotka práce a energie (odvodená jednotka SI)","correct":"joule","group":1},{"term":"jednotka výkonu (odvodená jednotka SI)","correct":"watt","group":1},{"term":"jednotka tlaku (odvodená jednotka SI)","correct":"pascal","group":1},{"term":"jednotka frekvencie (odvodená jednotka SI)","correct":"hertz","group":1},{"term":"minúta","correct":"jednotka času (vedľajšia jednotka SI)","group":2},{"term":"liter","correct":"jednotka objemu (vedľajšia jednotka SI)","group":2},{"term":"Celsiov stupeň","correct":"jednotka teploty (vedľajšia jednotka SI)","group":2},{"term":"hektár","correct":"jednotka plošného obsahu (vedľajšia jednotka SI)","group":2},{"term":"tona","correct":"jednotka hmotnosti (vedľajšia jednotka SI)","group":2}];
+var META = {"title":"Medzinárodné jednotky SI","author":"Mgr. Erika Matyiová","year":"2026","instruction":"Zvoľ správnu odpoveď."};
+
+var testData = [];
+var currIdx = 0;
+var result = { name: '', score: 0 };
+
+// Init
+window.onload = function() {
+  document.getElementById('maxQ').innerText = DB.length;
+  document.getElementById('pCount').max = DB.length;
+  document.getElementById('pCount').value = DB.length;
+};
+
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function startTest() {
+  var name = document.getElementById('pName').value.trim();
+  result.name = name || 'Anonym';
+  var cnt = parseInt(document.getElementById('pCount').value);
+  if (cnt < 1) cnt = 1;
+  if (cnt > DB.length) cnt = DB.length;
+
+  // Prepare questions
+  var picked = shuffle([...DB]).slice(0, cnt);
+  
+  // Generate distractors WITH GROUP LOGIC
+  testData = picked.map(q => {
+    var sameGroupItems = DB.filter(item => item.group === q.group);
+    var others = sameGroupItems
+                   .filter(x => x.correct !== q.correct)
+                   .map(x => x.correct);
+    var uniqueOthers = [...new Set(others)];
+    var dist = shuffle(uniqueOthers).slice(0, 3);
+    var options = shuffle([q.correct, ...dist]);
+    return {
+      term: q.term,
+      correct: q.correct,
+      opts: options,
+      userAns: null
+    };
+  });
+
+  // UI switch
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'flex';
+  
+  loadQ(0);
+}
+
+function loadQ(idx) {
+  currIdx = idx;
+  var q = testData[idx];
+  
+  // Vloženie pokynu pre žiaka
+  document.getElementById('qInst').innerText = META.instruction;
+  
+  document.getElementById('qNum').innerText = 'Otázka ' + (idx+1) + ' / ' + testData.length;
+  document.getElementById('qTxt').innerText = q.term;
+  
+  var box = document.getElementById('optsBox');
+  box.innerHTML = '';
+  q.opts.forEach(opt => {
+    var btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    if (q.userAns === opt) btn.classList.add('sel');
+    btn.innerText = opt;
+    btn.onclick = function() { setAns(opt); };
+    box.appendChild(btn);
+  });
+  
+  renderNav();
+  document.getElementById('btnEval').style.display = (idx === testData.length - 1) ? 'block' : 'none';
+}
+
+function setAns(ans) {
+  testData[currIdx].userAns = ans;
+  loadQ(currIdx);
+}
+
+function renderNav() {
+  var box = document.getElementById('navBox');
+  box.innerHTML = '';
+  testData.forEach((q, i) => {
+    var b = document.createElement('div');
+    b.className = 'nav-btn';
+    if (q.userAns) b.classList.add('done');
+    if (i === currIdx) b.classList.add('act');
+    b.innerText = i + 1;
+    b.onclick = function() { loadQ(i); };
+    box.appendChild(b);
+  });
+}
+
+function evalTest() {
+  var score = 0;
+  testData.forEach(q => { if (q.userAns === q.correct) score++; });
+  result.score = score;
+  
+  document.getElementById('quizScreen').style.display = 'none';
+  var resDiv = document.getElementById('resScreen');
+  resDiv.style.display = 'block';
+  
+  var percent = Math.round((score / testData.length) * 100);
+  var colorClass = percent >= 50 ? 'good' : 'bad';
+  
+  var html = '<h2>Výsledky testu</h2>';
+  html += '<div class="score-big ' + colorClass + '">' + percent + '%</div>';
+  html += '<p>Meno: <b>' + result.name + '</b></p>';
+  html += '<p>Body: ' + score + ' / ' + testData.length + '</p>';
+  html += '<p>Dátum: ' + new Date().toLocaleString() + '</p>';
+  html += '<button onclick="showDetails()" style="background:#008CBA; color:white; padding:10px; border:none; border-radius:5px;">Zobraziť odpovede</button>';
+  html += '<br><br><button onclick="location.reload()" style="background:#666; color:white; padding:10px; border:none; border-radius:5px;">Spustiť znova</button>';
+  
+  resDiv.innerHTML = html;
+}
+
+function showDetails() {
+  var w = window.open('', '_blank');
+  var rows = '';
+  var now = new Date().toLocaleString('sk-SK'); 
+  testData.forEach((q, i) => {
+    var status = '';
+    var uVal = '';
+    
+    if (q.userAns === q.correct) {
+      status = '✅';
+      uVal = '<span class="right-ans">' + q.userAns + '</span>';
+    } else if (q.userAns === null) {
+      status = '⚠️';
+      uVal = '(bez odpovede)';
+    } else {
+      status = '❌';
+      uVal = '<span class="wrong-ans">' + q.userAns + '</span>';
+    }
+    
+    rows += '<tr>';
+    rows += '<td><b>' + (i+1) + '. ' + q.term + '</b><br><small>Správne: ' + q.correct + '</small></td>';
+    rows += '<td>' + uVal + ' <span style="float:right; font-size:1.2em;">' + status + '</span></td>';
+    rows += '</tr>';
+  });
+
+  var page = '<html><head><title>Výsledky</title>';
+  page += '<style>body{font-family:sans-serif; padding:20px;} table{width:100%; border-collapse:collapse;} td,th{border:1px solid #ccc; padding:10px;} .wrong-ans{text-decoration:line-through;color:red;} .right-ans{color:green;font-weight:bold;}</style>';
+  page += '</head><body>';
+  page += '<h2>Detailný prehľad: ' + META.title + '</h2>';
+  page += '<p>Žiak: ' + result.name + '</p>';
+  page += '<p>Dátum a čas: ' + now + '</p>';
+  page += '<table><thead><tr><th>Otázka</th><th>Vaša odpoveď</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  page += '<br><button onclick="window.print()">Vytlačiť</button>';
+  page += '</body></html>';
+  w.document.write(page);
+  w.document.close();
+}
+</script>
+</body>
+</html>
