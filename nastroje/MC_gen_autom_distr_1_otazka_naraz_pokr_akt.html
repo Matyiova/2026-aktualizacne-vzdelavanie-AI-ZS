@@ -64,7 +64,7 @@
         font-size: 0.9em;
         border-radius: 4px;
     }
-    .code-ex { font-family: monospace; background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 3px; color: #d32f2f; }
+    .code-ex { font-family: monospace; font-size: 120%; background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 3px; color: #d32f2f; }
     
     /* Pre renderovanie v pomocníkovi */
     .helper-box b { color: black; font-weight: bold; }
@@ -78,7 +78,7 @@
   
   <div class="settings-group">
       <h2>1. Vstupné údaje</h2>
-      
+      <button onclick="toggleHelp()" style="margin-left:auto;">❓ Ťahák a pomoc</button>
       <div class="editor-toolbar">
           <div class="tool-group">
               <button onclick="insertTag('<b>', '</b>')" title="Tučné písmo"><b>B</b></button>
@@ -94,8 +94,8 @@
               <button onclick="insertTag('$$\\sqrt{', '}$$')" title="Odmocnina: $$\sqrt{}$$">√</button>
               <button onclick="insertTag('$$\\sqrt[', ']{}$$')" title="Vyššia odmocnina: $$\sqrt[]{}$$">ⁿ√</button>
               <button onclick="insertTag('$$_{', '}$$')" title="Dolný index: $$_{}$$">xₙ</button>
-              <button onclick="insertTag('$$\\frac{', '}{}$$')" title="Zlomok: $$\frac{}{}$$">½</button>
-              <button onclick="insertTag('$$x = \\frac{', '}{}$$')" title="Rovnica: $$x = \frac{}{}$$">x=..</button>
+              <button onclick="insertTag('$$\\frac{', '}{}$$')" title="Zlomok: $$\frac{}{}$$">zlomok</button>
+              <button onclick="insertTag('$$x = \\frac{', '}{}$$')" title="Rovnica: $$x = \frac{}{}$$">rovnica so zlomkom</button>
           </div>
 
           <div class="tool-group" style = "border:none; margin-left: 20px;">
@@ -104,12 +104,12 @@
               <button onclick="insertTag('\\(\\ce{', ' -> }\\)')" title="Chemická rovnica: \(\ce{ ->}\)">chemická rovnica \(\ce{\to}\)</button>
           </div>
           
-          <button onclick="toggleHelp()" style="margin-left:auto;">❓ Ťahák a pomoc</button>
+          
 
           <div style="flex-basis: 100%; height: 1px; background: #ddd; margin: 2px 0;"></div>
           
           <div class="tool-group" style="border:none;">
-              <span class="tool-label">Grécke</span>
+              <span class="tool-label">Grécke písmená</span>
               <button onclick="insertTag('α', '')" title="alfa">α</button>
               <button onclick="insertTag('β', '')" title="beta">β</button>
               <button onclick="insertTag('γ', '')" title="gama">γ</button>
@@ -126,9 +126,39 @@
               <button onclick="insertTag('Σ', '')" title="Sigma">Σ</button>
               <button onclick="insertTag('Ω', '')" title="Omega">Ω</button>
           </div>
-		   <div class="tool-group" style="border:none; margin-left: 20px;">
+		   <div class="tool-group" style="border:none;">
               <span class="tool-label">Iné symboly</span>
-              <button onclick="insertTag('&infin;', '')" title="nekonečno">&infin;</button>             
+              <button onclick="insertTag('&infin;', '')" title="nekonečno">&infin;</button> 
+		<button onclick="insertTag('&lt;', '')" title="menší (&lt;)">&lt;</button>
+        <button onclick="insertTag('&gt;', '')" title="väčší (&gt;)">&gt;</button>
+        <button onclick="insertTag('&le;', '')" title="menší alebo rovný (&le;)">&le;</button>
+<button onclick="insertTag('&ne;', '')" title="nerovná sa (&ne;)">&ne;</button>
+        <button onclick="insertTag('&equiv;', '')" title="ekvivalentné (&equiv;)">&equiv;</button>
+        <button onclick="insertTag('&asymp;', '')" title="približne (&asymp;)">&asymp;</button>
+<button onclick="insertTag('&plusmn;', '')" title="plus-mínus (&plusmn;)">&plusmn;</button>
+        <button onclick="insertTag('&times;', '')" title="krát (&times;)">&times;</button>
+        <button onclick="insertTag('&divide;', '')" title="delené (&divide;)">&divide;</button>
+        <button onclick="insertTag('&middot;', '')" title="stredový bod (&middot;)">&middot;</button>		
+
+<button onclick="insertTag('&isin;', '')" title="patrí do (&isin;)">&isin;</button>
+        <button onclick="insertTag('&notin;', '')" title="nepatrí do (&notin;)">&notin;</button>
+        <button onclick="insertTag('&subset;', '')" title="podmnožina (&subset;)">&subset;</button>
+        <button onclick="insertTag('&supset;', '')" title="nadmnožina (&supset;)">&supset;</button>
+        <button onclick="insertTag('&subseteq;', '')" title="podmnožina alebo rovná (&subseteq;)">&subseteq;</button>
+        <button onclick="insertTag('&supseteq;', '')" title="nadmnožina alebo rovná (&supseteq;)">&supseteq;</button>
+        <button onclick="insertTag('&empty;', '')" title="prázdna množina (&empty;)">&empty;</button>
+
+        <button onclick="insertTag('&not;', '')" title="negácia (&not;)">&not;</button>
+        <button onclick="insertTag('&and;', '')" title="logické AND (&and;)">&and;</button>
+        <button onclick="insertTag('&or;', '')" title="logické OR (&or;)">&or;</button>
+        <button onclick="insertTag('&rArr;', '')" title="implikácia (&rArr;)">&rArr;</button>
+        <button onclick="insertTag('&hArr;', '')" title="ekvivalencia (&hArr;)">&hArr;</button>
+
+        <button onclick="insertTag('&sum;', '')" title="súčet (&sum;)">&sum;</button>
+        <button onclick="insertTag('&prod;', '')" title="súčin (&prod;)">&prod;</button>
+        <button onclick="insertTag('&int;', '')" title="integrál (&int;)">&int;</button>
+        <button onclick="insertTag('&part;', '')" title="parciálna derivácia (&part;)">&part;</button>
+  
           </div>
       </div>
 
@@ -136,16 +166,18 @@
           <strong>Rýchly ťahák pre prírodné vedy:</strong><br>
           <ul>
 		   <li><strong>Matematika:</strong>
-                  <br>Zlomok: <span class="code-ex">$$\frac{1}{2}$$</span> &emsp;&rarr;&nbsp; <b>\(\frac{1}{2}\)</b>
-                  <br>Mocnina alebo horný index: <span class="code-ex">$$x^2$$</span> &emsp;&rarr;&nbsp; <b>\(x^2\)</b>
-				  <br>Dolný index: <span class="code-ex">$$y_1$$</span> &emsp;&rarr;&nbsp; <b>\(y_1\)</b>
-                  <br>Odmocnina: <span class="code-ex">$$\sqrt{x}$$</span> &emsp;&rarr;&nbsp; <b>\(\sqrt{x}\)</b>
-                  <br>Vyššia odmocnina: <span class="code-ex">$$\sqrt[4]{625}$$</span> &emsp;&rarr;&nbsp; <b>\(\sqrt[4]{625}\)</b>
+                  <br>Zlomok: <span class="code-ex">$$\frac{<span style="color: #1865a0; background-color: #ffffff;">1</span>}{<span style="color: #1865a0; background-color: #ffffff;">2</span>}$$</span> &emsp;&rarr;&nbsp; <b>\(\frac{1}{2}\)</b>
+                  <br>Mocnina alebo horný index: <span class="code-ex">$$<span style="color: #1865a0; background-color: #ffffff;">x</span>^<span style="color: #1865a0; background-color: #ffffff;">2</span>$$</span> &emsp;&rarr;&nbsp; <b>\(x^2\)</b>
+				  <br>Dolný index: <span class="code-ex">$$<span style="color: #1865a0; background-color: #ffffff;">y</span>_<span style="color: #1865a0; background-color: #ffffff;">1</span>$$</span> &emsp;&rarr;&nbsp; <b>\(y_1\)</b>
+                  <br>Odmocnina: <span class="code-ex">$$\sqrt{<span style="color: #1865a0; background-color: #ffffff;">x</span>}$$</span> &emsp;&rarr;&nbsp; <b>\(\sqrt{x}\)</b>
+                  <br>Vyššia odmocnina: <span class="code-ex">$$\sqrt[<span style="color: #1865a0; background-color: #ffffff;">4</span>]{<span style="color: #1865a0; background-color: #ffffff;">625</span>}$$</span> &emsp;&rarr;&nbsp; <b>\(\sqrt[4]{625}\)</b>
+				  <br>Rovnica so zlomkom: <span class="code-ex">$$<span style="color: #1865a0; background-color: #ffffff;">x</span> = \frac{<span style="color: #1865a0; background-color: #ffffff;">-b</span>}{<span style="color: #1865a0; background-color: #ffffff;">2a</span>}$$</span> &emsp;&rarr;&nbsp; <b>$\displaystyle x = \frac{-b}{2a}$</b>
+		
               </li>
 			  <br>
               <li><strong>Chémia:</strong>
-                  <br>Chemický vzorec vody: <span class="code-ex">\(\ce{H2O}\)</span> &emsp;&rarr;&nbsp; <b>\(\ce{H2O}\)</b>
-                  <br>Chemická rovnica: <span class="code-ex">\(\ce{H2SO4 -> 2H+ + SO4^2-}\)</span> &emsp;&rarr;&nbsp; <b>\(\ce{H2SO4 -> 2H+ + SO4^2-}\)</b>
+                  <br>Chemický vzorec vody: <span class="code-ex">\(\ce{<span style="color: #1865a0; background-color: #ffffff;">H2O</span>}\)</span> &emsp;&rarr;&nbsp; <b>\(\ce{H2O}\)</b>
+                  <br>Chemická rovnica: <span class="code-ex">\(\ce{<span style="color: #1865a0; background-color: #ffffff;">H2SO4</span> -> <span style="color: #1865a0; background-color: #ffffff;">2H+</span> + <span style="color: #1865a0; background-color: #ffffff;">SO4^2-</span>}\)</span> &emsp;&rarr;&nbsp; <b>\(\ce{H2SO4 -> 2H+ + SO4^2-}\)</b>
               </li>
              <br>
               <li><strong>Dôležité:</strong> Všetky kódy píšte do jedného riadku. Nepoužívajte Enter uprostred rovnice.</li>
@@ -688,7 +720,7 @@ document.getElementById("inputData").addEventListener("input", function(){ local
 </script>
 
 <div style="margin-top:20px; text-align: center; opacity: 0.6; font-size: 0.8rem;">
-  Spracované pomocou UI | Mgr. Erika Matyiová (2025 - 2026) | V2.0 Math+Chem
+  Spracované pomocou UI | Mgr. Erika Matyiová (2025 - 2026) | Prírodné vedy
 </div>
 
 </body>
