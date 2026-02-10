@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8"/>
+<title>Virtuálna klávesnica s emotikonmi</title>
+<style>
+  body { font-family: Courier bold, monospace; padding: 20px; background-color: #f4f4f4; }
+  h1 { text-align: center; }
+  
+  /* Štýl pre textové pole */
+  textarea { 
+    width: 100%; 
+    max-width: 800px;
+    height: 150px; 
+    font-size: 150%; 
+    margin-bottom: 20px; 
+    padding: 10px;
+    box-sizing: border-box;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Kontajner pre celú klávesnicu */
+  .keyboard-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  /* Štýly pre záložky (ušká) */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    cursor: pointer;
+    background: #e0e0e0;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    font-family: Courier bold, monospace;
+    font-weight: bold;
+    flex-grow: 1; /* Aby sa roztiahli */
+    text-align: center;
+  }
+
+  .tab-btn:hover {
+    background-color: #d0d0d0;
+  }
+
+  .tab-btn.active {
+    background-color: #fff;
+    border-bottom: 2px solid #fff; /* Prekrytie čiary */
+    margin-bottom: -7px; /* Posun, aby prekryl čiaru kontajnera */
+    z-index: 10;
+    font-weight: bold;
+    color: #000;
+  }
+
+  /* Obsah kategórií */
+  .category-content {
+    display: none; /* Skryté by default */
+    padding: 10px 0;
+    min-height: 200px;
+  }
+
+  .category-content.active {
+    display: block; /* Zobrazené ak je aktívne */
+    animation: fadeIn 0.3s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Klávesy */
+  .keyboard-row { display: flex; gap: 5px; justify-content: center; margin-bottom: 5px; flex-wrap: wrap; }
+  
+  button.key {
+    padding: 10px;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', Courier bold, monospace;
+    font-size: 160%;
+    min-width: 50px;
+    height: 50px;
+    cursor: pointer;
+    background: #f9f9f9;
+    border: 1px solid #999;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  button.key:active {
+    background: #ddd;
+  }
+
+  /* Funkčné klávesy dole */
+  .function-bar {
+    margin-top: 20px;
+    border-top: 2px solid #ddd;
+    padding-top: 10px;
+  }
+
+  button.func-key {
+    font-size: 100%;
+    min-width: 80px;
+    font-weight: bold;
+    background-color: #e8e8e8;
+  }
+  
+  button.backspace {
+      background-color: #ffdddd;
+  }
+</style>
+</head>
+<body>
+
+<h1>Virtuálna klávesnica na vkladanie emotikonov (kategórie)</h1>
+
+<textarea id="textInput" placeholder="Vyberte kategóriu a píšte..."></textarea>
+
+<div class="keyboard-container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'tvare')">🙂 Tváre</button>
+        <button class="tab-btn" onclick="openTab(event, 'priroda')">🌻 Príroda</button>
+        <button class="tab-btn" onclick="openTab(event, 'zvierata')">🐶 Zvieratá</button>
+        <button class="tab-btn" onclick="openTab(event, 'jedlo')">🍎 Jedlo</button>
+        <button class="tab-btn" onclick="openTab(event, 'aktivity')">⚽ Aktivity</button>
+        <button class="tab-btn" onclick="openTab(event, 'symboly')">❤️ Symboly</button>
+    </div>
+
+    <div id="tvare" class="category-content active">
+        <div class="keyboard-row">
+            <button class="key" data-char="🙂">🙂</button><button class="key" data-char="😀">😀</button><button class="key" data-char="😄">😄</button><button class="key" data-char="😉">😉</button><button class="key" data-char="😊">😊</button><button class="key" data-char="😍">😍</button><button class="key" data-char="🥰">🥰</button><button class="key" data-char="😘">😘</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="😂">😂</button><button class="key" data-char="🤣">🤣</button><button class="key" data-char="😎">😎</button><button class="key" data-char="🤔">🤔</button><button class="key" data-char="😐">😐</button><button class="key" data-char="🙄">🙄</button><button class="key" data-char="😮">😮</button><button class="key" data-char="🤐">🤐</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="😥">😥</button><button class="key" data-char="😢">😢</button><button class="key" data-char="😭">😭</button><button class="key" data-char="😱">😱</button><button class="key" data-char="😠">😠</button><button class="key" data-char="😡">😡</button><button class="key" data-char="😴">😴</button><button class="key" data-char="😷">😷</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="👍">👍</button><button class="key" data-char="👎">👎</button><button class="key" data-char="👌">👌</button><button class="key" data-char="👋">👋</button><button class="key" data-char="👏">👏</button><button class="key" data-char="🙏">🙏</button><button class="key" data-char="💪">💪</button><button class="key" data-char="🤝">🤝</button>
+        </div>
+    </div>
+
+    <div id="priroda" class="category-content">
+        <div class="keyboard-row">
+            <button class="key" data-char="🍀">🍀</button><button class="key" data-char="🌷">🌷</button><button class="key" data-char="🌹">🌹</button><button class="key" data-char="🌺">🌺</button><button class="key" data-char="🌸">🌸</button><button class="key" data-char="🌼">🌼</button><button class="key" data-char="🌻">🌻</button><button class="key" data-char="💐">💐</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🌲">🌲</button><button class="key" data-char="🌳">🌳</button><button class="key" data-char="🌴">🌴</button><button class="key" data-char="🌵">🌵</button><button class="key" data-char="🌾">🌾</button><button class="key" data-char="🌿">🌿</button><button class="key" data-char="🍁">🍁</button><button class="key" data-char="🍂">🍂</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="☀️">☀️</button><button class="key" data-char="🌙">🌙</button><button class="key" data-char="⭐">⭐</button><button class="key" data-char="☁️">☁️</button><button class="key" data-char="⛈️">⛈️</button><button class="key" data-char="❄️">❄️</button><button class="key" data-char="🔥">🔥</button><button class="key" data-char="💧">💧</button>
+        </div>
+    </div>
+
+    <div id="zvierata" class="category-content">
+        <div class="keyboard-row">
+            <button class="key" data-char="🐶">🐶</button><button class="key" data-char="🐱">🐱</button><button class="key" data-char="🐭">🐭</button><button class="key" data-char="🐹">🐹</button><button class="key" data-char="🐰">🐰</button><button class="key" data-char="🦊">🦊</button><button class="key" data-char="🐻">🐻</button><button class="key" data-char="🐼">🐼</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🦁">🦁</button><button class="key" data-char="🐯">🐯</button><button class="key" data-char="🦄">🦄</button><button class="key" data-char="🐴">🐴</button><button class="key" data-char="🐷">🐷</button><button class="key" data-char="🐮">🐮</button><button class="key" data-char="🐑">🐑</button><button class="key" data-char="🐐">🐐</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🐦">🐦</button><button class="key" data-char="🦆">🦆</button><button class="key" data-char="🦉">🦉</button><button class="key" data-char="🐝">🐝</button><button class="key" data-char="🦋">🦋</button><button class="key" data-char="🐌">🐌</button><button class="key" data-char="🐢">🐢</button><button class="key" data-char="🐠">🐠</button>
+        </div>
+    </div>
+
+    <div id="jedlo" class="category-content">
+        <div class="keyboard-row">
+            <button class="key" data-char="🍏">🍏</button><button class="key" data-char="🍎">🍎</button><button class="key" data-char="🍐">🍐</button><button class="key" data-char="🍊">🍊</button><button class="key" data-char="🍋">🍋</button><button class="key" data-char="🍌">🍌</button><button class="key" data-char="🍉">🍉</button><button class="key" data-char="🍇">🍇</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🍓">🍓</button><button class="key" data-char="🍒">🍒</button><button class="key" data-char="🍑">🍑</button><button class="key" data-char="🍍">🍍</button><button class="key" data-char="🥥">🥥</button><button class="key" data-char="🥝">🥝</button><button class="key" data-char="🍅">🍅</button><button class="key" data-char="🍄">🍄</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🍞">🍞</button><button class="key" data-char="🥐">🥐</button><button class="key" data-char="🧀">🧀</button><button class="key" data-char="🍖">🍖</button><button class="key" data-char="🍔">🍔</button><button class="key" data-char="🍕">🍕</button><button class="key" data-char="🌭">🌭</button><button class="key" data-char="🍟">🍟</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🍦">🍦</button><button class="key" data-char="🍰">🍰</button><button class="key" data-char="🎂">🎂</button><button class="key" data-char="🍫">🍫</button><button class="key" data-char="☕">☕</button><button class="key" data-char="🍵">🍵</button><button class="key" data-char="🍺">🍺</button><button class="key" data-char="🍷">🍷</button>
+        </div>
+    </div>
+
+    <div id="aktivity" class="category-content">
+        <div class="keyboard-row">
+            <button class="key" data-char="⚽">⚽</button><button class="key" data-char="🏀">🏀</button><button class="key" data-char="🏈">🏈</button><button class="key" data-char="🎾">🎾</button><button class="key" data-char="🏐">🏐</button><button class="key" data-char="🎱">🎱</button><button class="key" data-char="🏓">🏓</button><button class="key" data-char="🏸">🏸</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🥇">🥇</button><button class="key" data-char="🏆">🏆</button><button class="key" data-char="🏵️">🏵️</button><button class="key" data-char="🎨">🎨</button><button class="key" data-char="🎭">🎭</button><button class="key" data-char="🎤">🎤</button><button class="key" data-char="🎧">🎧</button><button class="key" data-char="🎮">🎮</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="🚗">🚗</button><button class="key" data-char="🚕">🚕</button><button class="key" data-char="🚌">🚌</button><button class="key" data-char="🚑">🚑</button><button class="key" data-char="🚲">🚲</button><button class="key" data-char="🚂">🚂</button><button class="key" data-char="✈️">✈️</button><button class="key" data-char="🚀">🚀</button>
+        </div>
+    </div>
+
+     <div id="symboly" class="category-content">
+        <div class="keyboard-row">
+            <button class="key" data-char="❤️">❤️</button><button class="key" data-char="🧡">🧡</button><button class="key" data-char="💛">💛</button><button class="key" data-char="💚">💚</button><button class="key" data-char="💙">💙</button><button class="key" data-char="💜">💜</button><button class="key" data-char="🖤">🖤</button><button class="key" data-char="🤍">🤍</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="💔">💔</button><button class="key" data-char="💯">💯</button><button class="key" data-char="✨">✨</button><button class="key" data-char="💥">💥</button><button class="key" data-char="💫">💫</button><button class="key" data-char="💤">💤</button><button class="key" data-char="🎵">🎵</button><button class="key" data-char="🎶">🎶</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-char="✅">✅</button><button class="key" data-char="❌">❌</button><button class="key" data-char="❓">❓</button><button class="key" data-char="❗">❗</button><button class="key" data-char="⚠️">⚠️</button><button class="key" data-char="⛔">⛔</button><button class="key" data-char="🇸🇰">🇸🇰</button><button class="key" data-char="🇨🇿">🇨🇿</button>
+        </div>
+    </div>
+
+    <div class="function-bar">
+        <div class="keyboard-row">
+            <button class="key func-key" id="space">Medzera</button>
+            <button class="key func-key backspace" id="backspace">⌫ Backspace</button>
+            <button class="key func-key" id="copy">Kopírovať</button>
+            <button class="key func-key" id="clear">Vymazať všetko</button>
+        </div>
+    </div>
+</div>
+
+<script>
+  const textarea = document.getElementById('textInput');
+  const keys = document.querySelectorAll('.key[data-char]');
+
+  // Prepínanie záložiek
+  function openTab(evt, categoryName) {
+    // 1. Skry všetky obsahy kategórií
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("category-content");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+      tabcontent[i].classList.remove("active");
+    }
+
+    // 2. Odstráň triedu "active" zo všetkých tlačidiel
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+
+    // 3. Zobraz aktuálnu kategóriu a pridaj triedu "active" kliknutému tlačidlu
+    document.getElementById(categoryName).style.display = "block";
+    document.getElementById(categoryName).classList.add("active");
+    evt.currentTarget.className += " active";
+  }
+
+  // Vkladanie textu
+  function insertAtCursor(text) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+    textarea.value = before + text + after;
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    textarea.focus();
+  }
+
+  keys.forEach(key => {
+    key.addEventListener('click', () => {
+      let char = key.getAttribute('data-char');
+      insertAtCursor(char);
+    });
+  });
+
+  // Backspace
+  document.getElementById('backspace').addEventListener('click', () => {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end && start > 0) {
+      // Mazanie pred kurzorom (podpora pre emoji surrgates je v moderných JS enginoch lepšia, ale slice funguje ok)
+      // Pre správne mazanie emoji (ktoré môžu mať 2 a viac znakov) používame Array.from
+      let textArray = Array.from(textarea.value);
+      // Nájdeme index v poli znakov, ktorý zodpovedá pozícii kurzora. 
+      // Toto je zjednodušená verzia, pre robustnosť v starých prehliadačoch stačí slice -1
+      textarea.value = textarea.value.slice(0, start - 2) + textarea.value.slice(end); // Skusme obycajny slice pre vacsinu emoji
+      // Oprava: Emoji majú často dĺžku 2. Skúsme jednoduchšiu logiku:
+       textarea.value = textarea.value.substring(0, start - 1) + textarea.value.substring(end);
+      
+      textarea.selectionStart = textarea.selectionEnd = start - 1;
+    } else {
+      textarea.value = textarea.value.substring(0, start) + textarea.value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start;
+    }
+    textarea.focus();
+  });
+
+  document.getElementById('space').addEventListener('click', () => {
+    insertAtCursor(' ');
+  });
+
+  document.getElementById('copy').addEventListener('click', () => {
+    textarea.select();
+    document.execCommand('copy');
+  });
+
+  document.getElementById('clear').addEventListener('click', () => {
+    if(confirm("Naozaj chcete vymazať celý text?")) {
+        textarea.value = '';
+        textarea.focus();
+    }
+  });
+</script>
+<br><br>
+<center>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025/2026)
+</center>
+<br><br>
+</body>
+</html>
