@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<title>Virtuálna ruská klávesnica</title>
+<style>
+  body { font-family: Courier bold, monospace; padding: 20px; }
+  textarea { width: 100%; height: 150px; font-size: 150%; margin-bottom: 20px; }
+  .keyboard { font-family: Courier bold, monospace; display: flex; flex-direction: column; gap: 5px; }
+  .row { display: flex; gap: 5px; }
+  /* Mierna úprava paddingu, aby sa zmestilo viac klávesov do radu (ruština ich má viac ako nemčina) */
+  button.key {
+    padding: 10px 10px; 
+    font-family: Courier bold, monospace;
+    font-size: 150%;
+    font-weight: bold;
+    min-width: 35px;
+    cursor: pointer;
+    flex-grow: 1; /* Aby sa klávesy roztiahli rovnomerne */
+  }
+  .keyboard-row {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  #space { flex-grow: 4; }
+</style>
+</head>
+<body>
+<h1>Virtuálna ruská klávesnica (ЙЦУКЕН)</h1>
+<center>
+<textarea id="textInput"></textarea>
+<div class="keyboard" id="keyboard">
+
+<div class="keyboard-row">
+<button class="key" data-char="ё">ё</button>
+<button class="key" data-char="1">1</button>
+<button class="key" data-char="2">2</button>
+<button class="key" data-char="3">3</button>
+<button class="key" data-char="4">4</button>
+<button class="key" data-char="5">5</button>
+<button class="key" data-char="6">6</button>
+<button class="key" data-char="7">7</button>
+<button class="key" data-char="8">8</button>
+<button class="key" data-char="9">9</button>
+<button class="key" data-char="0">0</button>
+</div>
+
+<div class="keyboard-row">
+<button class="key" data-char="й">й</button>
+<button class="key" data-char="ц">ц</button>
+<button class="key" data-char="у">у</button>
+<button class="key" data-char="к">к</button>
+<button class="key" data-char="е">е</button>
+<button class="key" data-char="н">н</button>
+<button class="key" data-char="г">г</button>
+<button class="key" data-char="ш">ш</button>
+<button class="key" data-char="щ">щ</button>
+<button class="key" data-char="з">з</button>
+<button class="key" data-char="х">х</button>
+<button class="key" data-char="ъ">ъ</button>
+</div>
+
+<div class="keyboard-row">
+<button class="key" data-char="ф">ф</button>
+<button class="key" data-char="ы">ы</button>
+<button class="key" data-char="в">в</button>
+<button class="key" data-char="а">а</button>
+<button class="key" data-char="п">п</button>
+<button class="key" data-char="р">р</button>
+<button class="key" data-char="о">о</button>
+<button class="key" data-char="л">л</button>
+<button class="key" data-char="д">д</button>
+<button class="key" data-char="ж">ж</button>
+<button class="key" data-char="э">э</button>
+</div>
+
+<div class="keyboard-row">
+<button class="key" id="shift">Shift</button>
+<button class="key" data-char="я">я</button>
+<button class="key" data-char="ч">ч</button>
+<button class="key" data-char="с">с</button>
+<button class="key" data-char="м">м</button>
+<button class="key" data-char="и">и</button>
+<button class="key" data-char="т">т</button>
+<button class="key" data-char="ь">ь</button>
+<button class="key" data-char="б">б</button>
+<button class="key" data-char="ю">ю</button>
+<button class="key" data-char=".">.</button>
+<button class="key" id="backspace">⌫</button>
+</div>
+
+<div class="keyboard-row">
+<button class="key" data-char=",">,</button>
+<button class="key" data-char="@">@</button>
+<button class="key" data-char="-">-</button>
+<button class="key" data-char="_">_</button>
+<button class="key" data-char="!">!</button>
+<button class="key" data-char="?">?</button>
+<button class="key" data-char="(">(</button>
+<button class="key" data-char=")">)</button>
+<button class="key" data-char=":">:</button>
+<button class="key" data-char=";">;</button>
+</div>
+
+<div class="keyboard-row">
+<button class="key" id="space">Space</button>
+<button class="key" id="copy">Copy</button>
+<button class="key" id="clear">Clear</button>
+</div>
+</div>
+</center>
+
+<script>
+  const textarea = document.getElementById('textInput');
+  const keys = document.querySelectorAll('.key[data-char]');
+  let shift = false;
+
+  function insertAtCursor(text) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+    textarea.value = before + text + after;
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    textarea.focus();
+  }
+
+  keys.forEach(key => {
+    key.addEventListener('click', () => {
+      let char = key.getAttribute('data-char');
+      if (shift) {
+        // V ruštine stačí štandardný toUpperCase pre všetky písmená
+        char = char.toUpperCase();
+      }
+      insertAtCursor(char);
+    });
+  });
+
+  document.getElementById('shift').addEventListener('click', () => {
+    shift = !shift;
+    keys.forEach(key => {
+      let char = key.getAttribute('data-char');
+      if (char) {
+        if (shift) {
+          key.textContent = char.toUpperCase();
+        } else {
+          key.textContent = char;
+        }
+      }
+    });
+    // Vizuálna indikácia zapnutého Shiftu
+    document.getElementById('shift').style.backgroundColor = shift ? '#ccc' : '';
+  });
+
+  document.getElementById('backspace').addEventListener('click', () => {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end && start > 0) {
+      textarea.value = textarea.value.slice(0, start - 1) + textarea.value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start - 1;
+    } else {
+      textarea.value = textarea.value.slice(0, start) + textarea.value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start;
+    }
+    textarea.focus();
+  });
+
+  document.getElementById('space').addEventListener('click', () => {
+    insertAtCursor(' ');
+  });
+
+  document.getElementById('copy').addEventListener('click', () => {
+    textarea.select();
+    document.execCommand('copy');
+  });
+
+  document.getElementById('clear').addEventListener('click', () => {
+    textarea.value = '';
+    textarea.focus();
+  });
+</script>
+<br><br>
+  <b>Upravené pre ruský jazyk (ЙЦУКЕН).</b><br>
+  Pôvodný kód: Mgr. Erika Matyiová (2025)
+<br><br>
+</body>
+</html>
