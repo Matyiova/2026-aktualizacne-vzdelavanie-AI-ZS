@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Editor</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/eclipse.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #f0f0f0;
+            --panel-bg: #2d2d2d;
+            --accent: #007acc;
+            --border: #444;
+            --input-bg: #3c3c3c;
+        }
+
+        body.light-mode {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --panel-bg: #e0e0e0;
+            --accent: #005f9e;
+            --border: #ccc;
+            --input-bg: #fff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        #toolbar {
+            background: var(--panel-bg);
+            padding: 5px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .tool-group {
+            border-right: 1px solid var(--border);
+            padding-right: 5px;
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        button, select {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Tabs */
+        #tabs-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 8px 15px;
+            background: var(--bg-color);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.7;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            opacity: 1;
+            border-top: 2px solid var(--accent);
+            font-weight: bold;
+        }
+
+        .close-tab {
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 50%;
+        }
+
+        .close-tab:hover {
+            background: red;
+            color: white;
+        }
+
+        /* Editor Area */
+        #editor-wrapper {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .cm-search-match {
+            background-color: rgba(255, 255, 0, 0.4);
+            outline: 1px solid yellow;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--panel-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 1000;
+            width: 350px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* --- NOVÝ ŠTÝL PRE TLAČIDLO ZATVORENIA --- */
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.7;
+            line-height: 1;
+        }
+        .modal-close-btn:hover {
+            color: red;
+            opacity: 1;
+        }
+        /* ----------------------------------------- */
+
+        .modal h3 { margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px; padding-right: 20px;}
+        
+        .modal-row { margin-bottom: 10px; }
+        .modal label { display: block; font-size: 12px; margin-bottom: 3px; color: var(--accent); }
+        .modal input[type="text"], 
+        .modal input[type="number"], 
+        .modal input[type="color"], 
+        .modal select, 
+        .modal textarea { 
+            width: 100%; 
+            box-sizing: border-box; 
+            background: var(--input-bg);
+            padding: 6px;
+            color: var(--text-color);
+            border: 1px solid var(--border);
+        }
+        
+        .modal-checkbox-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .modal-checkbox-row input { margin-right: 8px; }
+        .modal-checkbox-row label { display: inline; margin-bottom: 0; cursor: pointer; }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+        .char-grid button {
+            font-family: monospace;
+            font-size: 16px;
+            padding: 10px 0;
+            font-weight: bold;
+        }
+        
+        .search-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 15px;
+        }
+        .search-actions button {
+            width: 100%;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="toolbar">
+    <div class="tool-group">
+        <button onclick="fileManager.newTab()" title="Nové okno">➕ Nové</button>
+        <button onclick="fileManager.openFile()" title="Otvoriť súbor">📂 Otvoriť</button>
+        <button onclick="fileManager.saveFile()" title="Uložiť ako">💾 Uložiť</button>
+        <button onclick="ui.toggleTheme()" title="Prepnúť tmavý/svetlý režim">🌓 Režim</button>
+    </div>
+    
+    <div class="tool-group">
+        <button onclick="cmInstance.undo()" title="Krok späť (Ctrl+Z)">↩️ Späť</button>
+        <button onclick="cmInstance.redo()" title="Krok znova (Ctrl+Y)">↪️ Znova</button>
+    </div>
+    
+    <div class="tool-group">
+        <button onclick="ui.showModal('search-modal')">🔍 Hľadať</button>
+    </div>
+
+    <div class="tool-group">
+        <button onclick="inserter.structure()">HTML štruktúra</button>
+        <select onchange="inserter.tag(this.value); this.value='';">
+            <option value="" disabled selected>Formátovanie</option>
+            <option disabled>--- Nadpisy ---</option>
+            <option value="h1">&lt;h1&gt; Nadpis 1</option>
+            <option value="h2">&lt;h2&gt; Nadpis 2</option>
+            <option value="h3">&lt;h3&gt; Nadpis 3</option>
+            <option value="h4">&lt;h4&gt; Nadpis 4</option>
+            <option value="h5">&lt;h5&gt; Nadpis 5</option>
+            <option value="h6">&lt;h6&gt; Nadpis 6</option>
+            <option disabled>--- Text ---</option>
+            <option value="b">&lt;b&gt; Tučné</option>
+            <option value="br">&lt;br&gt; Odriadkovanie</option>
+            <option value="i">&lt;i&gt; Kurzíva</option>
+            <option value="p">&lt;p&gt; Odstavec</option>
+            <option value="span">&lt;span&gt;</option>
+            <option value="u">&lt;u&gt; Podčiarknuté</option>
+        </select>
+    </div>
+
+    <div class="tool-group">
+        <button onclick="ui.showModal('table-modal')">Tabuľka</button>
+        <button onclick="ui.showModal('font-modal')">Font</button>
+        <button onclick="ui.showModal('style-modal')">Farba/Pozadie</button>
+        <button onclick="inserter.cssTemplate()">CSS &lt;style&gt;</button>
+        <button onclick="ui.showModal('js-modal')">JS Elementy</button>
+    </div>
+
+    <div class="tool-group">
+        <button onclick="ui.showModal('charmap-modal')">Mapa znakov</button>
+        <button onclick="ui.showModal('lang-modal')">Národné znaky</button>
+    </div>
+
+    <div class="tool-group">
+        <button onclick="shortcuts.manage()">Vlastné skratky</button>
+    </div>
+</div>
+
+<div id="tabs-container"></div>
+
+<div id="editor-wrapper">
+    <textarea id="code-editor"></textarea>
+</div>
+
+<div class="overlay" onclick="ui.closeModals()"></div>
+
+<div id="search-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Hľadať a nahradiť</h3>
+    <div class="modal-row">
+        <label>Hľadať:</label>
+        <input type="text" id="search-query" placeholder="Text na hľadanie...">
+    </div>
+    <div class="modal-row">
+        <label>Nahradiť čím:</label>
+        <input type="text" id="replace-query" placeholder="Nový text...">
+    </div>
+    <div class="modal-checkbox-row">
+        <input type="checkbox" id="search-case">
+        <label for="search-case">Rozlišovať malé a veľké písmená</label>
+    </div>
+    <div class="modal-checkbox-row">
+        <input type="checkbox" id="search-word">
+        <label for="search-word">Iba celé slová</label>
+    </div>
+    <div class="modal-checkbox-row">
+        <input type="checkbox" id="search-selection">
+        <label for="search-selection">Len v označenom výbere</label>
+    </div>
+    <div class="search-actions">
+        <button onclick="searcher.highlightAll()">Hľadať (zvýrazniť)</button>
+        <button onclick="searcher.findNext()">Hľadať ďalšie</button>
+        <button onclick="searcher.replaceOne()">Hľadať a nahradiť (1x)</button>
+        <button onclick="searcher.replaceSelection()">Hľadať a nahradiť vo výbere</button>
+        <button onclick="searcher.replaceAll()" style="grid-column: span 2; background-color: var(--accent); color:white;">Nahradiť všetko</button>
+    </div>
+</div>
+
+<div id="table-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Vložiť tabuľku</h3>
+    <div class="modal-row">
+        <label>Počet riadkov:</label>
+        <input type="number" id="tbl-rows" value="3" min="1">
+    </div>
+    <div class="modal-row">
+        <label>Počet stĺpcov:</label>
+        <input type="number" id="tbl-cols" value="3" min="1">
+    </div>
+    <div class="modal-row">
+        <label>Hrúbka orámovania (px):</label>
+        <input type="number" id="tbl-border" value="1" min="0">
+    </div>
+    <div class="modal-row">
+        <label>Typ orámovania:</label>
+        <select id="tbl-border-style">
+            <option value="solid">Plné (solid)</option>
+            <option value="dashed">Čiarkované (dashed)</option>
+            <option value="dotted">Bodkované (dotted)</option>
+            <option value="double">Dvojité (double)</option>
+            <option value="groove">Rýha (groove)</option>
+            <option value="none">Žiadne</option>
+        </select>
+    </div>
+    <div class="modal-row">
+        <label>Šírka stĺpcov (napr. 100px alebo 33%):</label>
+        <input type="text" id="tbl-width">
+    </div>
+    <div class="modal-row">
+        <label>Zarovnanie textu:</label>
+        <div style="display:flex; gap:5px;">
+            <select id="tbl-align-h"><option value="left">Vľavo</option><option value="center">Stred</option><option value="right">Vpravo</option></select>
+            <select id="tbl-align-v"><option value="top">Hore</option><option value="middle">Stred</option><option value="bottom">Dole</option></select>
+        </div>
+    </div>
+    <button onclick="inserter.table()" style="width:100%; margin-top:10px; padding:10px;">Vložiť tabuľku</button>
+</div>
+
+<div id="font-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Vlastnosti fontu</h3>
+    <div class="modal-row">
+        <label>Druh písma (Family):</label>
+        <select id="font-family">
+            <option value="Arial">Arial</option>
+			<option value="Consolas">Consolas</option>
+            <option value="Courier bold">Courier bold</option>
+			<option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+			<option value="Monaco">Monaco</option>
+            <option value="Tahoma">Tahoma</option>
+			<option value="Times New Roman">Times New Roman</option>
+			<option value="Verdana">Verdana</option>
+        </select>
+    </div>
+    <div class="modal-row">
+        <label>Typ:</label>
+        <select id="font-type">
+            <option value="normal">Normálny</option>
+            <option value="bold">Tučný</option>
+            <option value="italic">Kurzíva</option>
+        </select>
+    </div>
+    <div class="modal-row">
+        <label>Veľkosť (px, em, %):</label>
+        <input type="text" id="font-size" placeholder="napr. 16px">
+    </div>
+    <button onclick="inserter.fontStyles()" style="width:100%">Vložiť štýl</button>
+</div>
+
+<div id="style-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Farby a pozadie</h3>
+    <div class="modal-row">
+        <label>Farba textu:</label>
+        <input type="color" id="style-color" value="#000000" style="height:40px;">
+    </div>
+    <div class="modal-row">
+        <label>Pozadie textu:</label>
+        <input type="color" id="style-bg" value="#ffffff" style="height:40px;">
+    </div>
+    <button onclick="inserter.colors()" style="width:100%">Vložiť</button>
+</div>
+
+<div id="js-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Javascript elementy</h3>
+    <div class="modal-row">
+        <button onclick="inserter.insertCode('<button onclick=\'myFunction()\'>Klikni</button>')" style="width:100%; margin-bottom:5px;">Vložiť tlačidlo</button>
+        <button onclick="inserter.insertCode('<script>\nfunction myFunction() {\n  alert(\'Ahoj!\');\n}\n</script>')" style="width:100%; margin-bottom:5px;">Definícia funkcie</button>
+        <button onclick="inserter.insertCode('<script>\n// Vyhodnotenie inputu\nlet odpoved = document.getElementById(\'inp\').value;\nif(odpoved == \'a\') alert(\'Správne\');\nelse alert(\'Nesprávne\');\n</script>')" style="width:100%;">Testová otázka logika</button>
+    </div>
+</div>
+
+<div id="charmap-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Mapa znakov pre kódovanie</h3>
+    <div class="char-grid" id="charmap-grid"></div>
+</div>
+
+<div id="lang-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Národné znaky (HTML Entity)</h3>
+    <div style="display:flex; gap:5px; margin-bottom:10px; justify-content: center;">
+        <button onclick="ui.renderLang('sk')">SK</button>
+        <button onclick="ui.renderLang('hu')">HU</button>
+        <button onclick="ui.renderLang('de')">DE</button>
+        <button onclick="ui.renderLang('fr')">FR</button>
+    </div>
+    <div class="char-grid" id="lang-grid"></div>
+</div>
+
+<div id="shortcuts-modal" class="modal">
+    <span class="modal-close-btn" onclick="ui.closeModals()" title="Zavrieť">✕</span>
+    <h3>Vlastné skratky</h3>
+    <div class="modal-row">
+        <label>Názov skratky:</label>
+        <input type="text" id="sc-key">
+    </div>
+    <div class="modal-row">
+        <label>Kód na vloženie:</label>
+        <textarea id="sc-val" rows="3" style="width:100%"></textarea>
+    </div>
+    <button onclick="shortcuts.add()" style="width:100%">Pridať</button>
+    <hr>
+    <div style="display:flex; gap:5px;">
+        <button onclick="shortcuts.export()" style="flex:1">Export JSON</button>
+        <button onclick="document.getElementById('sc-import').click()" style="flex:1">Import JSON</button>
+    </div>
+    <input type="file" id="sc-import" style="display:none" onchange="shortcuts.import(this)">
+    <div id="sc-list" style="max-height:100px; overflow-y:auto; margin-top:10px;"></div>
+</div>
+
+<script>
+    const editorEl = document.getElementById('code-editor');
+    let cmInstance = null;
+    let tabs = [];
+    let activeTabId = null;
+    let customShortcuts = {};
+
+    window.onload = () => {
+        cmInstance = CodeMirror.fromTextArea(editorEl, {
+            lineNumbers: true,
+            mode: "htmlmixed",
+            theme: "dracula",
+            lineWrapping: true,
+            indentWithTabs: true,
+            extraKeys: {"Ctrl-Space": "autocomplete"},
+            undoDepth: 300 // --- Nastavenie histórie na 300 krokov ---
+        });
+
+        cmInstance.on("change", () => {
+            if (activeTabId !== null) {
+                const tab = tabs.find(t => t.id === activeTabId);
+                if (tab) {
+                    tab.content = cmInstance.getValue();
+                    saveState();
+                }
+            }
+        });
+
+        loadState();
+        if (tabs.length === 0) fileManager.newTab();
+        shortcuts.renderList();
+        ui.initCharMap(); 
+    };
+
+    // --- Search Manager ---
+    const searcher = {
+        lastQuery: null,
+        cursor: null,
+        
+        getOptions: () => {
+            return {
+                query: document.getElementById('search-query').value,
+                replace: document.getElementById('replace-query').value,
+                caseSensitive: document.getElementById('search-case').checked,
+                wholeWord: document.getElementById('search-word').checked,
+                inSelection: document.getElementById('search-selection').checked
+            };
+        },
+
+        createRegExp: (query, wholeWord, caseSensitive) => {
+            if (wholeWord) query = "\\b" + query + "\\b";
+            query = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+            return new RegExp(query, caseSensitive ? "g" : "gi");
+        },
+
+        clearMarks: () => {
+            cmInstance.getAllMarks().forEach(m => {
+                if(m.className === "cm-search-match") m.clear();
+            });
+        },
+
+        highlightAll: () => {
+            searcher.clearMarks();
+            const opts = searcher.getOptions();
+            if(!opts.query) return;
+
+            const regex = searcher.createRegExp(opts.query, opts.wholeWord, opts.caseSensitive);
+            const cursor = cmInstance.getSearchCursor(regex);
+            
+            let count = 0;
+            while(cursor.findNext()) {
+                if(opts.inSelection && !cmInstance.somethingSelected()) {
+                     alert("Nie je označený žiadny text!");
+                     return;
+                }
+                
+                if(opts.inSelection) {
+                    const selFrom = cmInstance.getCursor("from");
+                    const selTo = cmInstance.getCursor("to");
+                    const matchFrom = cursor.from();
+                    const matchTo = cursor.to();
+                    
+                    if(matchFrom.line < selFrom.line || (matchFrom.line === selFrom.line && matchFrom.ch < selFrom.ch)) continue;
+                    if(matchTo.line > selTo.line || (matchTo.line === selTo.line && matchTo.ch > selTo.ch)) continue;
+                }
+
+                cmInstance.markText(cursor.from(), cursor.to(), { className: "cm-search-match" });
+                count++;
+            }
+            if(count === 0) alert("Žiadny výsledok.");
+        },
+
+        findNext: () => {
+            const opts = searcher.getOptions();
+            if(!opts.query) return;
+            const regex = searcher.createRegExp(opts.query, opts.wholeWord, opts.caseSensitive);
+            
+            if(!searcher.cursor || opts.query !== searcher.lastQuery) {
+                searcher.cursor = cmInstance.getSearchCursor(regex, cmInstance.getCursor());
+                searcher.lastQuery = opts.query;
+            }
+
+            if (!searcher.cursor.findNext()) {
+                searcher.cursor = cmInstance.getSearchCursor(regex, {line: 0, ch: 0});
+                if (!searcher.cursor.findNext()) {
+                    alert("Nenájdené.");
+                    return;
+                }
+            }
+
+            if(opts.inSelection) {
+                const selFrom = cmInstance.getCursor("from");
+                const selTo = cmInstance.getCursor("to");
+                const matchFrom = searcher.cursor.from();
+                const matchTo = searcher.cursor.to();
+                
+                 if(matchFrom.line < selFrom.line || (matchFrom.line === selFrom.line && matchFrom.ch < selFrom.ch) ||
+                    matchTo.line > selTo.line || (matchTo.line === selTo.line && matchTo.ch > selTo.ch)) {
+                     alert("V označenom výbere sa už nenachádza ďalší výskyt.");
+                     return;
+                 }
+            }
+
+            cmInstance.setSelection(searcher.cursor.from(), searcher.cursor.to());
+            cmInstance.scrollIntoView(searcher.cursor.from(), 20);
+        },
+
+        replaceOne: () => {
+            const opts = searcher.getOptions();
+            if(!opts.query) return;
+            if(cmInstance.somethingSelected()) {
+                 const sel = cmInstance.getSelection();
+                 const regex = searcher.createRegExp(opts.query, opts.wholeWord, opts.caseSensitive);
+                 if(sel.match(regex)) {
+                     cmInstance.replaceSelection(opts.replace);
+                     searcher.findNext();
+                     return;
+                 }
+            }
+            searcher.findNext();
+        },
+
+        replaceAll: () => {
+            const opts = searcher.getOptions();
+            if(!opts.query) return;
+            const regex = searcher.createRegExp(opts.query, opts.wholeWord, opts.caseSensitive);
+            
+            if(opts.inSelection) {
+                searcher.replaceSelection();
+                return;
+            }
+
+            let cursor = cmInstance.getSearchCursor(regex);
+            let count = 0;
+            cmInstance.operation(() => {
+                while (cursor.findNext()) {
+                    cursor.replace(opts.replace);
+                    count++;
+                }
+            });
+            alert(`Nahradených ${count} výskytov.`);
+        },
+        
+        replaceSelection: () => {
+            const opts = searcher.getOptions();
+            if(!opts.query) return;
+            if(!cmInstance.somethingSelected()) {
+                alert("Nie je označený žiadny text!");
+                return;
+            }
+
+            const start = cmInstance.getCursor("from");
+            const end = cmInstance.getCursor("to");
+            const text = cmInstance.getSelection();
+            
+            const regex = searcher.createRegExp(opts.query, opts.wholeWord, opts.caseSensitive);
+            const newText = text.replace(regex, opts.replace);
+            
+            if(text !== newText) {
+                cmInstance.replaceSelection(newText);
+            } else {
+                alert("V označenom texte sa nenašla zhoda.");
+            }
+        }
+    };
+
+    // --- Tab Management ---
+    const tabManager = {
+        render: () => {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            tabs.forEach(tab => {
+                const el = document.createElement('div');
+                el.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
+                el.innerHTML = `
+                    <span onclick="tabManager.switch(${tab.id})">${tab.name}</span>
+                    <span class="close-tab" onclick="tabManager.close(${tab.id}, event)">✕</span>
+                `;
+                container.appendChild(el);
+            });
+        },
+        switch: (id) => {
+            activeTabId = id;
+            const tab = tabs.find(t => t.id === id);
+            if (tab) cmInstance.setValue(tab.content);
+            tabManager.render();
+            saveState();
+        },
+        close: (id, e) => {
+            if(e) e.stopPropagation();
+            if (tabs.length === 1 && confirm("Chcete zatvoriť posledné okno? Vytvorí sa nové prázdne.")) {
+                tabs = [];
+                fileManager.newTab();
+                return;
+            }
+            tabs = tabs.filter(t => t.id !== id);
+            if (activeTabId === id) {
+                activeTabId = tabs[tabs.length - 1].id;
+                cmInstance.setValue(tabs[tabs.length - 1].content);
+            }
+            tabManager.render();
+            saveState();
+        }
+    };
+
+    // --- File Manager ---
+    const fileManager = {
+        newTab: () => {
+            const id = Date.now();
+            tabs.push({ id: id, name: `Dokument ${tabs.length + 1}`, content: '' });
+            tabManager.switch(id);
+        },
+        openFile: () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html,.txt,.json,.js,.css';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const id = Date.now();
+                    tabs.push({ id: id, name: file.name, content: event.target.result });
+                    tabManager.switch(id);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        },
+        saveFile: () => {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (!tab) return;
+            let filename = prompt("Názov súboru:", tab.name);
+            if (!filename) return;
+            tab.name = filename;
+            tabManager.render();
+            const blob = new Blob([tab.content], { type: "text/plain;charset=utf-8" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
+    };
+
+    // --- Inserter ---
+    const inserter = {
+        insertCode: (text) => {
+            cmInstance.replaceSelection(text);
+            cmInstance.focus();
+            ui.closeModals();
+        },
+        tag: (tagName) => {
+            const selection = cmInstance.getSelection();
+            if (tagName === 'br') {
+                inserter.insertCode('<br>');
+            } else {
+                inserter.insertCode(`<${tagName}>${selection}</${tagName}>`);
+            }
+        },
+        structure: () => {
+            const tpl = `<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nový dokument</title>
+</head>
+<style>
+</style>
+<body style="margin: 20px; background-color: white;">
+<h1>Nadpis</h1>
+<p>Môj text</p>
+</body>
+</html>`;
+            cmInstance.setValue(tpl);
+        },
+        cssTemplate: () => {
+            inserter.insertCode(`body { font-family: sans-serif; }\n  .trieda { color: red; }`);
+        },
+        table: () => {
+            const rows = document.getElementById('tbl-rows').value;
+            const cols = document.getElementById('tbl-cols').value;
+            const width = document.getElementById('tbl-width').value;
+            const border = document.getElementById('tbl-border').value;
+            const borderStyle = document.getElementById('tbl-border-style').value;
+            const halign = document.getElementById('tbl-align-h').value;
+            const valign = document.getElementById('tbl-align-v').value;
+
+            const borderCss = border > 0 ? `${border}px ${borderStyle} black` : 'none';
+
+            let html = `<table style="border-collapse: collapse; border: ${borderCss};">\n`;
+            for(let i=0; i<rows; i++) {
+                html += `  <tr style="vertical-align: ${valign};">\n`;
+                for(let j=0; j<cols; j++) {
+                    html += `    <td style="width: ${width}; text-align: ${halign}; border: ${borderCss}; padding: 5px;"> Text </td>\n`;
+                }
+                html += `  </tr>\n`;
+            }
+            html += `</table>`;
+            inserter.insertCode(html);
+        },
+        fontStyles: () => {
+            const family = document.getElementById('font-family').value;
+            const type = document.getElementById('font-type').value;
+            const size = document.getElementById('font-size').value;
+            
+            let style = `font-family: ${family}; font-size: ${size || 'inherit'};`;
+            if(type === 'bold') style += ' font-weight: bold;';
+            if(type === 'italic') style += ' font-style: italic;';
+            
+            inserter.insertCode(`<span style="${style}">${cmInstance.getSelection() || 'Text'}</span>`);
+        },
+        colors: () => {
+            const color = document.getElementById('style-color').value;
+            const bg = document.getElementById('style-bg').value;
+            inserter.insertCode(`<span style="color: ${color}; background-color: ${bg};">${cmInstance.getSelection() || 'Text'}</span>`);
+        }
+    };
+
+    // --- UI Helpers ---
+    const ui = {
+        toggleTheme: () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            cmInstance.setOption('theme', isLight ? 'eclipse' : 'dracula');
+        },
+        showModal: (id) => {
+            document.querySelector('.overlay').style.display = 'block';
+            document.getElementById(id).style.display = 'block';
+            
+            if(id === 'charmap-modal') ui.initCharMap();
+            if(id === 'shortcuts-modal') shortcuts.renderList();
+        },
+        closeModals: () => {
+            document.querySelector('.overlay').style.display = 'none';
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        },
+        initCharMap: () => {
+            const chars = ['#', '&', '$', '{', '}', '[', ']', '<', '>', '\\', '"', "'", ';'];
+            const grid = document.getElementById('charmap-grid');
+            if(!grid) return;
+            grid.innerHTML = ''; 
+            chars.forEach(c => {
+                const btn = document.createElement('button');
+                btn.innerText = c;
+                btn.title = `Vložiť znak ${c}`;
+                btn.onclick = () => inserter.insertCode(c);
+                grid.appendChild(btn);
+            });
+        },
+        renderLang: (lang) => {
+            const grid = document.getElementById('lang-grid');
+            grid.innerHTML = '';
+            let entities = {};
+            if(lang === 'sk') entities = {'á':'&aacute;', 'ä':'&auml;', 'č':'&#269;', 'ď':'&#271;', 'é':'&eacute;', 'í':'&iacute;', 'ľ':'&#314;', 'ĺ':'&#314;', 'ň':'&#328;', 'ó':'&oacute;', 'ô':'&ocirc;', 'ŕ':'&#341;', 'š':'&#353;', 'ť':'&#357;', 'ú':'&uacute;', 'ý':'&yacute;', 'ž':'&#382;'};
+            if(lang === 'hu') entities = {'á':'&aacute;', 'é':'&eacute;', 'í':'&iacute;', 'ó':'&oacute;', 'ö':'&ouml;', 'ő':'&#337;', 'ú':'&uacute;', 'ü':'&uuml;', 'ű':'&#369;'};
+            if(lang === 'de') entities = {'ä':'&auml;', 'ö':'&ouml;', 'ü':'&uuml;', 'ß':'&szlig;'};
+            if(lang === 'fr') entities = {'à':'&agrave;', 'â':'&acirc;', 'ç':'&ccedil;', 'é':'&eacute;', 'è':'&egrave;', 'ê':'&ecirc;', 'ë':'&euml;', 'î':'&icirc;', 'ï':'&iuml;', 'ô':'&ocirc;', 'û':'&ucirc;'};
+
+            for (const [char, entity] of Object.entries(entities)) {
+                 const btnS = document.createElement('button');
+                 btnS.innerText = char;
+                 btnS.title = entity;
+                 btnS.onclick = () => inserter.insertCode(entity);
+                 grid.appendChild(btnS);
+                 
+                 const btnB = document.createElement('button');
+                 btnB.innerText = char.toUpperCase();
+                 btnB.onclick = () => inserter.insertCode(entity.replace(/[a-z]/, m => m.toUpperCase())); 
+                 grid.appendChild(btnB);
+            }
+        }
+    };
+
+    // --- Shortcuts Manager ---
+    const shortcuts = {
+        add: () => {
+            const key = document.getElementById('sc-key').value;
+            const val = document.getElementById('sc-val').value;
+            if(key && val) {
+                customShortcuts[key] = val;
+                shortcuts.renderList();
+                saveState();
+                document.getElementById('sc-key').value = '';
+                document.getElementById('sc-val').value = '';
+                alert('Skratka pridaná.');
+            }
+        },
+        renderList: () => {
+            const list = document.getElementById('sc-list');
+            list.innerHTML = '';
+            for(const [key, val] of Object.entries(customShortcuts)) {
+                const div = document.createElement('div');
+                div.innerHTML = `<button onclick="inserter.insertCode(customShortcuts['${key}'].replace(/\\n/g, '\\n'))" title="${val}">${key}</button>`;
+                div.style.display = 'inline-block';
+                div.style.margin = '2px';
+                list.appendChild(div);
+            }
+        },
+        export: () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(customShortcuts));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = "moje_skratky.json";
+            a.click();
+        },
+        import: (input) => {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    customShortcuts = JSON.parse(e.target.result);
+                    shortcuts.renderList();
+                    saveState();
+                    alert('Skratky importované');
+                } catch(err) { alert('Chyba pri čítaní JSON'); }
+            };
+            reader.readAsText(file);
+        },
+        manage: () => {
+            ui.showModal('shortcuts-modal');
+        }
+    };
+
+    // --- Local Storage ---
+    function saveState() {
+        localStorage.setItem('htmlEditorTabs', JSON.stringify(tabs));
+        localStorage.setItem('htmlEditorShortcuts', JSON.stringify(customShortcuts));
+        localStorage.setItem('htmlEditorActive', activeTabId);
+    }
+
+    function loadState() {
+        const savedTabs = localStorage.getItem('htmlEditorTabs');
+        const savedShortcuts = localStorage.getItem('htmlEditorShortcuts');
+        const savedActive = localStorage.getItem('htmlEditorActive');
+
+        if (savedTabs) tabs = JSON.parse(savedTabs);
+        if (savedShortcuts) customShortcuts = JSON.parse(savedShortcuts);
+        if (savedActive) activeTabId = parseInt(savedActive);
+    }
+</script>
+
+</body>
+</html>
