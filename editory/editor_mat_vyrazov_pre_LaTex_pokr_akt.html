@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX editor</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            options: {
+                // Toto zabezpečí, že MathJax nebude renderovať obsah vnútri <code> tagov (pre stĺpec "Kód")
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        :root {
+            /* Definícia farby pre ťahák */
+            --number-color: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px; /* Zmenšená medzera kvôli tlačidlu ťahák */
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        /* --- ŠTÝLY PRE ŤAHÁK --- */
+        .cheat-sheet-toggle {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .cheat-sheet-btn {
+            background-color: #f39c12; /* Oranžová pre odlíšenie */
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .cheat-sheet-btn:hover {
+            background-color: #e67e22;
+            transform: translateY(-1px);
+        }
+
+        #cheat-sheet-content {
+            display: none; /* Skryté pri načítaní */
+            background: #fff;
+            border: 2px solid #f39c12;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        /* Tabuľka v ťaháku */
+        .help-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .help-table th, .help-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            vertical-align: middle;
+        }
+
+        .help-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            text-align: left;
+        }
+
+        .help-table code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #c7254e;
+            font-family: Consolas, monospace;
+        }
+        
+        /* Highlight trieda z vášho kódu */
+        .highlight {
+            color: var(--number-color);
+            font-weight: bold;
+        }
+
+        /* --- KONIEC ŠTÝLOV PRE ŤAHÁK --- */
+
+        /* Ovládací panel */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #eef2f5;
+            border-radius: 8px;
+        }
+
+        .radio-group label {
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 15px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .radio-group input {
+            margin-right: 5px;
+        }
+
+        /* Mriežka tlačidiel */
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .math-btn {
+            background: #fff;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            height: 60px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 0 5px;
+        }
+
+        .math-btn:hover {
+            background: #f0f8ff;
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .math-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Textová oblasť */
+        .input-area {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace; 
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        /* Spodné tlačidlá */
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            color: white;
+        }
+
+        .copy-btn {
+            background-color: #27ae60;
+        }
+        .copy-btn:hover { background-color: #219150; }
+
+        .preview-btn {
+            background-color: #3498db;
+        }
+        .preview-btn:hover { background-color: #2980b9; }
+
+        /* Oblasť náhľadu */
+        #preview-box {
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            background: #fff;
+            min-height: 50px;
+            display: none;
+        }
+        
+        #preview-box h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #7f8c8d;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        #preview-content {
+            font-family: 'Times New Roman', Times, serif; /* Pre krajšie zobrazenie matematiky */
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Sekcia pre JSON Export/Import */
+        .file-actions {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .json-btn {
+            background-color: #95a5a6;
+            font-size: 0.9rem;
+            padding: 8px 15px;
+        }
+        .json-btn:hover { background-color: #7f8c8d; }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-upload-label {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #95a5a6;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        .file-upload-label:hover { background-color: #7f8c8d; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Editor pre LaTeX</h1>
+
+    <div class="cheat-sheet-toggle">
+        <button class="cheat-sheet-btn" onclick="toggleCheatSheet()">💡 Ťahák</button>
+    </div>
+
+    <div id="cheat-sheet-content">
+        <h3>💡 Pomôcka: Ako zapisovať vo formáte LaTex</h3>
+        <p>V tabuľke nižšie vidíte, ako zapisovať vo formáte LaTex. Údaje sú pre prehľadnosť zvýraznené <span style="color:var(--number-color); font-weight:bold;">modrou farbou</span>.</p>
+        
+        <table class="help-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%">Typ zápisu</th>
+                    <th style="width: 40%">Kód (čo napíšete)</th>
+                    <th style="width: 35%">Výsledok (čo uvidíte)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Obyčajný text</td>
+                    <td><code>Toto je text: x=5</code></td>
+                    <td style="text-align: center;">Toto je text: x=5 </td>
+                </tr>
+                <tr>
+                    <td>Mocnina (Horný index)</td>
+                    <td><code>$$<span class="highlight">x</span>^<span class="highlight">2</span>$$</code></td>
+                    <td>$$x^2$$</td>
+                </tr>
+                <tr>
+                    <td>Dolný index</td>
+                    <td><code>$$<span class="highlight">a</span>_<span class="highlight">1</span>$$</code></td>
+                    <td>$$a_1$$</td>
+                </tr>
+                <tr>
+                    <td>Zlomok</td>
+                    <td><code>$$\frac{<span class="highlight">1</span>}{<span class="highlight">2</span>}$$</code></td>
+                    <td>$$\frac{1}{2}$$</td>
+                </tr>
+                <tr>
+                    <td>Odmocnina</td>
+                    <td><code>$$\sqrt{<span class="highlight">25</span>}$$</code></td>
+                    <td>$$\sqrt{25}$$</td>
+                </tr>
+                <tr>
+                    <td>Vyššia odmocnina</td>
+                    <td><code>$$\sqrt[<span class="highlight">4</span>]{<span class="highlight">625</span>}$$</code></td>
+                    <td>$$\sqrt[4]{625}$$</td>
+                </tr>
+                <tr>
+                    <td>Zložitejší výraz</td>
+                    <td><code>$$<span class="highlight">x</span> = \frac{<span class="highlight">-b</span>}{<span class="highlight">2a</span>}$$</code></td>
+                    <td>$$x = \frac{-b}{2a}$$</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="controls">
+        <div class="radio-group">
+            <label>
+                <input type="radio" name="mode" value="inline" checked> 
+                V texte ($...$)
+            </label>
+            <label>
+                <input type="radio" name="mode" value="display"> 
+                Samostatne ($$...$$)
+            </label>
+        </div>
+    </div>
+
+    <div class="keyboard-grid" id="keyboard">
+        </div>
+
+    <p class="info-text">Píšte text alebo HTML tagy. Kliknutím na tlačidlo vložíte kód na pozíciu kurzora. <strong>Obsah sa automaticky ukladá.</strong></p>
+    
+    <div class="input-area">
+        <textarea id="editor" placeholder="Tu píšte svoj text... Napr.: Výsledok rovnice <b>je</b>:"></textarea>
+    </div>
+
+    <div class="actions">
+        <button class="btn preview-btn" onclick="renderPreview()">Zobraziť náhľad</button>
+        <button class="btn copy-btn" onclick="copyContent()">Kopírovať obsah</button>
+    </div>
+
+    <div id="preview-box">
+        <h3>Náhľad:</h3>
+        <div id="preview-content"></div>
+    </div>
+
+    <div class="file-actions">
+        <span style="margin-right: auto; font-weight: bold; color: #555;">Správa súborov:</span>
+        
+        <button class="btn json-btn" onclick="exportToJson()">Exportovať do súboru (.json)</button>
+        
+        <label for="importFile" class="file-upload-label">
+            Importovať zo súboru (.json)
+        </label>
+        <input type="file" id="importFile" accept=".json" onchange="importFromJson(this)">
+    </div>
+
+<br><br>
+<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+<br><br>
+</div>
+
+<script>
+    // Definícia tlačidiel a ich LaTeX kódov
+    const buttons = [
+        // Násobenie a delenie
+        { latex: "\\cdot", tooltip: "Násobenie (bodka)" },
+        { latex: "\\times", tooltip: "Násobenie (krížik)" },
+        { latex: ":", tooltip: "Delenie (dvojbodka)" },
+        { latex: "\\div", tooltip: "Delenie (obelus)" },
+        { latex: "\\frac{a}{b}", tooltip: "Zlomok" },
+        
+        // NOVÉ TLAČIDLÁ
+        { latex: "a \\cdot b = c", tooltip: "Rovnica: násobenie" },
+        { latex: "a : b = c", tooltip: "Rovnica: delenie" },
+
+        // Mocniny a odmocniny
+        { latex: "x^2", tooltip: "Druhá mocnina" },
+        { latex: "x^{n}", tooltip: "n-tá mocnina" },
+        { latex: "\\sqrt{x}", tooltip: "Odmocnina" },
+        { latex: "\\sqrt[n]{x}", tooltip: "n-tá odmocnina" },
+        
+        // Indexy
+        { latex: "x_1", tooltip: "Dolný index" },
+        { latex: "x_{ij}", tooltip: "Zložený dolný index" },
+
+        // Rovnice
+        { latex: "a + b = c", tooltip: "Jednoduchá rovnica" },
+        { latex: "\\frac{a}{b} = c", tooltip: "Rovnica so zlomkom" },
+        { latex: "\\left(\\frac{a}{b}\\right)", tooltip: "Zlomok v zátvorke" }
+    ];
+
+    const keyboardContainer = document.getElementById('keyboard');
+    const editor = document.getElementById('editor');
+    const previewBox = document.getElementById('preview-box');
+    const previewContent = document.getElementById('preview-content');
+
+    // Funkcia na vygenerovanie tlačidiel
+    function renderButtons() {
+        buttons.forEach(btn => {
+            const buttonElement = document.createElement('button');
+            buttonElement.className = 'math-btn';
+            buttonElement.title = btn.tooltip;
+            
+            // Vložíme LaTeX vzorec, ktorý MathJax vykreslí
+            buttonElement.innerHTML = `\\( ${btn.latex} \\)`;
+            
+            // Pridanie udalosti kliknutia
+            buttonElement.onclick = () => insertLatex(btn.latex);
+            
+            keyboardContainer.appendChild(buttonElement);
+        });
+        
+        // Zavoláme MathJax na prekreslenie obsahu tlačidiel
+        if (window.MathJax) {
+            MathJax.typesetPromise([keyboardContainer]);
+        }
+    }
+
+    // Funkcia na prepínanie zobrazenia ťaháka
+    function toggleCheatSheet() {
+        const sheet = document.getElementById('cheat-sheet-content');
+        if (sheet.style.display === 'none' || sheet.style.display === '') {
+            sheet.style.display = 'block';
+            // Preistotu zavoláme MathJax na renderovanie obsahu ťaháka, ak by sa nenačítal na začiatku
+            if (window.MathJax) {
+                MathJax.typesetPromise([sheet]);
+            }
+        } else {
+            sheet.style.display = 'none';
+        }
+    }
+
+    // Funkcia na vkladanie textu na pozíciu kurzora
+    function insertLatex(latexCode) {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        let finalCode = "";
+
+        // Obalenie podľa zvoleného režimu
+        if (mode === 'inline') {
+            finalCode = `$${latexCode}$`;
+        } else {
+            finalCode = `$$${latexCode}$$`;
+        }
+
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const text = editor.value;
+
+        // Vloženie textu
+        editor.value = text.substring(0, start) + finalCode + text.substring(end);
+
+        // Presunutie kurzora za vložený text
+        editor.selectionStart = editor.selectionEnd = start + finalCode.length;
+        
+        // Uloženie do LocalStorage po vložení
+        saveToLocalStorage();
+        
+        // Návrat fokusu do poľa
+        editor.focus();
+    }
+
+    // Funkcia na kopírovanie
+    function copyContent() {
+        editor.select();
+        document.execCommand('copy');
+        
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "Skopírované!";
+        btn.style.backgroundColor = "#2ecc71";
+        
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.backgroundColor = "#27ae60";
+        }, 1500);
+    }
+
+    // --- LOGIKA UKLADANIA A NÁHĽADU ---
+
+    function saveToLocalStorage() {
+        localStorage.setItem('latexEditorContent', editor.value);
+    }
+
+    function loadFromLocalStorage() {
+        const savedContent = localStorage.getItem('latexEditorContent');
+        if (savedContent) {
+            editor.value = savedContent;
+        }
+    }
+
+    editor.addEventListener('input', saveToLocalStorage);
+
+    // Vykreslenie náhľadu
+    function renderPreview() {
+        previewBox.style.display = 'block';
+        
+        // Používame innerHTML, aby sa interpretovali aj HTML tagy (napr. <b>, <br>)
+        // Nahrádzame nové riadky \n za <br>, aby sa zachovalo riadkovanie aj bez <p> tagov
+        let content = editor.value;
+        content = content.replace(/\n/g, "<br>");
+        
+        previewContent.innerHTML = content;
+        
+        // Požiadame MathJax o prekreslenie obsahu
+        if (window.MathJax) {
+            // Najprv vyčistíme predchádzajúci stav MathJax v tomto elemente (ak treba), potom renderujeme
+            MathJax.typesetPromise([previewContent])
+                .then(() => {
+                    console.log("MathJax rendering complete");
+                })
+                .catch((err) => console.log('MathJax error:', err));
+        }
+    }
+
+    // Export do JSON
+    function exportToJson() {
+        const data = {
+            timestamp: new Date().toISOString(),
+            content: editor.value
+        };
+        
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `latex_editor_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Import z JSON
+    function importFromJson(inputElement) {
+        const file = inputElement.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.content !== undefined) {
+                    editor.value = data.content;
+                    saveToLocalStorage();
+                    alert("Obsah bol úspešne načítaný.");
+                    if (previewBox.style.display === 'block') {
+                        renderPreview();
+                    }
+                } else {
+                    alert("Chyba: Súbor JSON nemá správny formát.");
+                }
+            } catch (error) {
+                alert("Chyba pri čítaní súboru: " + error.message);
+            }
+        };
+        reader.readAsText(file);
+        inputElement.value = '';
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        renderButtons();
+        loadFromLocalStorage();
+    });
+
+</script>
+
+</body>
+</html>
