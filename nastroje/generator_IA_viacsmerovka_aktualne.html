@@ -172,7 +172,12 @@
         wordInput.value = localStorage.getItem('myWordSearchWords');
     }
     wordInput.addEventListener('input', () => {
-        localStorage.setItem('myWordSearchWords', wordInput.value);
+        try {
+            localStorage.setItem('myWordSearchWords', wordInput.value);
+        } catch(e) {
+            // Ignorujeme chybu kvôty, aby to neprerušilo skript
+            console.warn('LocalStorage quota exceeded. Progress not saved locally.');
+        }
     });
 
     let currentGrid = [];
@@ -229,7 +234,12 @@
                 if (settings.cols) document.getElementById('cols').value = settings.cols;
                 if (settings.words) {
                     document.getElementById('wordList').value = settings.words;
-                    localStorage.setItem('myWordSearchWords', settings.words);
+                    try {
+                        localStorage.setItem('myWordSearchWords', settings.words);
+                    } catch(e) {
+                        // Ignorujeme chybu, ak je úložisko plné. Slová sa načítajú do poľa, len sa neuložia do cache prehliadača.
+                        console.warn('Import: LocalStorage full, skipping save.');
+                    }
                 }
                 if (settings.fillType) document.getElementById('fillType').value = settings.fillType;
                 if (settings.directions && Array.isArray(settings.directions)) {
@@ -280,11 +290,22 @@
 
                 if (rEnd >= 0 && rEnd < rows && cEnd >= 0 && cEnd < cols) {
                     let match = true;
+                    let emptyCellsUsed = 0; // POČÍTADLO: Koľko prázdnych políčok slovo zaberie?
+                    
                     for (let i = 0; i < len; i++) {
                         const cell = grid[rStart + i * dr][cStart + i * dc];
-                        if (cell !== '' && cell !== wordObj.clean[i]) { match = false; break; }
+                        if (cell === '') {
+                            emptyCellsUsed++;
+                        } else if (cell !== wordObj.clean[i]) { 
+                            match = false; 
+                            break; 
+                        }
                     }
-                    if (match) {
+                    
+                    // ZMENA: Slovo vložíme len ak písmená sedia (match) A ZÁROVEŇ
+                    // zaberie aspoň jedno prázdne políčko (emptyCellsUsed > 0).
+                    // Tým zabránime, aby sa 'mit' skrylo celé do už existujúceho 'Nachmittag'.
+                    if (match && emptyCellsUsed > 0) {
                         for (let i = 0; i < len; i++) grid[rStart + i * dr][cStart + i * dc] = wordObj.clean[i];
                         placed.push({ ...wordObj, r: rStart, c: cStart });
                         fitted = true;
@@ -688,14 +709,26 @@
             }
             endSel() {
                 this.isSelecting = false;
+                if(this.selectedCells.length === 0) return;
                 const text = this.selectedCells.map(c => c.char).join('');
                 const textRev = this.selectedCells.map(c => c.char).reverse().join('');
-                this.checkWord(text, textRev);
+                const start = this.selectedCells[0];
+                const end = this.selectedCells[this.selectedCells.length - 1];
+                this.checkWord(text, textRev, start, end);
                 document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
             }
-            checkWord(str, strRev) {
+            checkWord(str, strRev, start, end) {
                 let foundId = -1;
-                this.words.forEach((w, i) => { if(!w.found && (w.clean === str || w.clean === strRev)) foundId = i; });
+                this.words.forEach((w, i) => { 
+                    if(!w.found) {
+                        if (w.clean === str && w.r === start.r && w.c === start.c) {
+                            foundId = i;
+                        }
+                        else if (w.clean === strRev && w.r === end.r && w.c === end.c) {
+                            foundId = i;
+                        }
+                    } 
+                });
                 if(foundId !== -1) {
                     this.words[foundId].found = true;
                     document.getElementById('word-' + foundId).classList.add('done');
