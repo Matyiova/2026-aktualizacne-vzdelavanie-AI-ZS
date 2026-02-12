@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline piškvorky</title>
+    <style>
+        :root {
+            /* Veľkosť štvorčekov */
+            --cell-size: 60px;
+            --grid-gap: 2px;
+            --bg-color: #f0f2f5;
+            --board-bg: #fff;
+            --line-color: #ccc;
+            --x-color: #e74c3c;
+            --o-color: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            overscroll-behavior: none;
+            user-select: none;
+        }
+
+        h1 { margin-bottom: 10px; color: #333; }
+
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .info-panel {
+            font-size: 1.2rem;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .goal-text {
+            font-size: 1rem;
+            color: #555;
+            font-style: italic;
+            border-left: 2px solid #eee;
+            padding-left: 15px;
+        }
+
+        select {
+            padding: 8px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .current-turn span {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        .btn:hover { background-color: #555; }
+
+        /* MODRÉ TLAČIDLO PRE NOVÚ HRU */
+        .btn-new {
+            background-color: #2980b9;
+        }
+        .btn-new:hover {
+            background-color: #1a5276;
+        }
+
+        .game-board {
+            display: grid;
+            gap: var(--grid-gap);
+            background-color: var(--line-color);
+            border: 5px solid #333;
+            touch-action: none;
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            width: var(--cell-size);
+            height: var(--cell-size);
+            position: relative;
+            cursor: crosshair;
+        }
+
+        /* Ak hrá počítač, zmeníme kurzor, aby bolo jasné, že sa čaká */
+        .game-board.thinking .cell {
+            cursor: wait;
+        }
+
+        .cell canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+        }
+
+        .symbol {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .symbol.X { color: var(--x-color); }
+        .symbol.O { color: var(--o-color); }
+
+        /* UPRAVENÝ MODAL - TERAZ AKO PLÁVAJÚCI PANEL */
+        .modal {
+            display: none;
+            position: fixed;
+            /* Zrušené celoobrazovkové pozadie */
+            top: 80px;  /* Posunuté od vrchu */
+            right: 20px; /* Zarovnané doprava */
+            width: auto;
+            height: auto;
+            background: transparent;
+            z-index: 100;
+            pointer-events: none; /* Aby sa dalo klikať na plochu pod tým (ak treba), okrem samotného boxu */
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.4);
+            border: 2px solid #2ecc71;
+            pointer-events: auto; /* Samotný box je klikateľný */
+            position: relative;
+            min-width: 200px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .modal h2 { margin-top: 0; color: #2ecc71; font-size: 1.8rem; margin-bottom: 15px;}
+        
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 1.5rem;
+            color: #aaa;
+            cursor: pointer;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+
+        @media (max-width: 800px) {
+            :root { --cell-size: 40px; }
+            .symbol { font-size: 2rem; }
+            .info-panel { flex-direction: column; gap: 10px; }
+            .goal-text { border-left: none; padding-left: 0; border-top: 1px solid #eee; padding-top: 5px;}
+            
+            /* Na mobiloch zobrazíme výhru dole alebo v strede, ale stále nezakryjeme celú plochu */
+            .modal {
+                top: auto;
+                bottom: 20px;
+                right: 50%;
+                transform: translateX(50%);
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Offline piškvorky</h1>
+
+    <div class="controls-container">
+        <div class="info-panel">
+            <div class="settings-row">
+                <label for="boardSize">Plocha:</label>
+                <select id="boardSize" onchange="changeGameMode()">
+                    <option value="5-3" selected>5 x 5</option>
+                    <option value="8-3">8 x 8</option>
+                    <option value="10-5">10 x 10</option>
+                    <option value="15-5">15 x 15</option>
+                </select>
+
+                <label for="gameType">Hráči:</label>
+                <select id="gameType" onchange="changeGameMode()">
+                    <option value="pvp">Hráč vs Hráč</option>
+                    <option value="pvc">Hráč vs Počítač</option>
+                </select>
+
+                <div id="goalDescription" class="goal-text">Cieľ: 5 za sebou</div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="current-turn">Na ťahu: <span id="turnIndicator" style="color: var(--x-color)">X</span></div>
+            <button class="btn btn-new" onclick="resetGame()">Nová hra</button>
+        </div>
+    </div>
+
+    <div class="game-board" id="board"></div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()" title="Zavrieť">&times;</span>
+            <h2 id="winnerText">Vyhráva X!</h2>
+            <button class="btn btn-new" onclick="resetGame()">Hrať znova</button>
+        </div>
+    </div>
+
+<script>
+    // Nastavenia hry
+    let currentGridSize = 15;
+    let currentWinLength = 5;
+    let vsComputer = false; // Mód hry proti PC
+    
+    const DRAW_DELAY = 1200; 
+
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let boardState = [];
+    let recognitionTimer = null;
+    let isComputerThinking = false; // Zámok počas ťahu PC
+
+    const boardElement = document.getElementById('board');
+    const turnIndicator = document.getElementById('turnIndicator');
+    const winModal = document.getElementById('winModal');
+    const winnerText = document.getElementById('winnerText');
+    const goalTextElement = document.getElementById('goalDescription');
+    const sizeSelect = document.getElementById('boardSize');
+    const typeSelect = document.getElementById('gameType');
+
+    function changeGameMode() {
+        const sizeVal = sizeSelect.value;
+        const [size, win] = sizeVal.split('-').map(Number);
+        
+        const typeVal = typeSelect.value;
+        vsComputer = (typeVal === 'pvc');
+
+        currentGridSize = size;
+        currentWinLength = win;
+
+        // Aktualizácia textu s cieľom
+        goalTextElement.innerText = `Cieľ: ${currentWinLength} za sebou`;
+        
+        resetGame();
+    }
+
+    function initBoard() {
+        boardElement.innerHTML = '';
+        boardElement.classList.remove('thinking');
+        
+        // Dynamické nastavenie Gridu
+        boardElement.style.gridTemplateColumns = `repeat(${currentGridSize}, var(--cell-size))`;
+        boardElement.style.gridTemplateRows = `repeat(${currentGridSize}, var(--cell-size))`;
+
+        for (let y = 0; y < currentGridSize; y++) {
+            for (let x = 0; x < currentGridSize; x++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.x = x;
+                cell.dataset.y = y;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 120; 
+                canvas.height = 120;
+                setupDrawing(canvas, x, y);
+
+                cell.appendChild(canvas);
+                boardElement.appendChild(cell);
+            }
+        }
+    }
+
+    function setupDrawing(canvas, x, y) {
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 12; 
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#222';
+
+        let isDrawing = false;
+        let hasContent = false;
+
+        function startDraw(e) {
+            // Zakážeme kreslenie, ak hra skončila, ak je bunka obsadená, 
+            // ALEBO ak práve "rozmýšľa" počítač (hráč 'O' v móde vsComputer)
+            if (!gameActive || boardState[y][x] !== '' || isComputerThinking) return;
+            
+            // Extra kontrola: ak je PvC a na ťahu je 'O', hráč nesmie zasahovať
+            if (vsComputer && currentPlayer === 'O') return;
+
+            if (recognitionTimer) {
+                clearTimeout(recognitionTimer);
+                recognitionTimer = null;
+            }
+
+            isDrawing = true;
+            hasContent = true;
+            
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            ctx.beginPath();
+            const drawX = (clientX - rect.left) * (canvas.width / rect.width);
+            const drawY = (clientY - rect.top) * (canvas.height / rect.height);
+            ctx.moveTo(drawX, drawY);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const drawX = (clientX - rect.left) * (canvas.width / rect.width);
+            const drawY = (clientY - rect.top) * (canvas.height / rect.height);
+
+            ctx.lineTo(drawX, drawY);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDraw() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            if (hasContent) {
+                recognitionTimer = setTimeout(() => {
+                    finalizeMove(ctx, x, y);
+                }, DRAW_DELAY);
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+
+        canvas.addEventListener('touchstart', startDraw, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDraw);
+    }
+
+    function finalizeMove(ctx, x, y) {
+        let detectedShape = recognizeShape(ctx);
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        
+        if (detectedShape === 'UNKNOWN') return;
+        
+        // V móde proti PC hráč vždy hrá ako X, takže ak AI deteguje O, ignorujeme to a dáme X
+        if (vsComputer && currentPlayer === 'X') detectedShape = 'X';
+
+        // Kontrola, či sa hráč nesnaží zahrať za súpera
+        if (detectedShape !== currentPlayer) {
+            detectedShape = currentPlayer;
+        }
+
+        makeMove(x, y, detectedShape);
+    }
+
+    function recognizeShape(ctx) {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        
+        let centerX = w / 2;
+        let centerY = h / 2;
+        let centerRadius = w / 5;
+        
+        let pixelsInCenter = 0;
+        let totalPixels = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i+3] > 100) { 
+                totalPixels++;
+                const pixelIdx = i / 4;
+                const px = pixelIdx % w;
+                const py = Math.floor(pixelIdx / w);
+                
+                const dist = Math.sqrt(Math.pow(px - centerX, 2) + Math.pow(py - centerY, 2));
+                if (dist < centerRadius) {
+                    pixelsInCenter++;
+                }
+            }
+        }
+
+        if (totalPixels < 50) return 'UNKNOWN'; 
+
+        const centerRatio = pixelsInCenter / totalPixels;
+
+        if (centerRatio < 0.1) return 'O';
+        else return 'X';
+    }
+
+    function makeMove(x, y, symbol) {
+        if (boardState[y][x] !== '') return;
+
+        boardState[y][x] = symbol;
+        
+        const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+        
+        const oldCanvas = cell.querySelector('canvas');
+        if(oldCanvas) oldCanvas.remove();
+
+        const symbolDiv = document.createElement('div');
+        symbolDiv.classList.add('symbol', symbol);
+        symbolDiv.innerText = symbol;
+        cell.appendChild(symbolDiv);
+
+        if (checkWin(x, y, symbol)) {
+            // Zavoláme endGame s malým oneskorením, aby sa stihol symbol vykresliť
+            endGame(symbol);
+            return;
+        }
+
+        // Prepnutie hráča
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        turnIndicator.innerText = currentPlayer;
+        turnIndicator.style.color = currentPlayer === 'X' ? 'var(--x-color)' : 'var(--o-color)';
+
+        // Ak je mód vsComputer a teraz je na ťahu O (počítač)
+        if (vsComputer && currentPlayer === 'O' && gameActive) {
+            triggerComputerMove();
+        }
+    }
+
+    function triggerComputerMove() {
+        isComputerThinking = true;
+        boardElement.classList.add('thinking');
+        
+        // Malé oneskorenie pre pocit "premýšľania"
+        setTimeout(() => {
+            const bestMove = getBestMove();
+            if (bestMove) {
+                makeMove(bestMove.x, bestMove.y, 'O');
+            }
+            isComputerThinking = false;
+            boardElement.classList.remove('thinking');
+        }, 800);
+    }
+
+    // --- AI LOGIKA ---
+    function getBestMove() {
+        let bestScore = -Infinity;
+        let move = null;
+        
+        for (let y = 0; y < currentGridSize; y++) {
+            for (let x = 0; x < currentGridSize; x++) {
+                if (boardState[y][x] === '') {
+                    let score = evaluatePosition(x, y);
+                    score += Math.random() * 5; 
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        move = {x, y};
+                    }
+                }
+            }
+        }
+        
+        if (!move) {
+            const center = Math.floor(currentGridSize / 2);
+            if (boardState[center][center] === '') return {x: center, y: center};
+            return {x: center+1, y: center+1}; 
+        }
+        
+        return move;
+    }
+
+    function evaluatePosition(x, y) {
+        let score = 0;
+        score += evaluateLines(x, y, 'O', 1.0); 
+        score += evaluateLines(x, y, 'X', 0.9); 
+        return score;
+    }
+
+    function evaluateLines(x, y, player, weight) {
+        const directions = [
+            {dx: 1, dy: 0}, 
+            {dx: 0, dy: 1}, 
+            {dx: 1, dy: 1}, 
+            {dx: 1, dy: -1} 
+        ];
+        
+        let totalScore = 0;
+
+        for (let dir of directions) {
+            let count = 0;
+            let openEnds = 0;
+            
+            for (let i = 1; i < currentWinLength; i++) {
+                const nx = x + dir.dx * i;
+                const ny = y + dir.dy * i;
+                if (nx < 0 || nx >= currentGridSize || ny < 0 || ny >= currentGridSize) break;
+                if (boardState[ny][nx] === player) {
+                    count++;
+                } else if (boardState[ny][nx] === '') {
+                    openEnds++;
+                    break;
+                } else {
+                    break; 
+                }
+            }
+            
+            for (let i = 1; i < currentWinLength; i++) {
+                const nx = x - dir.dx * i;
+                const ny = y - dir.dy * i;
+                if (nx < 0 || nx >= currentGridSize || ny < 0 || ny >= currentGridSize) break;
+                if (boardState[ny][nx] === player) {
+                    count++;
+                } else if (boardState[ny][nx] === '') {
+                    openEnds++;
+                    break;
+                } else {
+                    break; 
+                }
+            }
+
+            if (count >= currentWinLength - 1) totalScore += 100000; 
+            else if (count >= currentWinLength - 2 && openEnds > 0) totalScore += 5000;
+            else if (count >= currentWinLength - 3 && openEnds > 0) totalScore += 500;
+            else if (count > 0) totalScore += 10 * count;
+        }
+        
+        return totalScore * weight;
+    }
+    // --- KONIEC AI LOGIKY ---
+
+    function checkWin(lastX, lastY, player) {
+        const directions = [
+            {dx: 1, dy: 0}, {dx: 0, dy: 1}, {dx: 1, dy: 1}, {dx: 1, dy: -1}
+        ];
+
+        for (let dir of directions) {
+            let count = 1;
+            for (let i = 1; i < currentWinLength; i++) {
+                const nx = lastX + dir.dx * i;
+                const ny = lastY + dir.dy * i;
+                if (nx < 0 || nx >= currentGridSize || ny < 0 || ny >= currentGridSize) break;
+                if (boardState[ny][nx] === player) count++; else break;
+            }
+            for (let i = 1; i < currentWinLength; i++) {
+                const nx = lastX - dir.dx * i;
+                const ny = lastY - dir.dy * i;
+                if (nx < 0 || nx >= currentGridSize || ny < 0 || ny >= currentGridSize) break;
+                if (boardState[ny][nx] === player) count++; else break;
+            }
+            if (count >= currentWinLength) return true;
+        }
+        return false;
+    }
+
+    function endGame(winner) {
+        gameActive = false;
+        
+        let msg = "";
+        if (vsComputer) {
+            msg = winner === 'X' ? "Vyhral si!" : "Počítač vyhral!";
+        } else {
+            msg = `Vyhráva hráč ${winner}!`;
+        }
+        
+        winnerText.innerText = msg;
+        winnerText.style.color = winner === 'X' ? 'var(--x-color)' : 'var(--o-color)';
+        
+        // Použijeme setTimeout, aby mal prehliadač čas vykresliť posledný symbol do DOMu
+        // predtým, než sa zobrazí modal (aj keď už nezakrýva, je to dobrá prax pre plynulosť)
+        setTimeout(() => {
+            winModal.style.display = 'block';
+        }, 150);
+    }
+
+    function closeModal() {
+        winModal.style.display = 'none';
+        // Hra zostáva neaktívna (gameActive = false), takže sa nedá ďalej kresliť
+        // kým používateľ nestlačí "Nová hra" v hornom paneli.
+    }
+
+    function resetGame() {
+        boardState = Array(currentGridSize).fill().map(() => Array(currentGridSize).fill(''));
+        currentPlayer = 'X';
+        gameActive = true;
+        isComputerThinking = false;
+        turnIndicator.innerText = 'X';
+        turnIndicator.style.color = 'var(--x-color)';
+        winModal.style.display = 'none';
+        initBoard(); 
+    }
+
+    // Inicializácia pri prvom načítaní
+    changeGameMode();
+</script>
+ <br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+  <br><br>
+</body>
+</html>
