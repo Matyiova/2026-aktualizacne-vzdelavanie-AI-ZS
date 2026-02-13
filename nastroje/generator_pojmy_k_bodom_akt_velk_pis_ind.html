@@ -30,10 +30,12 @@
         
         /* Markers in Generator (Red) */
         .marker-point { 
-            position: absolute; transform: translate(-50%, -50%); width: 20px; height: 20px;
-            background: rgba(255, 0, 0, 0.4); border: 2px solid red; border-radius: 50%;
+            position: absolute; transform: translate(-50%, -50%); 
+            /* Width/Height is now set via JS based on radius */
+            background: rgba(255, 0, 0, 0.4); border: 2px solid red; 
             cursor: grab; z-index: 10; display: flex; align-items: center; justify-content: center;
             color: white; font-size: 10px; font-weight: bold;
+            box-sizing: border-box;
         }
         .marker-label-pos {
             position: absolute; transform: translate(-50%, -50%); min-width: 60px; padding: 2px 5px;
@@ -86,12 +88,9 @@
             <div class="hint-box">
                 <strong>Viacriadkový text:</strong> Ak chcete text rozdeliť na viac riadkov, použite znak <strong>|</strong> (zvislá čiara).<br>
 				<strong>Viac správnych odpovedí</strong> oddeľte bodkočiarkou <code>;</code>.<br>
+                <strong>Duplicity:</strong> Ak zadáte rovnaký pojem viackrát (pre rôzne body), v cvičení sa zobrazí toľkokrát, koľko bodov ho vyžaduje.<br>
 				<strong>zvislá čiara</strong> = ľavý Alt + 0124<br>
 				<strong>bodkočiarka</strong> = ľavý Alt + 059
-				<br><br>
-                <strong>Príklady:</strong><br>ein Uhr / eins<strong>|</strong>zwei Uhr / zwei<br>
-				zwanzig nach eins<strong>;</strong> zehn vor halb zwei
-                
             </div>
             <div id="points-list">
                 <p style="color:#666; font-style:italic;">Nahrajte obrázok a kliknite naň pre pridanie bodu.</p>
@@ -164,7 +163,7 @@
             term: '',
             x: xPerc, y: yPerc,
             lx: xPerc + 10, ly: yPerc - 5,
-            shape: 'circle', radius: 1,
+            shape: 'circle', radius: 1.5, // Zväčšená default hodnota pre lepšiu viditeľnosť
             fontSize: '' // Defaultne prázdne = použije sa globálne
         });
         renderPointsList(); renderMarkers();
@@ -200,7 +199,7 @@
                     <input type="text" placeholder="Pojem (pre nový riadok použite | )" value="${p.term}" oninput="updatePoint(${index}, 'term', this.value)">
                     <div style="display:flex; gap:5px; margin-top:5px; font-size:0.85em; color:#666; align-items:center;">
                         <span>Zóna:</span>
-                        <input type="number" value="${p.radius}" oninput="updatePoint(${index}, 'radius', this.value)" style="width:50px; padding:2px;">
+                        <input type="number" step="0.1" value="${p.radius}" oninput="updatePoint(${index}, 'radius', this.value)" style="width:50px; padding:2px;">
                         
                         <span style="margin-left:5px;">Písmo:</span>
                         <input type="number" value="${p.fontSize || ''}" placeholder="Auto" oninput="updatePoint(${index}, 'fontSize', this.value)" style="width:50px; padding:2px;" title="Veľkosť písma pre tento bod (v px). Ak necháte prázdne, použije sa základná veľkosť.">
@@ -224,7 +223,6 @@
         markersLayer.innerHTML = '';
         while(svgOverlay.firstChild) svgOverlay.removeChild(svgOverlay.firstChild);
         
-        // Získanie globálnej veľkosti písma
         const globalFontSize = document.getElementById('meta-fontsize').value || 13;
         
         appState.points.forEach((p, index) => {
@@ -237,6 +235,16 @@
             const targetEl = document.createElement('div');
             targetEl.className = 'marker-point';
             targetEl.style.left = p.x + '%'; targetEl.style.top = p.y + '%';
+            
+            // --- VÝPOČET REÁLNEJ VEĽKOSTI ---
+            const radius = parseFloat(p.radius) || 1;
+            const size = (p.shape === 'circle' || p.shape === 'square') ? radius * 2 : radius * 3;
+            
+            targetEl.style.width = size + '%';
+            targetEl.style.aspectRatio = (p.shape === 'rect') ? "2 / 1.5" : "1 / 1";
+            targetEl.style.borderRadius = (p.shape === 'circle') ? "50%" : "0";
+            // -------------------------------
+
             targetEl.innerHTML = p.id;
             targetEl.addEventListener('mousedown', (e) => startDrag(e, index, 'target'));
             markersLayer.appendChild(targetEl);
@@ -245,7 +253,6 @@
             labelEl.className = 'marker-label-pos';
             labelEl.style.left = p.lx + '%'; labelEl.style.top = p.ly + '%';
             
-            // Aplikovanie veľkosti písma: buď individuálna (ak je zadaná) alebo globálna
             const specificSize = p.fontSize ? p.fontSize : globalFontSize;
             labelEl.style.fontSize = specificSize + 'px';
             
@@ -294,7 +301,6 @@
         if (!appState.imageData || appState.points.length === 0) { alert('Chýba obrázok/body.'); return; }
         const jsonString = JSON.stringify(appState);
         
-        // Globálna veľkosť písma
         const fontSize = appState.labelFontSize || 13;
 
         const htmlContent = `<!DOCTYPE html>
@@ -366,7 +372,6 @@
         .map-label {
             position: absolute; transform: translate(-50%, -50%);
             padding: 4px 10px; border-radius: 4px;
-            /* Predvolená veľkosť písma */
             font-size: ${fontSize}px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 20; cursor: pointer;
             text-align: center; white-space: nowrap;
@@ -403,7 +408,7 @@
 
         <div class="layout">
             <div class="sidebar no-print">
-                <h3>Pojmy</h3>
+                <h3>Položky na priradenie</h3>
                 <div id="terms-list"></div>
                 <button onclick="evaluateExercise()" class="btn-eval" id="btnEval">Vyhodnotiť</button>
             </div>
@@ -426,7 +431,6 @@
 
     <script>
         const appData = ${jsonString};
-        let termsMap = {}; 
         let pointsState = {}; 
         let selectedTerm = null;
         let isEvaluated = false;
@@ -435,11 +439,6 @@
             appData.points.forEach(p => {
                 pointsState[p.id] = { filled: false, assignedTerm: null, labelId: null, def: p };
                 createHitbox(p);
-                const pTerms = p.term ? p.term.split(';').map(t => t.trim()).filter(t=>t) : [];
-                pTerms.forEach(termText => {
-                    if (!termsMap[termText]) termsMap[termText] = [];
-                    termsMap[termText].push(p.id);
-                });
             });
             renderSidebar();
         }
@@ -451,7 +450,8 @@
             el.style.left = p.x + '%'; 
             el.style.top = p.y + '%';
             
-            const size = (p.shape === 'circle' || p.shape === 'square') ? p.radius * 2 : p.radius * 3;
+            const radius = p.radius || 1;
+            const size = (p.shape === 'circle' || p.shape === 'square') ? radius * 2 : radius * 3;
             el.style.width = size + '%';
             
             el.style.aspectRatio = "1 / 1"; 
@@ -465,19 +465,25 @@
         function renderSidebar() {
             const list = document.getElementById('terms-list');
             list.innerHTML = '';
-            let uniqueTerms = Object.keys(termsMap);
-            for (let i = uniqueTerms.length - 1; i > 0; i--) {
+            
+            let allTerms = [];
+            appData.points.forEach((p, index) => {
+                const termText = p.term ? p.term.split(';')[0].trim() : '???';
+                allTerms.push({ text: termText, id: 't-' + index });
+            });
+
+            for (let i = allTerms.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [uniqueTerms[i], uniqueTerms[j]] = [uniqueTerms[j], uniqueTerms[i]];
+                [allTerms[i], allTerms[j]] = [allTerms[j], allTerms[i]];
             }
-            uniqueTerms.forEach(term => {
+
+            allTerms.forEach(item => {
                 const btn = document.createElement('div');
                 btn.className = 'term-btn';
-                const safeId = 'btn-' + btoa(unescape(encodeURIComponent(term))).replace(/[^a-zA-Z0-9]/g, '');
-                btn.id = safeId;
-                btn.dataset.term = term;
-                btn.innerHTML = term.replace(/\\|/g, '<br>'); 
-                btn.onclick = () => selectTerm(term, safeId);
+                btn.id = item.id;
+                btn.dataset.term = item.text;
+                btn.innerHTML = item.text.replace(/\\|/g, '<br>'); 
+                btn.onclick = () => selectTerm(item.text, item.id);
                 list.appendChild(btn);
             });
         }
@@ -510,7 +516,6 @@
             const lbl = document.createElement('div');
             lbl.className = 'map-label lbl-neutral';
             
-            // APLIKOVANIE INDIVIDUÁLNEJ VEĽKOSTI PÍSMA (ak existuje)
             if (def.fontSize) {
                 lbl.style.fontSize = def.fontSize + 'px';
             }
@@ -664,8 +669,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Správny pojem</th>
-                                <th>Vaša odpoveď</th>
+                                <th>Správna odpoveď</th>
+                                <th>Odpoveď žiaka</th>
                                 <th style="text-align:center; width:80px;">Výsledok</th>
                             </tr>
                         </thead>
