@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor pracovných listov - pomiešané úlohy s doplňovaním (RTF)</title>
+    <title>Generátor pracovných listov - pomiešané úlohy s doplňovaním</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -108,6 +108,13 @@
         }
         .btn-primary:hover { background-color: #218838; }
         
+        .btn-pdf {
+            background-color: #dc3545;
+            color: white;
+            flex: 2;
+        }
+        .btn-pdf:hover { background-color: #c82333; }
+        
         .btn-outline {
             background-color: transparent;
             border: 2px solid #6c757d;
@@ -147,7 +154,7 @@
 <body>
 
 <div class="generator-container">
-    <h1>Generátor pracovných listov - pomiešané úlohy s doplňovaním (.rtf)</h1>
+    <h1>Generátor pracovných listov - <br>pomiešané úlohy s doplňovaním</h1>
 
     <div class="row">
         <div class="col">
@@ -246,7 +253,11 @@
         <button class="btn-outline" onclick="exportData()">Exportovať údaje</button>
         <button class="btn-outline" onclick="document.getElementById('fileInput').click()">Importovať údaje</button>
         <input type="file" id="fileInput" accept=".json" onchange="importData(this)">
-        <button class="btn-primary" onclick="generateRTF()">Stiahnuť pracovný list (.rtf)</button>
+    </div>
+    
+    <div class="button-group">
+        <button class="btn-primary" onclick="generateRTF()">Stiahnuť súbor (.rtf)</button>
+        <button class="btn-pdf" onclick="generatePDFPreview()">Zobraziť / Exportovať do .pdf</button>
     </div>
     
     <br><br>
@@ -321,7 +332,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'cvicenie_rtf_data.json';
+        a.download = 'cvicenie_data.json';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -375,61 +386,9 @@
         }
     }
 
-    // --- GENERÁTOR RTF ---
-    
-    function toRTF(str, allowSlashBreak = false) {
-        if (!str) return "";
-        
-        const regex = allowSlashBreak 
-            ? /(<b>|<\/b>|<i>|<\/i>|\/)/g
-            : /(<b>|<\/b>|<i>|<\/i>)/g;
-
-        const parts = str.split(regex);
-        let result = "";
-
-        parts.forEach(part => {
-            if (part === '<b>') {
-                result += '\\b ';
-            } else if (part === '</b>') {
-                result += '\\b0 ';
-            } else if (part === '<i>') {
-                result += '\\i ';
-            } else if (part === '</i>') {
-                result += '\\i0 ';
-            } else if (allowSlashBreak && part === '/') {
-                result += '\\line ';
-            } else {
-                result += escapeRTFText(part);
-            }
-        });
-        return result;
-    }
-
-    function escapeRTFText(text) {
-        let res = "";
-        for (let i = 0; i < text.length; i++) {
-            const charCode = text.charCodeAt(i);
-            if (charCode > 127) {
-                res += "\\u" + charCode + "?"; 
-            } else if (text[i] === '\\' || text[i] === '{' || text[i] === '}') {
-                res += "\\" + text[i];
-            } else if (text[i] === '\n') {
-                res += "\\line ";
-            } else {
-                res += text[i];
-            }
-        }
-        return res;
-    }
-
-    function generateRTF() {
-        const title = document.getElementById('exTitle').value.trim() || "Cvičenie";
-        const author = document.getElementById('exAuthor').value.trim() || "Autor";
-        const year = document.getElementById('exYear').value.trim() || new Date().getFullYear();
-        const instructions = document.getElementById('instructions').value.trim();
+    // --- Pomocné funkcie pre získanie štruktúrovaných dát ---
+    function parseTasks() {
         const rawContent = document.getElementById('inputText').value;
-        const groupCount = parseInt(document.getElementById('groupCount').value);
-
         const lines = rawContent.split('\n');
         const tasks = [];
         lines.forEach(line => {
@@ -454,17 +413,212 @@
                 allOptions: options 
             });
         });
+        return tasks;
+    }
 
+    // --- GENERÁTOR PDF / TLAČE ---
+    function toHTML(str, allowSlashBreak = false) {
+        if (!str) return "";
+        let result = str;
+        if (allowSlashBreak) {
+            result = result.replace(/\//g, '<br>');
+        }
+        return result;
+    }
+
+    function generatePDFPreview() {
+        const title = document.getElementById('exTitle').value.trim() || "Cvičenie";
+        const author = document.getElementById('exAuthor').value.trim() || "Autor";
+        const year = document.getElementById('exYear').value.trim() || new Date().getFullYear();
+        const instructions = document.getElementById('instructions').value.trim();
+        const groupCount = parseInt(document.getElementById('groupCount').value);
+        
+        const tasks = parseTasks();
         if (tasks.length === 0) {
             alert("Žiadne platné úlohy. Skontrolujte formát vstupu.");
             return;
         }
 
-        // --- ZAČIATOK RTF ---
+        const groupNames = ["A", "B", "C"];
+        let allGroupsData = [];
+
+        // Generovanie dát pre skupiny
+        for (let g = 0; g < groupCount; g++) {
+            let groupTasks = [...tasks];
+            for (let i = groupTasks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [groupTasks[i], groupTasks[j]] = [groupTasks[j], groupTasks[i]];
+            }
+            allGroupsData.push({ name: groupNames[g], tasks: groupTasks });
+        }
+
+        // Tvorba HTML pre náhľad a PDF - EXAKTNÉ KOPÍROVANIE RTF ŠTÝLOV
+        let htmlContent = `
+        <!DOCTYPE html>
+        <html lang="sk">
+        <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+                /* Okraje A4 na mieru RTF: Hore/Dole 10mm (567 twips), Vľavo/Vpravo 15mm (850 twips) */
+                @page { size: A4; margin: 10mm 15mm 10mm 15mm; }
+                
+                /* Základný font 12pt (rovnaké ako \\fs24) */
+                body { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif; font-size: 12pt; color: black; line-height: 1.4; }
+                
+                .page-break { page-break-before: always; }
+                .header-line { text-align: center; margin-bottom: 25px; font-size: 12pt; }
+                
+                /* Nadpis 16pt (rovnaké ako \\fs32 v RTF) */
+                .title { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
+                .group-title { text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 15px; }
+                
+                /* Inštrukcie 11pt (rovnaké ako \\fs22 v RTF) */
+                .instructions { font-style: italic; font-size: 11pt; margin-bottom: 25px; text-align: left; }
+                
+                /* Riadky tabuľky rozdelené presne ako v RTF: vľavo 65% (\\cellx6500), vpravo 35% (\\cellx10000) */
+                .task-row { display: flex; width: 100%; align-items: flex-end; }
+                .task-left { width: 65%; padding-right: 15px; padding-bottom: 5px; padding-top: 5px; border-bottom: 1px solid #808080; font-size: 11.5pt; }
+                .task-right { width: 35%; padding-bottom: 5px; padding-top: 5px; border-bottom: 1px solid #808080; font-size: 11.5pt; text-align: left; }
+                
+                /* Pätička a hodnotenie - font 10pt (rovnaké ako \\fs20) */
+                .footer-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 10pt; page-break-inside: avoid; }
+                .footer-left { width: 55%; line-height: 2.5; }
+                .footer-right { width: 42%; }
+                
+                .grade-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+                .grade-table th, .grade-table td { border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; font-size: 10pt; }
+                
+                .copyright { font-size: 10pt; margin-top: 30px; }
+                
+                /* Kľúč - nadpis 14pt (rovnaké ako \\fs28) */
+                .key-title { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 20px; margin-top: 20px;}
+            </style>
+        </head>
+        <body onload="window.print()">
+        `;
+
+        // Generovanie dokumentov pre žiakov
+        allGroupsData.forEach((groupData, gIndex) => {
+            if (gIndex > 0) htmlContent += `<div class="page-break"></div>`;
+            
+            htmlContent += `<div class="header-line">Meno: ................................................................ &nbsp;&nbsp;&nbsp; Trieda: ................... &nbsp;&nbsp;&nbsp; Dátum: ............................</div>`;
+            htmlContent += `<div class="title">${title}</div>`;
+            htmlContent += `<div class="group-title">Skupina ${groupData.name}</div>`;
+            
+            if (instructions) {
+                htmlContent += `<div class="instructions">${toHTML(instructions, false)}</div>`;
+            }
+
+            groupData.tasks.forEach((task, index) => {
+                let currentOptions = [...task.allOptions];
+                for (let i = currentOptions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentOptions[i], currentOptions[j]] = [currentOptions[j], currentOptions[i]];
+                }
+                const optionsString = currentOptions.join(" / ");
+                const taskNumber = (index + 1).toString().padStart(2, '0');
+
+                htmlContent += `
+                <div class="task-row">
+                    <div class="task-left">${toHTML(task.part1, true)} ..... ${toHTML(task.part2, true)}</div>
+                    <div class="task-right"><b>${taskNumber}.</b> ${toHTML(optionsString, false)}</div>
+                </div>`;
+            });
+
+            // Pätička s hodnotením
+            htmlContent += `
+            <div class="footer-section">
+                <div class="footer-left">
+                    Počet bodov: _______________<br>
+                    Počet percent: _______________<br>
+                    Známka a podpis učiteľa: ____________________
+                </div>
+                <div class="footer-right">
+                    <b>Stupnica hodnotenia:</b>
+                    <table class="grade-table">
+                        <tr><th>Známka</th><th>Percentá</th></tr>
+                        <tr><td>1</td><td>${document.getElementById('grade1').value}</td></tr>
+                        <tr><td>2</td><td>${document.getElementById('grade2').value}</td></tr>
+                        <tr><td>3</td><td>${document.getElementById('grade3').value}</td></tr>
+                        <tr><td>4</td><td>${document.getElementById('grade4').value}</td></tr>
+                        <tr><td>5</td><td>${document.getElementById('grade5').value}</td></tr>
+                    </table>
+                </div>
+            </div>`;
+            
+            htmlContent += `<div class="copyright">&copy; ${author} (${year})</div>`;
+        });
+
+        // Generovanie kľúča
+        htmlContent += `<div class="page-break"></div>`;
+        allGroupsData.forEach((groupData, gIndex) => {
+            if (gIndex > 0) htmlContent += `<br>`;
+            
+            htmlContent += `<div class="key-title">Kľúč správnych odpovedí - Skupina ${groupData.name}</div>`;
+            htmlContent += `<div>`;
+            groupData.tasks.forEach((task, index) => {
+                const taskNumber = (index + 1).toString().padStart(2, '0');
+                htmlContent += `<div style="margin-bottom: 5px;">${taskNumber}. ${toHTML(task.correct, false)}</div>`;
+            });
+            htmlContent += `</div>`;
+        });
+
+        htmlContent += `</body></html>`;
+
+        // Otvorenie nového okna pre tlač
+        const printWindow = window.open('', '_blank');
+        printWindow.document.open();
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    }
+
+
+    // --- GENERÁTOR RTF (Pôvodný, bez zmien) ---
+    function toRTF(str, allowSlashBreak = false) {
+        if (!str) return "";
+        const regex = allowSlashBreak ? /(<b>|<\/b>|<i>|<\/i>|\/)/g : /(<b>|<\/b>|<i>|<\/i>)/g;
+        const parts = str.split(regex);
+        let result = "";
+        parts.forEach(part => {
+            if (part === '<b>') result += '\\b ';
+            else if (part === '</b>') result += '\\b0 ';
+            else if (part === '<i>') result += '\\i ';
+            else if (part === '</i>') result += '\\i0 ';
+            else if (allowSlashBreak && part === '/') result += '\\line ';
+            else result += escapeRTFText(part);
+        });
+        return result;
+    }
+
+    function escapeRTFText(text) {
+        let res = "";
+        for (let i = 0; i < text.length; i++) {
+            const charCode = text.charCodeAt(i);
+            if (charCode > 127) res += "\\u" + charCode + "?"; 
+            else if (text[i] === '\\' || text[i] === '{' || text[i] === '}') res += "\\" + text[i];
+            else if (text[i] === '\n') res += "\\line ";
+            else res += text[i];
+        }
+        return res;
+    }
+
+    function generateRTF() {
+        const title = document.getElementById('exTitle').value.trim() || "Cvičenie";
+        const author = document.getElementById('exAuthor').value.trim() || "Autor";
+        const year = document.getElementById('exYear').value.trim() || new Date().getFullYear();
+        const instructions = document.getElementById('instructions').value.trim();
+        const groupCount = parseInt(document.getElementById('groupCount').value);
+
+        const tasks = parseTasks();
+        if (tasks.length === 0) {
+            alert("Žiadne platné úlohy. Skontrolujte formát vstupu.");
+            return;
+        }
+
         let rtfContent = `{\\rtf1\\ansi\\ansicpg1250\\deff0\\nouicompat\\deflang1051{\\fonttbl{\\f0\\fnil\\fcharset0 Comic Sans MS;}}`;
         rtfContent += `{\\colortbl ;\\red0\\green0\\blue0;\\red128\\green128\\blue128;}`;
         rtfContent += `\\paperw11906\\paperh16838\\margl850\\margr850\\margt567\\margb567`;
-        
         rtfContent += `\\f0\\fs24 `; 
 
         const groupNames = ["A", "B", "C"];
@@ -472,25 +626,18 @@
 
         for (let g = 0; g < groupCount; g++) {
             const gName = groupNames[g];
-            
             if (g > 0) rtfContent += `\\page `; 
 
-            // --- MIEŠANIE ÚLOH (Shuffle) ---
             let groupTasks = [...tasks];
             for (let i = groupTasks.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [groupTasks[i], groupTasks[j]] = [groupTasks[j], groupTasks[i]];
             }
             
-            allGroupsData.push({
-                name: gName,
-                tasks: groupTasks
-            });
+            allGroupsData.push({ name: gName, tasks: groupTasks });
 
-            // --- HLAVIČKA ---
             rtfContent += `\\pard\\fs24 `;
             rtfContent += `\\qc ${toRTF("Meno:", false)} ................................................................    ${toRTF("Trieda:", false)} ...................    ${toRTF("Dátum:", false)} ............................\\par\\par `;
-            
             rtfContent += `\\pard\\qc\\sa200\\sl276\\slmult1\\b\\fs32 ${toRTF(title, false)}\\par\\fs24\\b0 `;
             rtfContent += `\\pard\\qc\\sa100\\sl276\\slmult1\\b ${toRTF("Skupina", false)} ${gName}\\b0\\par `;
 
@@ -498,12 +645,8 @@
                 rtfContent += `\\pard\\ql\\sa200\\sl276\\slmult1\\fs22\\i ${toRTF(instructions, false)}\\i0\\par `;
             }
 
-            // ODSTRÁNENÝ EXTRA RIADOK "rtfContent += `\\par `;" PRE ZMENŠENIE ODSTUPU
-
-            // --- ÚLOHY (Použijeme groupTasks) ---
             groupTasks.forEach((task, index) => {
                 let currentOptions = [...task.allOptions];
-                // Shuffle options
                 for (let i = currentOptions.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [currentOptions[i], currentOptions[j]] = [currentOptions[j], currentOptions[i]];
@@ -515,12 +658,10 @@
                 rtfContent += `\\clbrdrb\\brdrs\\brdrw10\\brdrcf2 \\cellx6500`; 
                 rtfContent += `\\clbrdrb\\brdrs\\brdrw10\\brdrcf2 \\cellx10000`; 
 
-                // ĽAVÝ STĹPEC (VETA)
                 rtfContent += `\\pard\\intbl\\sb100\\sa100\\sl276\\slmult1\\fs23 `;
                 rtfContent += `${toRTF(task.part1, true)} ..... ${toRTF(task.part2, true)}`;
                 rtfContent += `\\cell `;
 
-                // PRAVÝ STĹPEC (ČÍSLO + MOŽNOSTI)
                 rtfContent += `\\pard\\intbl\\sb100\\sa100\\ql\\sl276\\slmult1\\fs23 `; 
                 rtfContent += `\\b ${taskNumber}.\\b0  ${toRTF(optionsString, false)}`;
                 rtfContent += `\\cell `;
@@ -528,22 +669,16 @@
                 rtfContent += `\\row `;
             });
 
-            // --- PÄTIČKA (SECTION BREAK - 2 Stĺpce) ---
             rtfContent += `\\pard \\par `;
-            
             rtfContent += `\\sect\\sbknone\\cols2\\colsx400\\colw9500\\colw3250 `;
-            
             rtfContent += `\\pard\\sl276\\slmult1\\fs20 `;
             rtfContent += `${toRTF("Počet bodov:", false)} _______________\\par\\par `; 
             rtfContent += `${toRTF("Počet percent:", false)} _______________\\par\\par `;
             rtfContent += `${toRTF("Známka a podpis učiteľa:", false)} ____________________\\par `;
-            
             rtfContent += `\\column `;
 
             rtfContent += `\\pard\\sa100\\b ${toRTF("Stupnica hodnotenia:", false)} \\b0\\par `;
-            
             const cellBorders = "\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10";
-            
             rtfContent += `\\trowd\\trgaph108\\trleft0`;
             rtfContent += `${cellBorders}\\cellx1000`; 
             rtfContent += `${cellBorders}\\cellx3200`; 
@@ -562,20 +697,15 @@
             }
 
             rtfContent += `\\pard \\sect\\sbknone\\cols1 `;
-            
             rtfContent += `\\pard\\par `;
             rtfContent += `\\fs20 \\u169? ${toRTF(author, false)} (${year}) \\fs24\\par `; 
         }
 
-        // --- KĽÚČ ---
         rtfContent += `\\page `;
-        
         allGroupsData.forEach((groupData, gIndex) => {
             if (gIndex > 0) rtfContent += `\\par\\par `;
-            
             rtfContent += `\\pard\\qc\\b\\fs28 ${toRTF("Kľúč správnych odpovedí - Skupina " + groupData.name, false)} \\b0\\fs24\\par\\par `;
             rtfContent += `\\pard\\ql `;
-            
             groupData.tasks.forEach((task, index) => {
                 const taskNumber = (index + 1).toString().padStart(2, '0');
                 rtfContent += `${taskNumber}.  ${toRTF(task.correct, false)}\\par `;
