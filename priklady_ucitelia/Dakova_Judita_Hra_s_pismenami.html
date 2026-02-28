@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Hra s písmenami</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .game-area { margin-top: 30px; }
+    .definition { font-size: 20px; margin-bottom: 10px; }
+    .word-display { font-size: 24px; letter-spacing: 10px; margin-bottom: 20px; }
+.alphabet { display: block; }
+	.alphabet-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+    .alphabet button { padding: 10px; font-size: 18px; width: 40px; }
+    .score { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Hra s písmenami</h1>
+  <p><b>Autor:</b> Mgr. Judita Daková</p>
+  <div class="game-area" id="gameArea">
+    <div class="definition" id="definitionText"></div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="alphabet" id="alphabetButtons"></div>
+    <div class="score" id="scoreDisplay"></div>
+  </div>
+
+  <script>
+    let tasks = [{"definition":"naša vlasť","word":"Slovensko"},{"definition":"hráme sa na ňom","word":"Playstation"},{"definition":"píšeme ním","word":"pero"},{"definition":"čítame z nej","word":"kniha"},{"definition":"voláme na ňom","word":"mobil"},{"definition":"píšeme na ňu","word":"tabuľa"},{"definition":"počúvame ním hudbu","word":"slúchadlo"},{"definition":"predmet, na ktorom sa učíme počítať","word":"matematika"},{"definition":"lietame ním","word":"lietadlo"},{"definition":"prváci ju dostávajú namiesto známky","word":"pečiatka"},{"definition":"ráno ju pijú dospelí","word":"káva"},{"definition":"píšeme ich","word":"písmená"}];
+    let usedIndices = [];
+    let currentWord = '';
+    let currentDefinition = '';
+    let guessedLetters = [];
+    let guessedLettersNormalized = [];
+    let score = 0;
+    let currentMaxScore = 0;
+    let currentScore = 0;
+
+    function normChar(ch) {
+      if (ch === 'ẞ') return 'ß';
+      return ch.toLowerCase();
+    }
+
+    function nextTask() {
+      if (usedIndices.length === tasks.length) {
+        document.getElementById('definitionText').textContent = '🎉 Hra sa skončila! Celkové skóre: ' + score;
+        document.getElementById('wordDisplay').textContent = '';
+        document.getElementById('alphabetButtons').innerHTML = '';
+        return;
+      }
+
+      let index;
+      do {
+        index = Math.floor(Math.random() * tasks.length);
+      } while (usedIndices.includes(index));
+      usedIndices.push(index);
+
+      const task = tasks[index];
+      currentWord = task.word; // ponechať originál (vrátane ß)
+      currentDefinition = task.definition;
+      guessedLetters = [];
+      guessedLettersNormalized = [];
+      currentMaxScore = currentWord.length;
+      currentScore = currentMaxScore;
+
+      document.getElementById('definitionText').textContent = currentDefinition;
+      updateWordDisplay();
+      renderAlphabet();
+      updateScoreDisplay();
+    }
+
+    function updateWordDisplay() {
+      const wordDisplayElement = document.getElementById('wordDisplay');
+      const display = currentWord.split('').map(letter => {
+        if (letter === ' ') {
+          return '<span style="margin-right: 30px;"></span>'; // vizuálna medzera
+        } else if (guessedLettersNormalized.includes(normChar(letter))) {
+          return letter; // zobraz originál (vrátane ß)
+        } else {
+          return '_';
+        }
+      }).join(' ');
+
+      wordDisplayElement.innerHTML = display; // použijeme innerHTML kvôli <span>
+    }
+
+   function renderAlphabet() {
+  // definuj si riadky písmen
+  const rows = [
+    'ABCDEFGHIJKLM',
+    'NOPQRSTUVWXYZ',
+    'ÁČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ',
+	'ÄÖÜß'
+  ];
+
+  const container = document.getElementById('alphabetButtons');
+  container.innerHTML = '';  // vymaž predchádzajúce tlačidlá
+
+  // pre každý riadok vytvor nový div a vlož doň tlačidlá
+  rows.forEach(letters => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.display = 'flex';
+    rowDiv.style.gap = '5px';
+    rowDiv.style.marginBottom = '10px';
+
+    letters.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.textContent = letter;
+      btn.style.fontWeight = 'bold';
+      btn.onclick = () => handleGuess(letter);
+      btn.disabled = guessedLetters.includes(letter);
+      rowDiv.appendChild(btn);
+    });
+
+    container.appendChild(rowDiv);
+  });
+}
+    function handleGuess(letter) {
+      guessedLetters.push(letter);
+      guessedLettersNormalized.push(normChar(letter));
+
+      const hasLetter = currentWord.split('').some(l => normChar(l) === normChar(letter));
+
+      if (hasLetter) {
+        updateWordDisplay();
+
+        const allGuessed = currentWord.split('').every(l =>
+          l === ' ' || guessedLettersNormalized.includes(normChar(l))
+        );
+
+        if (allGuessed) {
+          score += currentScore;
+          updateScoreDisplay();
+          setTimeout(nextTask, 1000);
+        }
+      } else {
+        currentScore = Math.max(0, currentScore - 1);
+        updateScoreDisplay();
+      }
+
+      renderAlphabet();
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('scoreDisplay').textContent =
+        `Skóre: ${score} | Aktuálne: ${currentScore} / ${currentMaxScore}`;
+    }
+
+    window.onload = nextTask;
+  </script>
+</body>
+</html>
