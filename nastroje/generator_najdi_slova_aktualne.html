@@ -114,7 +114,12 @@
 </head>
 <body>
 
-    <h1>Nájdi a označ položky v texte - generátor</h1>
+    <h1>Nájdi a označ položky v texte - generátor (jedna úloha)</h1>
+	
+	 <p><strong>Pokyn pre učiteľa ohľadom definovania položiek:</strong><br>
+        Označte v texte po jednom myšou všetky časti, ktoré musí žiak identifikovať ako položky, ktoré má nájsť. <br>Po označení každej jednej položky kliknite na tlačidlo <b>Označiť ako položku (cieľ)</b>. Táto získa sivé pozadie.<br>
+		Ak chcete vložiť čistý text, použite kombináciu <b>Ctrl + Shift + V</b>.
+		</p>
 
     <div class="config-panel">
         <div class="form-group">
@@ -131,7 +136,7 @@
         </div>
         <div class="form-group">
             <label>Pokyny pre žiaka:</label>
-            <textarea id="instructions" rows="3">Nájdi všetky podstatné mená. Označ ich myšou. Ak si rozmyslíš svoju voľbu, klikni na označenú položku dvakrát za sebou.</textarea>
+            <textarea id="instructions" rows="3">Nájdi všetky podstatné mená. Klikni na ne myšou. Ak si rozmyslíš svoju voľbu, klikni na už označenú položku.</textarea>
         </div>
     </div>
 
@@ -152,7 +157,7 @@
     <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importFromJSON(event)">
 
     <div class="info-box">
-        Uložte si údaje zadané do vstupných polí generátora pomocou tlačidla Exportovať údaje (json). Po otvorení tohoto generátora v inom prehliadači alebo v inom počítači môžete tieto uložené údaje načítať znova pomocou tlačidla Importovať údaje (json).
+        Uložte si údaje zadané do vstupných polí generátora pomocou tlačidla <b>Exportovať nastavenia do súboru .json</b>. <br>Po otvorení tohoto generátora v inom prehliadači alebo v inom počítači môžete tieto uložené údaje načítať znova pomocou tlačidla <b>Importovať nastavenia zo súboru .json</b>.
     </div>
 
     <footer>
