@@ -143,7 +143,9 @@
     </div>
     <button class="btn-gen" onclick="generate('v3')">GENEROVAŤ PEXESO</button>
 </div>
-
+ <br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+  <br><br>
 <script>
     let imageMemory = { v1: [], v2: [] };
 
@@ -156,6 +158,32 @@
         }
         el.oninput = () => localStorage.setItem(id, el.type === 'checkbox' ? el.checked : el.value);
     });
+
+    // --- DOPLNENÁ FUNKCIA PRE TABULÁTOR ---
+    function enableTabSupport(textareaId) {
+        const el = document.getElementById(textareaId);
+        el.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                // Vloženie tabulátora na pozíciu kurzora
+                this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+
+                // Posunutie kurzora za vložený tabulátor
+                this.selectionStart = this.selectionEnd = start + 1;
+
+                // Manuálne vyvolanie oninput, aby sa zmeny uložili do localStorage
+                this.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+
+    // Aktivácia podpory TAB pre obe textové polia
+    enableTabSupport('v2text');
+    enableTabSupport('v3text');
+    // --------------------------------------
 
     function toggleUI() {
         const isUncovered = document.getElementById('isUncovered').checked;
