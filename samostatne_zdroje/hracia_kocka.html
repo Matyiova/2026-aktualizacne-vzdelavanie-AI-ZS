@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Kocky - Jemné Zelené Tlačidlo</title>
+    <style>
+        :root {
+            --default-dice-bg: #ffffff;
+            --dot-color: #111111;
+            --dice-size: 200px;
+            --tz: 100px; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .header-controls {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+        label { font-weight: 600; font-size: 0.85rem; color: #555; }
+
+        input[type="number"] {
+            width: 65px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .global-color-picker {
+            width: 45px;
+            height: 35px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .dice-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-content: center;
+            width: 100%;
+            max-width: 1300px;
+            flex-grow: 1;
+            margin-bottom: 30px;
+        }
+
+        .dice-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scene {
+            width: var(--dice-size);
+            height: var(--dice-size);
+            perspective: 1200px;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: translateZ(calc(var(--tz) * -1));
+            transition: transform 2.8s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        .cube__face {
+            position: absolute;
+            width: var(--dice-size);
+            height: var(--dice-size);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 18%;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 12%;
+            box-sizing: border-box;
+        }
+
+        .cube__face--1 { transform: rotateY(  0deg) translateZ(var(--tz)); }
+        .cube__face--2 { transform: rotateX( 90deg) translateZ(var(--tz)); }
+        .cube__face--3 { transform: rotateY( 90deg) translateZ(var(--tz)); }
+        .cube__face--4 { transform: rotateY(-90deg) translateZ(var(--tz)); }
+        .cube__face--5 { transform: rotateX(-90deg) translateZ(var(--tz)); }
+        .cube__face--6 { transform: rotateY(180deg) translateZ(var(--tz)); }
+
+        .dot {
+            background-color: var(--dot-color);
+            border-radius: 50%;
+            width: 85%;
+            height: 85%;
+            justify-self: center;
+            align-self: center;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.5);
+        }
+
+        .individual-color {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .bottom-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            padding: 20px;
+            background: #fff;
+            border-top: 1px solid #ddd;
+        }
+
+        /* TLAČIDLO SO ZNÍŽENÝM TIEŇOM */
+        button#actionBtn {
+            background-color: #28a745;
+            color: white;
+            border: 1px solid #218838;
+            border-radius: 6px;
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #1e7e34; /* Znížený tieň na 2px */
+            transition: all 0.1s ease;
+            text-transform: none;
+            outline: none;
+        }
+
+        button#actionBtn:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+
+        button#actionBtn:active {
+            transform: translateY(1px); /* Jemnejší posun pri stlačení */
+            box-shadow: 0 1px 0 #1e7e34;
+        }
+
+        button#actionBtn:disabled {
+            background-color: #6c757d;
+            border-color: #545b62;
+            box-shadow: 0 1px 0 #343a40;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container { text-align: center; }
+        .result-label { font-size: 0.9rem; color: #6c757d; font-weight: bold; margin-bottom: 5px; }
+        .result-value { font-size: 4rem; font-weight: 900; color: #343a40; line-height: 1; }
+    </style>
+</head>
+<body>
+<h1>Hracia kocka</h1>
+    <div class="header-controls">
+        <div class="control-group">
+            <label>Počet kociek</label>
+            <input type="number" id="diceCount" min="1" max="100" value="1">
+        </div>
+        <div class="control-group">
+            <label>Farba steny</label>
+            <input type="color" id="globalColor" class="global-color-picker" value="#ffffff">
+        </div>
+    </div>
+
+    <div class="dice-container" id="diceContainer"></div>
+
+    <div class="bottom-ui">
+        <button id="actionBtn">Hodiť</button>
+        <div class="result-container">
+            <div class="result-label" id="resultLabel">Hodená hodnota</div>
+            <div class="result-value" id="resultValue">-</div>
+        </div>
+    </div>
+
+    <script>
+        const diceCountInput = document.getElementById('diceCount');
+        const globalColorInput = document.getElementById('globalColor');
+        const diceContainer = document.getElementById('diceContainer');
+        const actionBtn = document.getElementById('actionBtn');
+        const resultValue = document.getElementById('resultValue');
+        const resultLabel = document.getElementById('resultLabel');
+
+        const dotPatterns = {
+            1: [4], 2: [0, 8], 3: [0, 4, 8],
+            4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+        };
+
+        const faceRotations = {
+            1: { x: 0, y: 0 }, 2: { x: -90, y: 0 }, 3: { x: 0, y: -90 },
+            4: { x: 0, y: 90 }, 5: { x: 90, y: 0 }, 6: { x: 180, y: 0 }
+        };
+
+        function calculateBestSize(count) {
+            const containerWidth = window.innerWidth * 0.9;
+            const containerHeight = window.innerHeight * 0.45;
+            const area = containerWidth * containerHeight;
+            let size = Math.sqrt(area / (count * 1.6));
+            
+            if (count === 1) size = 250;
+            else if (size > 170) size = 170;
+            if (size < 50) size = 50;
+
+            const maxW = (containerWidth / Math.ceil(Math.sqrt(count))) - 30;
+            return Math.floor(Math.min(size, maxW));
+        }
+
+        function createCube(color) {
+            const cube = document.createElement('div');
+            cube.className = 'cube';
+            cube.dataset.rotX = 0;
+            cube.dataset.rotY = 0;
+
+            for (let i = 1; i <= 6; i++) {
+                const face = document.createElement('div');
+                face.className = `cube__face cube__face--${i}`;
+                face.style.backgroundColor = color;
+                
+                for (let dotIdx = 0; dotIdx < 9; dotIdx++) {
+                    const cell = document.createElement('div');
+                    if (dotPatterns[i].includes(dotIdx)) {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot';
+                        cell.appendChild(dot);
+                    }
+                    face.appendChild(cell);
+                }
+                cube.appendChild(face);
+            }
+            return cube;
+        }
+
+        function initDice() {
+            const count = parseInt(diceCountInput.value) || 1;
+            const size = calculateBestSize(count);
+            
+            document.documentElement.style.setProperty('--dice-size', size + 'px');
+            document.documentElement.style.setProperty('--tz', (size / 2) + 'px');
+
+            actionBtn.textContent = count === 1 ? 'Hodiť' : 'Spočítať hodnoty hodov';
+            resultLabel.textContent = count === 1 ? 'Hodená hodnota' : 'Súčet hodov';
+
+            diceContainer.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'dice-wrapper';
+
+                const scene = document.createElement('div');
+                scene.className = 'scene';
+                
+                const cube = createCube(globalColorInput.value);
+                scene.appendChild(cube);
+                
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.className = 'individual-color';
+                picker.value = globalColorInput.value;
+                
+                picker.addEventListener('input', (e) => {
+                    const faces = cube.querySelectorAll('.cube__face');
+                    faces.forEach(f => f.style.backgroundColor = e.target.value);
+                });
+
+                wrapper.appendChild(scene);
+                wrapper.appendChild(picker);
+                diceContainer.appendChild(wrapper);
+            }
+            resultValue.textContent = '-';
+        }
+
+        function rollDice() {
+            const cubes = document.querySelectorAll('.cube');
+            let totalSum = 0;
+            actionBtn.disabled = true;
+            resultValue.textContent = '...';
+
+            cubes.forEach((cube, index) => {
+                const rollResult = Math.floor(Math.random() * 6) + 1;
+                totalSum += rollResult;
+
+                const currentX = parseInt(cube.dataset.rotX);
+                const currentY = parseInt(cube.dataset.rotY);
+
+                const spinX = (Math.floor(Math.random() * 4) + 5) * 360;
+                const spinY = (Math.floor(Math.random() * 4) + 5) * 360;
+
+                const targetX = faceRotations[rollResult].x;
+                const targetY = faceRotations[rollResult].y;
+
+                const newX = (Math.floor(currentX / 360) * 360) + spinX + targetX;
+                const newY = (Math.floor(currentY / 360) * 360) + spinY + targetY;
+
+                setTimeout(() => {
+                    cube.style.transform = `translateZ(calc(var(--tz) * -1)) rotateX(${newX}deg) rotateY(${newY}deg)`;
+                }, index * (cubes.length > 10 ? 15 : 40));
+                
+                cube.dataset.rotX = newX;
+                cube.dataset.rotY = newY;
+            });
+
+            setTimeout(() => {
+                resultValue.textContent = totalSum;
+                actionBtn.disabled = false;
+            }, 2900);
+        }
+
+        diceCountInput.addEventListener('change', initDice);
+        globalColorInput.addEventListener('input', (e) => {
+            const allFaces = document.querySelectorAll('.cube__face');
+            const allPickers = document.querySelectorAll('.individual-color');
+            allFaces.forEach(f => f.style.backgroundColor = e.target.value);
+            allPickers.forEach(p => p.value = e.target.value);
+        });
+
+        window.addEventListener('resize', initDice);
+        actionBtn.addEventListener('click', rollDice);
+
+        initDice();
+    </script>
+	<br><br>
+  <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+<br><br>
+</body>
+</html>
