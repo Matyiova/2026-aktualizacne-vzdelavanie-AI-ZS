@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8" />
-  <title>Generátor cvičení s krátkou odpoveďou</title>
+  <title>Generátor cvičení s krátkou odpoveďou (viac riadkov)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body { font-family: Courier bold, monospace; font-size: 110%; padding: 20px; }
@@ -15,7 +15,6 @@
     button { margin-top:12px; padding:8px 12px; margin-right: 8px; cursor: pointer; }
     .button-group { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
     .preview { margin-top:20px; border-top:1px solid #ddd; padding-top:16px; }
-    /* tlačové štýly: skryť hlavičku, pokyny, meno, ovládacie prvky a vstupy; zobraziť len výsledky */
     @media print {
       header, h1, .meta, .instructions, .controls, #exercise, input, button, .preview, .button-group { display: none !important; }
       #result { display: block !important; width: 100% !important; }
@@ -26,8 +25,8 @@
 </head>
 <body>
   <header>
-    <h1>Generátor testov s krátkou odpoveďou<br>
-	(zobrazuje sa naraz len jedna úloha)</h1>
+    <h1>Generátor testov s krátkou odpoveďou -<br>
+	viac riadkov (zobrazuje sa naraz len jedna úloha)</h1>
   </header>
 
   <label for="titleInput">Názov testu:</label>
@@ -46,8 +45,14 @@
   <label for="exerciseCount">Predvolený počet úloh v cvičení:</label><input id="exerciseCount" type="number" min="1" value="10" />
 
   <label for="taskInput"><b>Zadajte úlohy. Každá úloha má byť v samostatnom riadku.<br>Zadanie a riešenie oddeľte klávesom[TAB].<br>Ak má zadanie viac riešení, ďalšie riešenie pridajte za ďalší [TAB]:</b></label>
-  <div class="hint">Formát:<br>zadanie[TAB]správna odpoveď 1[TAB]správna odpoveď 2 (ak existuje)[TAB]správna odpoveď 3 (ak existuje)</div>
+  <div class="hint"><b>Formát:</b><br>zadanie[TAB]správna odpoveď 1[TAB]správna odpoveď 2 (ak existuje)[TAB]správna odpoveď 3 (ak existuje)<br>
+  Je povolené formátovanie pomocou tagov html.<br>
+  <b>Je možné zadávať úlohy aj takto:</b> On zbiera staré mobily.|Er ... alte Handys.[TAB]sammelt<br><br>
+  Znak | znamená nový riadok v úlohe.</div>
   <textarea id="taskInput" placeholder="fernsehen (du)  Sieh fern!  Sieh ... fern!"></textarea>
+  <div style="margin-top: 5px;">
+    <button type="button" id="insertPipeBtn" style="font-size: 0.9rem; padding: 4px 10px; cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background: #eee; margin-top: 0;">Vložiť znak <b>|</b> (ľavý Alt + 0124)</button>
+  </div>
 
   <div>
     <button id="downloadBtn" style="font-weight: bold; background-color: #e0f7fa;">Stiahnuť test ako súbor .html</button>
@@ -62,7 +67,6 @@
   <div class="preview" id="preview"></div>
 
   <script>
-    // elementy
     const taskInput = document.getElementById('taskInput');
     const titleInput = document.getElementById('titleInput');
     const instructionsInput = document.getElementById('instructionsInput');
@@ -75,8 +79,8 @@
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const importJsonBtn = document.getElementById('importJsonBtn');
     const importJsonFile = document.getElementById('importJsonFile');
+    const insertPipeBtn = document.getElementById('insertPipeBtn');
 
-    // TAB vloží skutočný tab
     taskInput.addEventListener('keydown', function(e){
       if (e.key === 'Tab') {
         e.preventDefault();
@@ -86,7 +90,13 @@
       }
     });
 
-    // localStorage načítanie
+    insertPipeBtn.addEventListener('click', function() {
+      const s = taskInput.selectionStart, epos = taskInput.selectionEnd;
+      taskInput.value = taskInput.value.slice(0,s) + '|' + taskInput.value.slice(epos);
+      taskInput.selectionStart = taskInput.selectionEnd = s + 1;
+      taskInput.focus();
+    });
+
     window.addEventListener('load', () => {
       const raw = localStorage.getItem('exerciseRaw'); if (raw) taskInput.value = raw;
       const t = localStorage.getItem('exerciseTitle'); if (t) titleInput.value = t;
@@ -96,7 +106,6 @@
       const cnt = localStorage.getItem('exerciseCount'); if (cnt) exerciseCountEl.value = cnt;
     });
 
-    // localStorage ukladanie
     taskInput.addEventListener('input', ()=> localStorage.setItem('exerciseRaw', taskInput.value));
     titleInput.addEventListener('input', e=> localStorage.setItem('exerciseTitle', e.target.value));
     instructionsInput.addEventListener('input', e=> localStorage.setItem('exerciseInstr', e.target.value));
@@ -121,16 +130,14 @@
 
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); }); }
 
-    // Pomocná funkcia na bezpečný názov súboru (bez diakritiky, medzery na podčiarkovníky)
     function sanitizeFilename(str) {
       if (!str) return '';
       return str
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // odstráni diakritiku
-        .replace(/[ \(\)\[\]]+/g, "_")                    // medzery a zátvorky na podčiarkovník
-        .replace(/[^a-zA-Z0-9_\-]/g, "");                 // nechá len bezpečné znaky
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[ \(\)\[\]]+/g, "_")
+        .replace(/[^a-zA-Z0-9_\-]/g, "");
     }
 
-    // STIAHNUŤ VYGENEROVANÝ SÚBOR (.HTML)
     function downloadHtml(){
       const title = titleInput.value.trim();
       const instructions = instructionsInput.value.trim();
@@ -191,6 +198,10 @@
   .incorrect { background: #ffcdd2; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
   .row { margin-bottom: 12px; }
   #answerInput { font-family: Courier bold, monospace; font-size: 1.6rem; line-height: 1.2; padding: 10px; text-align: center; }
+  
+  .char-keyboard { margin-top: 15px; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .char-btn { padding: 8px 15px; font-size: 1.2rem; cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background-color: #fff; font-family: Courier bold, monospace; font-weight: bold; }
+  .char-btn:hover { background-color: #e0e0e0; }
   
   @media print {
     header, h1, .meta, .instructions, .controls, #exercise, #navContainer, input, button, #setupScreen { display: none !important; }
@@ -277,7 +288,32 @@
 
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); }); }
 
-    // SPUSTENIE TESTU
+    function formatPrompt(text) {
+      if (!text) return '';
+      let lines = String(text).split('|');
+      return lines.map(line => {
+        let esc = escapeHtml(line);
+        esc = esc.replace(/&lt;b&gt;/gi, '<b>').replace(/&lt;\\/b&gt;/gi, '</b>');
+        esc = esc.replace(/&lt;i&gt;/gi, '<i>').replace(/&lt;\\/i&gt;/gi, '</i>');
+        esc = esc.replace(/&lt;u&gt;/gi, '<u>').replace(/&lt;\\/u&gt;/gi, '</u>');
+        esc = esc.replace(/&lt;span(.*?)&gt;/gi, function(m, p1) {
+          return '<span' + p1.replace(/&quot;/g, '"').replace(/&#39;/g, "\\'") + '>';
+        }).replace(/&lt;\\/span&gt;/gi, '</span>');
+        return esc;
+      }).join('<br>');
+    }
+
+    function insertChar(char) {
+      const inp = document.getElementById('answerInput');
+      if(inp) {
+        const start = inp.selectionStart;
+        const end = inp.selectionEnd;
+        inp.value = inp.value.substring(0, start) + char + inp.value.substring(end);
+        inp.selectionStart = inp.selectionEnd = start + 1;
+        inp.focus();
+      }
+    }
+
     function startTest() {
       let reqCount = parseInt(document.getElementById('userTaskCount').value, 10);
       if (isNaN(reqCount) || reqCount < 1) reqCount = 1;
@@ -293,7 +329,6 @@
       renderTask(0);
     }
 
-    // ULOŽENIE AKTUÁLNEJ ODPOVEDE
     function saveCurrentAnswer() {
       const inp = document.getElementById('answerInput');
       if (inp) {
@@ -301,16 +336,24 @@
       }
     }
 
-    // VYKRESLENIE ÚLOHY
     function renderTask(index) {
       currentIndex = index;
       const task = tasks[currentIndex];
 
       document.getElementById('exercise').innerHTML = \`
         <div class="task">
-          <div class="row"><strong>\${escapeHtml(task.prompt)}</strong></div>
+          <div class="row" style="text-align: center;"><strong>\${formatPrompt(task.prompt)}</strong></div>
           <div class="row">
             <input id="answerInput" type="text" autocomplete="off" value="\${escapeHtml(answers[currentIndex])}" />
+          </div>
+          <div class="char-keyboard">
+            <button type="button" class="char-btn" onclick="insertChar('ä')">ä</button>
+            <button type="button" class="char-btn" onclick="insertChar('ö')">ö</button>
+            <button type="button" class="char-btn" onclick="insertChar('ü')">ü</button>
+            <button type="button" class="char-btn" onclick="insertChar('ß')">ß</button>
+            <button type="button" class="char-btn" onclick="insertChar('Ä')">Ä</button>
+            <button type="button" class="char-btn" onclick="insertChar('Ö')">Ö</button>
+            <button type="button" class="char-btn" onclick="insertChar('Ü')">Ü</button>
           </div>
         </div>\`;
       
@@ -323,19 +366,17 @@
         }
       });
 
-      // Zobrazenie / skrytie tlačidiel Ďalej a Vyhodnotiť
       if (currentIndex < tasks.length - 1) {
         document.getElementById('nextBtn').style.display = 'inline-block';
         document.getElementById('evalBtn').style.display = 'none';
       } else {
         document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('evalBtn').style.display = 'block'; // Zelené tlačidlo na poslednej úlohe
+        document.getElementById('evalBtn').style.display = 'block';
       }
 
       updateNav();
     }
 
-    // PRECHOD NA ĎALŠIU ÚLOHU
     function goNext() {
       saveCurrentAnswer();
       if (currentIndex < tasks.length - 1) {
@@ -343,13 +384,11 @@
       }
     }
 
-    // SKOK CEZ NAVIGAČNÉ TLAČIDLO
     function jumpTo(index) {
       saveCurrentAnswer();
       renderTask(index);
     }
 
-    // AKTUALIZÁCIA NAVIGAČNÝCH TLAČIDIEL
     function updateNav() {
       const nav = document.getElementById('navContainer');
       nav.innerHTML = '';
@@ -358,12 +397,10 @@
         btn.innerText = i + 1;
         btn.className = 'nav-btn';
         
-        // Zvýraznenie aktuálnej úlohy
         if (i === currentIndex) {
           btn.classList.add('current');
         }
         
-        // Zafarbenie zodpovedaných úloh na modro
         if (answers[i] && answers[i].trim() !== '') {
           btn.classList.add('answered');
         }
@@ -373,7 +410,6 @@
       }
     }
 
-    // VYHODNOTENIE TESTU
     function evaluateTest() {
       saveCurrentAnswer();
       
@@ -390,7 +426,7 @@
         
         if (isMultipleAnswers(aRaw)) {
           const aEsc = escapeHtml(aRaw || '(žiadna odpoveď)');
-          summary += \`<div class="incorrect"><div><strong>\${escapeHtml(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌ (viac odpovedí)</strong></div></div><br />\`;
+          summary += \`<div class="incorrect"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌ (viac odpovedí)</strong></div></div><br />\`;
           continue;
         }
         
@@ -407,9 +443,9 @@
         const aEsc = escapeHtml(aRaw || '(žiadna odpoveď)');
         if (matched) {
           score++;
-          summary += \`<div class="correct"><div><strong>\${escapeHtml(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Správne ✅</strong></div></div><br />\`;
+          summary += \`<div class="correct"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Správne ✅</strong></div></div><br />\`;
         } else {
-          summary += \`<div class="incorrect"><div><strong>\${escapeHtml(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌</strong></div></div><br />\`;
+          summary += \`<div class="incorrect"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌</strong></div></div><br />\`;
         }
       }
 
@@ -428,7 +464,7 @@
       document.getElementById('printBtn').style.display = 'block';
     }
 
-  <\/script>
+  \x3C/script>
 </body>
 </html>`;
 
@@ -438,11 +474,15 @@
       a.href = url;
       const safeTitle = sanitizeFilename(title) || 'cvicenie';
       a.download = safeTitle + '.html';
+      
+      // Fix pre Firefox: element musí byť pridaný do body, aby fungoval klik
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      
       URL.revokeObjectURL(url);
     }
 
-    // EXPORT JSON
     function exportSettings() {
       const data = {
         title: titleInput.value,
@@ -458,11 +498,15 @@
       a.href = url;
       const safeTitle = sanitizeFilename(titleInput.value) || 'nastavenia';
       a.download = safeTitle + '_nastavenia.json';
+      
+      // Fix pre Firefox
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      
       URL.revokeObjectURL(url);
     }
 
-    // IMPORT JSON
     importJsonBtn.addEventListener('click', () => importJsonFile.click());
     importJsonFile.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -479,7 +523,7 @@
           if(data.count !== undefined) { exerciseCountEl.value = data.count; localStorage.setItem('exerciseCount', data.count); }
           if(data.tasksRaw !== undefined) { taskInput.value = data.tasksRaw; localStorage.setItem('exerciseRaw', data.tasksRaw); }
           
-          importJsonFile.value = ''; // Reset pre možnosť opätovného nahratia toho istého súboru
+          importJsonFile.value = '';
         } catch (err) {
           alert('Nepodarilo sa načítať súbor. Skontrolujte, či ide o správny .json formát.');
         }
@@ -487,14 +531,12 @@
       reader.readAsText(file);
     });
 
-    // LISTENERY
     downloadBtn.addEventListener('click', downloadHtml);
     exportJsonBtn.addEventListener('click', exportSettings);
 
   </script>
   <br><br>
-<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
 <br><br>
 </body>
 </html>
-
