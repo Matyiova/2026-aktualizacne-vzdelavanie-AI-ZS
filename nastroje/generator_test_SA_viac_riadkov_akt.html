@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -6,7 +5,7 @@
   <title>Generátor cvičení s krátkou odpoveďou (viac riadkov)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: Courier bold, monospace; font-size: 110%; padding: 20px; }
+    body { font-family: Courier, monospace; font-size: 110%; padding: 20px; }
     label { display:block; margin-top:12px; font-weight:600; }
     .hint { color:#555; font-size:0.9rem; margin-bottom:6px; }
     textarea { width:100%; box-sizing:border-box; padding:8px; margin-top:6px; }
@@ -46,8 +45,10 @@
   <label for="exerciseCount">Predvolený počet úloh v cvičení:</label><input id="exerciseCount" type="number" min="1" value="10" />
 
   <label for="taskInput"><b>Zadajte úlohy. Každá úloha má byť v samostatnom riadku.<br>Zadanie a riešenie oddeľte klávesom[TAB].<br>Ak má zadanie viac riešení, ďalšie riešenie pridajte za ďalší [TAB]:</b></label>
-  <div class="hint"><b>Formát:</b><br>zadanie[TAB]správna odpoveď 1[TAB]správna odpoveď 2 (ak existuje)[TAB]správna odpoveď 3 (ak existuje)<br>
+  <div class="hint"><b>Formát:</b><br>zadanie[TAB]správna odpoveď 1[TAB]správna odpoveď 2 (ak existuje)<br>
   Je povolené formátovanie pomocou tagov html.<br>
+  <b>Hodnotenie po slovách:</b> Ak chcete prideliť body za jednotlivé slová, pridajte ich do zátvorky za slovo, napr.: in(0,5) der(0,5) Slowakei(1).<br>
+  <i>Upozornenie: Pri tomto bodovaní sa za každé slovo navyše (ktoré žiak napíše chybne navyše) odpočíta 0,5 bodu!</i><br>
   <b>Je možné zadávať úlohy aj takto:</b> On zbiera staré mobily.|Er ... alte Handys.[TAB]sammelt<br><br>
   Znak | znamená nový riadok v úlohe.</div>
   <textarea id="taskInput" placeholder="fernsehen (du)  Sieh fern!  Sieh ... fern!"></textarea>
@@ -165,7 +166,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>${escapeHtml(title)}</title>
 <style>
-  body { font-family: Courier bold, monospace; font-size: 110%; padding: 18px; margin: 0; background-color: #ffffff; }
+  body { font-family: Courier, monospace; font-size: 110%; padding: 18px; margin: 0; background-color: #ffffff; }
   .test-container { max-width: 900px; margin: 0 auto; text-align: center; }
   
   .meta { margin-bottom: 20px; }
@@ -196,6 +197,7 @@
 
   .result { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px; text-align: left; }
   .correct { background: #c8e6c9; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+  .partial { background: #fff9c4; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
   .incorrect { background: #ffcdd2; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
   .row { margin-bottom: 12px; }
   #answerInput { font-family: Courier bold, monospace; font-size: 2.6rem; line-height: 1.2; padding: 10px; text-align: center; }
@@ -220,8 +222,6 @@
     </header>
 
     <div id="setupScreen">
-      <p class="instructions">${escapeHtml(instructions)}</p>
-      
       <div class="setup-input-group">
         <label for="studentName">Meno žiaka:</label>
         <input id="studentName" type="text" placeholder="Zadajte svoje meno" />
@@ -236,6 +236,7 @@
     </div>
 
     <div id="testScreen" style="display:none;">
+      <p class="instructions" style="text-align:center;">${escapeHtml(instructions)}</p>
       <div id="exercise"></div>
       
       <div class="controls">
@@ -253,7 +254,7 @@
     <br><br>
     ${authorInfoHtml}
     <br><br>
-    <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025)
+    <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025/2026)
     <br><br>
   </div>
 
@@ -274,17 +275,165 @@
       return out;
     }
 
-    function isMultipleAnswers(input) { return /[;,\/|]/.test(input); }
     function normalizePreserveCase(s) {
       if (!s) return '';
-      s = String(s).trim().replace(/\\s+/g, ' ').replace(/\\s*([!?.,:;])\\s*/g, '$1');
-      return s;
+      return String(s).trim().replace(/\\s+/g, ' ');
     }
 
-    function makeFlexibleRegexCaseSensitive(answer) {
-      if (!answer) return null;
-      let esc = String(answer).replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&').replace(/\\\\\\.{3,}/g, '.*').replace(/ /g, '\\\\\\\\s+');
-      try { return new RegExp('^' + esc + '$'); } catch (e) { return null; }
+    function stripPunctuation(str) {
+      return str.replace(/[.,?!:;]/g, '');
+    }
+
+    function parseAnswerTokens(ansString) {
+      if (!/\\([\\d]+[.,]?[\\d]*\\)/.test(ansString)) return null;
+      let chunks = ansString.trim().split(/\\s+/);
+      let tokens = [];
+      let totalMax = 0;
+      for (let chunk of chunks) {
+        let m = chunk.match(/^(.*?)\\(([\\d]+[.,]?[\\d]*)\\)$/);
+        if (m) {
+          let w = m[1];
+          let p = parseFloat(m[2].replace(',', '.'));
+          tokens.push({ word: w, pts: p });
+          totalMax = Number((totalMax + p).toFixed(2));
+        } else {
+          tokens.push({ word: chunk, pts: 0 });
+        }
+      }
+      return { tokens, totalMax };
+    }
+
+    // Levenshteinova vzdialenosť (počet preklepov: vymazanie, pridanie, zámena)
+    function getLevenshteinDist(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
+    function getWordScore(cWord, sWord, maxPts) {
+      let cLower = cWord.toLowerCase();
+      let sLower = sWord.toLowerCase();
+      let isAbbreviation = (cWord === cWord.toUpperCase() && cWord.length > 1);
+      
+      let dist = getLevenshteinDist(cLower, sLower);
+      
+      // Slovo sa neuzná, ak má viac než 1 preklep.
+      // 1 preklep povolíme LEN ak je slovo za presne 1 bod a nie je to skratka.
+      if (dist > 1) return -1;
+      if (dist === 1 && (maxPts !== 1 || isAbbreviation)) return -1; 
+      
+      let penalty = 0;
+      
+      // 1. Penalizácia za preklep (chýbajúce, pridané alebo nesprávne písmeno)
+      if (dist === 1) {
+        penalty += 0.5;
+      }
+      
+      // 2. Penalizácia za veľké/malé písmená (Case penalty)
+      if (cWord === cWord.toLowerCase()) {
+        penalty += 0;
+      } else if (isAbbreviation) {
+        if (sWord === sWord.toLowerCase()) penalty += 0.5;
+      } else {
+        // Kontroluje formát ako 'Schweiz' (len prvé veľké)
+        let isFirstUpperRestLower = (cWord.charAt(0) === cWord.charAt(0).toUpperCase()) &&
+                                    (cWord.slice(1) === cWord.slice(1).toLowerCase());
+        if (isFirstUpperRestLower) {
+          if (sWord === sWord.toUpperCase()) penalty += 0.75;
+          // Ak žiak nenapísal na začiatku veľké písmeno:
+          else if (sWord.charAt(0) === sWord.charAt(0).toLowerCase()) penalty += 0.5;
+        } else {
+          penalty += 0.5;
+        }
+      }
+      
+      let finalPts = maxPts - penalty;
+      return finalPts > 0 ? finalPts : 0;
+    }
+
+    function evaluateVariant(studentAns, correctAns) {
+      let s = normalizePreserveCase(studentAns);
+      let c = normalizePreserveCase(correctAns);
+
+      let parsed = parseAnswerTokens(c);
+      if (parsed) {
+        let studentWords = s === "" ? [] : s.split(" ");
+        let studentTotalCount = studentWords.length;
+        let correctTotalCount = parsed.tokens.length;
+        
+        let score = 0;
+        let max = parsed.totalMax;
+
+        for (let tk of parsed.tokens) {
+          if (tk.pts > 0) {
+            let cClean = stripPunctuation(tk.word);
+            let bestMatchIdx = -1;
+            let bestMatchScore = -1;
+
+            for (let i = 0; i < studentWords.length; i++) {
+              let swClean = stripPunctuation(studentWords[i]);
+              
+              let currentScore = getWordScore(cClean, swClean, tk.pts);
+              if (currentScore !== -1) { 
+                if (currentScore > bestMatchScore) {
+                  bestMatchScore = currentScore;
+                  bestMatchIdx = i;
+                }
+                // Ak našlo zhodu na plný počet bodov pre toto slovo, ďalej nehľadáme
+                if (currentScore === tk.pts) break;
+              }
+            }
+
+            if (bestMatchIdx !== -1) {
+              score = Number((score + bestMatchScore).toFixed(2));
+              studentWords.splice(bestMatchIdx, 1);
+            }
+          }
+        }
+        
+        if (studentTotalCount > correctTotalCount) {
+          let extraCount = studentTotalCount - correctTotalCount;
+          score = Number((score - (extraCount * 0.5)).toFixed(2));
+        }
+        
+        if (score < 0) score = 0;
+
+        return { 
+          score: score, 
+          max: max, 
+          isPartial: (score > 0 && score < max), 
+          isCorrect: (score === max && studentTotalCount === correctTotalCount) 
+        };
+      }
+
+      let isMatch = false;
+      if (c.includes('...')) {
+        let parts = c.split('...');
+        let escParts = parts.map(p => p.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&'));
+        let pattern = '^' + escParts.join('.*') + '$';
+        try {
+          isMatch = new RegExp(pattern).test(s);
+        } catch(e) { isMatch = s === c; }
+      } else {
+        isMatch = s === c;
+      }
+      return { score: isMatch ? 1 : 0, max: 1, isPartial: false, isCorrect: isMatch };
     }
 
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); }); }
@@ -343,7 +492,7 @@
 
       document.getElementById('exercise').innerHTML = \`
         <div class="task">
-          <div class="row" style="text-align: center;"><strong>\${formatPrompt(task.prompt)}</strong></div>
+          <div class="row" style="text-align: center;">\${formatPrompt(task.prompt)}</div>
           <div class="row">
             <input id="answerInput" type="text" autocomplete="off" value="\${escapeHtml(answers[currentIndex])}" />
           </div>
@@ -418,46 +567,58 @@
       const resultDiv = document.getElementById('result');
       resultDiv.style.display = 'block';
 
-      let score = 0; 
+      let totalScore = 0;
+      let totalMaxScore = 0;
       let summary = '';
       
       for (let i = 0; i < tasks.length; i++){
         const t = tasks[i]; 
         const aRaw = (answers[i] || '').trim();
         
-        if (isMultipleAnswers(aRaw)) {
-          const aEsc = escapeHtml(aRaw || '(žiadna odpoveď)');
-          summary += \`<div class="incorrect"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌ (viac odpovedí)</strong></div></div><br />\`;
-          continue;
-        }
-        
-        const student = normalizePreserveCase(aRaw);
         const variants = Array.isArray(t.answers) ? t.answers.slice() : [t.answers];
-        let matched = false;
+        let bestEval = { score: 0, max: 1, isPartial: false, isCorrect: false };
+        let maxFound = false;
         
         for (const cv of variants) {
           if (!cv) continue;
-          const re = makeFlexibleRegexCaseSensitive(normalizePreserveCase(cv));
-          if (re && re.test(student)) { matched = true; break; }
+          let currentEval = evaluateVariant(aRaw, cv);
+          if (currentEval.score > bestEval.score || (!maxFound && currentEval.score === 0)) {
+            bestEval = currentEval;
+            maxFound = true;
+          }
         }
         
+        totalScore = Number((totalScore + bestEval.score).toFixed(2));
+        totalMaxScore = Number((totalMaxScore + bestEval.max).toFixed(2));
+        
         const aEsc = escapeHtml(aRaw || '(žiadna odpoveď)');
-        if (matched) {
-          score++;
-          summary += \`<div class="correct"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Správne ✅</strong></div></div><br />\`;
+        let boxClass = '';
+        let statusText = '';
+        
+        if (bestEval.isCorrect) {
+          boxClass = 'correct';
+          statusText = \`<strong>Správne ✅</strong> (\${bestEval.score} / \${bestEval.max} b.)\`;
+        } else if (bestEval.score > 0) {
+          boxClass = 'partial';
+          statusText = \`<strong>Čiastočne správne ⚠️</strong> (\${bestEval.score} / \${bestEval.max} b.)\`;
         } else {
-          summary += \`<div class="incorrect"><div style="text-align:center;"><strong>\${formatPrompt(t.prompt)}</strong></div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(t.answers.join(' | '))}</strong></div><div><strong>Nesprávne ❌</strong></div></div><br />\`;
+          boxClass = 'incorrect';
+          statusText = \`<strong>Nesprávne ❌</strong> (\${bestEval.score} / \${bestEval.max} b.)\`;
         }
+        
+        let displayVariants = variants.map(v => v.replace(/\\([\\d]+[.,]?[\\d]*\\)/g, '')).join(' | ');
+
+        summary += \`<div class="\${boxClass}"><div style="text-align:center;">\${formatPrompt(t.prompt)}</div><div>Tvoja odpoveď: <em>\${aEsc}</em></div><div>Správne odpovede: <strong>\${escapeHtml(displayVariants)}</strong></div><div>\${statusText}</div></div><br />\`;
       }
 
-      const percent = Math.round((score / tasks.length) * 100);
+      const percent = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
       const now = new Date().toLocaleString();
       const studentName = document.getElementById('studentName').value.trim();
 
       resultDiv.innerHTML = \`
         <p><strong>Názov testu:</strong> \${escapeHtml(document.title)}</p>
         <p><strong>Meno žiaka:</strong> \${escapeHtml(studentName)}</p>
-        <p><strong>Bodovanie:</strong> \${score} / \${tasks.length} (\${percent}%)</p>
+        <p><strong>Bodovanie:</strong> \${totalScore} / \${totalMaxScore} (\${percent}%)</p>
         <p><strong>Dátum a čas:</strong> \${escapeHtml(now)}</p>
         <hr />
         <h3>Vyhodnotenie úloh:</h3>\${summary}\`;
@@ -476,7 +637,6 @@
       const safeTitle = sanitizeFilename(title) || 'cvicenie';
       a.download = safeTitle + '.html';
       
-      // Fix pre Firefox: element musí byť pridaný do body, aby fungoval klik
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -500,7 +660,6 @@
       const safeTitle = sanitizeFilename(titleInput.value) || 'nastavenia';
       a.download = safeTitle + '_nastavenia.json';
       
-      // Fix pre Firefox
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -537,7 +696,7 @@
 
   </script>
   <br><br>
-<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+<b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2025/2026)
 <br><br>
 </body>
 </html>
