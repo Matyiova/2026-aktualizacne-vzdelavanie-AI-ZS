@@ -19,8 +19,13 @@
         table.grading-table th, table.grading-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         table.grading-table th { background-color: #e9ecef; }
         
-        button { background-color: #28a745; color: white; padding: 15px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; transition: background 0.3s; }
-        button:hover { background-color: #218838; }
+        button { color: white; padding: 15px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; transition: background 0.3s; }
+        .btn-generate { background-color: #28a745; }
+        .btn-generate:hover { background-color: #218838; }
+        .btn-export { background-color: #17a2b8; margin-top: 10px; }
+        .btn-export:hover { background-color: #138496; }
+        .btn-import { background-color: #ffc107; color: #333; margin-top: 10px; }
+        .btn-import:hover { background-color: #e0a800; }
 
         .note { font-size: 0.85em; color: #666; margin-top: 5px; }
         .highlight { color: #d9534f; font-weight: bold; }
@@ -44,6 +49,17 @@
         <div class="grid-col">
             <label for="groupCount">Počet skupín (A, B...):</label>
             <input type="number" id="groupCount" value="1" min="1" max="26">
+        </div>
+    </div>
+
+    <div class="grid-row">
+        <div class="grid-col">
+            <label for="authorName">Autor (do pätičky):</label>
+            <input type="text" id="authorName" placeholder="Meno a priezvisko autora">
+        </div>
+        <div class="grid-col">
+            <label for="year">Rok (do pätičky):</label>
+            <input type="number" id="year" value="2025" min="1900" max="2100">
         </div>
     </div>
 
@@ -74,7 +90,17 @@
         </tbody>
     </table>
 
-    <button onclick="generateRTF()">Vygenerovať súbor .rtf</button>
+    <button type="button" class="btn-generate" onclick="generateRTF()">Vygenerovať súbor .rtf</button>
+
+    <div class="grid-row">
+        <div class="grid-col">
+            <button type="button" class="btn-export" onclick="exportSettings()">Exportovať nastavenia (.json)</button>
+        </div>
+        <div class="grid-col">
+            <button type="button" class="btn-import" onclick="document.getElementById('importFile').click()">Importovať nastavenia (.json)</button>
+            <input type="file" id="importFile" style="display: none;" accept=".json, application/json" onchange="importSettings(event)">
+        </div>
+    </div>
 </div>
 
 <script>
@@ -115,8 +141,8 @@
         }
     }
 
-    // --- 1. Obsluha LocalStorage ---
-    const fields = ['testName', 'taskCount', 'groupCount', 'instructions', 'dataInput', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5'];
+    // --- 1. Obsluha LocalStorage a Export/Import ---
+    const fields = ['testName', 'taskCount', 'groupCount', 'authorName', 'year', 'instructions', 'dataInput', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5'];
 
     function saveSettings() {
         fields.forEach(id => {
@@ -132,6 +158,51 @@
                 if(el) el.value = localStorage.getItem(id);
             }
         });
+    }
+
+    function exportSettings() {
+        const data = {};
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) data[id] = el.value;
+        });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "nastavenia_generator_priradovanie.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function importSettings(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                fields.forEach(id => {
+                    if (data[id] !== undefined) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.value = data[id];
+                            localStorage.setItem(id, data[id]);
+                        }
+                    }
+                });
+            } catch (err) {
+                // Tichý pád podľa požiadavky - žiadne chybové hlásenie pre používateľa
+                console.warn("Nastala chyba pri spracovaní JSON súboru.");
+            }
+        };
+        
+        // Explicitné definovanie kódovania pre čítanie
+        reader.readAsText(file, "UTF-8");
+        
+        // Reset inputu, aby fungoval aj opätovný výber toho istého súboru
+        event.target.value = '';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -161,6 +232,8 @@
         const taskCount = parseInt(document.getElementById('taskCount').value);
         const groupCount = parseInt(document.getElementById('groupCount').value);
         const rawData = document.getElementById('dataInput').value;
+        const authorVal = document.getElementById('authorName').value;
+        const yearVal = document.getElementById('year').value;
 
         // PARSOVANIE PO BLOKOCH
         let rawBlocks = rawData.split(/\n\s*\n/);
@@ -189,8 +262,9 @@
         const spaceAfter = "\\sa50";
         const tableSpacing = "\\sl240\\slmult1\\sa30"; 
 
+        // Upravené horné a dolné okraje na 720 (cca 1,27 cm)
         let rtf = `{\\rtf1\\ansi\\deff0\\nouicompat{\\fonttbl{\\f0\\fnil\\fcharset0 Comic Sans MS;}}
-\\margl1080\\margr1080\\margt1080\\margb1080 \\viewkind4\\uc1\\pard${spaceAfter}${globalSpacing}\\f0\\fs24 `;
+\\margl1080\\margr1080\\margt720\\margb720 \\viewkind4\\uc1\\pard${spaceAfter}${globalSpacing}\\f0\\fs24 `;
 
         let allGroupsSolutions = [];
         const groups = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -206,7 +280,7 @@
             let groupSolution = { letter: groupLetter, tasks: [] };
 
             // Hlavička
-            rtf += `${toRTF("Meno: ............................................................")}  ${toRTF("Trieda: .....................")}  ${toRTF("Dátum: .........................")}\\par\\pard\\sa100\\par\n`;
+            rtf += `\\pard\\ql ${toRTF("Meno: ....................................................................")}  ${toRTF("Trieda: .....................")}  ${toRTF("Dátum: .............................")}\\par\\pard\\sa100\\par\n`;
             rtf += `\\qc\\b\\fs28 ${toRTF(testName)}\\b0\\fs24\\par\n`;
             rtf += `\\qc\\b ${toRTF("Skupina")} ${groupLetter}\\b0\\sa180\\par\n`;
             rtf += `\\ql\\b ${toRTF(instructions)}\\b0\\sa180\\par\n`;
@@ -230,7 +304,7 @@
                 }));
                 shuffleArray(rightSide);
 
-                const letters = "abcdefghijklmnopqrstuvwxyz";
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                 rightSide = rightSide.map((item, idx) => {
                     let letChar = letters[idx % 26] + ")";
                     return { ...item, letter: letChar, pureLetter: letters[idx % 26] };
@@ -246,7 +320,6 @@
                 // VYPIS ZADANIA ÚLOHY
                 rtf += `\\keepn\\b ${toRTF("Úloha " + taskNum)}\\b0\\sa180\\par\n`;
 				
-                
                 for (let i = 0; i < leftSide.length; i++) {
                     const left = leftSide[i];
                     const right = rightSide[i];
@@ -257,8 +330,9 @@
                 }
                 
                 // --- VLOŽENIE TABUĽKY ODPOVEDÍ HNEĎ POD ÚLOHU ---
-                rtf += `\\pard${spaceAfter}${globalSpacing}`; // Reset formátu pred tabuľkou
-                rtf += `\\par\\b ${toRTF("Odpovede:")}\\b0\\par\n`;
+                // Znížený odstup pred odpoveďami
+                rtf += `\\pard\\sb180\\sa50${globalSpacing}`;
+                rtf += `\\b ${toRTF("Odpovede:")}\\b0\\par\n`;
 
                 const count = leftSide.length;
                 const colWidth = Math.floor(9000 / count);
@@ -277,7 +351,8 @@
                 for(let k=1; k<=count; k++) rtf += `\\cell`; 
                 rtf += "\\row\n";
 
-                rtf += `\\pard${spaceAfter}${globalSpacing}\\par\\par\n`; // Väčšia medzera za celou úlohou
+                // Znížený odstup po tabuľke
+                rtf += `\\pard\\sa350${globalSpacing}\\par\n`; 
             });
 
             allGroupsSolutions.push(groupSolution);
@@ -302,6 +377,14 @@
             }
             
             rtf += `\\pard${spaceAfter}${globalSpacing}`; 
+
+            // Pridanie Autora a Roku do pätičky malým písmom
+            if (authorVal || yearVal) {
+                let footerPieces = [];
+                if (authorVal) footerPieces.push(toRTF(authorVal));
+                if (yearVal) footerPieces.push(yearVal);
+                rtf += `\\par\\pard\\sa0\\sl240\\slmult1\\qr\\fs16 ${footerPieces.join(" - ")}\\fs24\\par\n`;
+            }
 
             if (g < groupCount - 1) {
                 rtf += `\\page\n`;
