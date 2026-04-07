@@ -20,12 +20,14 @@
     }
 
     input[type="text"] { padding: 6px; width: 320px; }
+    .small-input { width: 150px !important; }
 
     button {
       margin-right: 8px;
       padding: 6px 10px;
       font-size: 1em;
       cursor: pointer;
+      margin-bottom: 5px;
     }
 
     .word, .punc { cursor: pointer; padding: 0 2px; border-radius: 3px; }
@@ -105,8 +107,17 @@
 5. Kliknite na jednotlivé slová, ktoré chcete, aby žiak doplnil (zafarbia sa na žlto).<br>
 4. Pri každej úlohe kliknite na tlačidlo "Generovať test".<br>
 5. V dolnej časti stránky kliknete na tlačidlo "Stiahnuť (všetky vygenerované úlohy)".</p>
+  
   <div class="panel">
-    <label><b>Názov testu:</b> <input id="testTitle" type="text" placeholder="Zadajte názov testu"></label>
+    <label><b>Názov testu:</b> <input id="testTitle" type="text" placeholder="Zadajte názov testu"></label><br><br>
+    <label><b>Autor:</b> <input id="testAuthor" type="text" placeholder="Zadajte autora" class="small-input"></label>
+    <label style="margin-left: 15px;"><b>Rok:</b> <input id="testYear" type="text" placeholder="Zadajte rok" class="small-input"></label>
+  </div>
+
+  <div class="panel">
+    <button id="btnExportJson">💾 Exportovať nastavenia (.json)</button>
+    <button id="btnImportJson">📂 Importovať nastavenia (.json)</button>
+    <input type="file" id="fileImport" accept=".json" style="display:none;">
   </div>
 
   <div class="panel">
@@ -114,7 +125,6 @@
     <textarea id="inputText" placeholder="Sem vložte text, ktorý neskôr upravíte.&#10;Viaceré úlohy oddeľte dvoma prázdnymi riadkami."></textarea>
   </div>
 
-  <!-- Whitespace-cleaning controls -->
   <div class="panel">
     <button id="btnClean">🧼 Vyčistiť medzery</button>
     <button id="btnFixCommas">🔍 Skontrolovať čiarky</button>
@@ -123,7 +133,6 @@
     <button id="btnCopy">📋 Kopírovať do schránky</button>
   </div>
 
-  <!-- Jedno-úlohový režim (ponechaný) -->
   <div class="panel">
     <button id="btnPrepare">Označiť slová kliknutím</button>
     <button id="btnGenerate">Generovať test (jedna úloha)</button><br><br>
@@ -152,8 +161,6 @@
 
   <hr>
   
-
-  <!-- Viacúlohový režim -->
   <div class="panel">
     <button id="btnSplit">🔀 Rozdeliť na úlohy</button>
     <button id="btnEvaluateAll">📊 Vyhodnotiť všetky</button>
@@ -175,7 +182,7 @@
     function shuffle(a){ var t=a.slice(); for(var i=t.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)); var tmp=t[i]; t[i]=t[j]; t[j]=tmp;} return t; }
     function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function tokenize(text){
-      var re = /([A-Za-zÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽáäčďéíĺľňóôŕšťúýžÜÖŐŰüöőűßẞ]+(?:-[A-Za-zÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽáäčďéíĺľňóôŕšťúýžÜÖŐŰüöőűßẞ]+)*)|(\s+)|([.,!?])/gu;
+      var re = /([A-Za-z0-9ÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽáäčďéíĺľňóôŕšťúýžÜÖŐŰüöőűßẞ]+(?:-[A-Za-z0-9ÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽáäčďéíĺľňóôŕšťúýžÜÖŐŰüöőűßẞ]+)*)|(\s+)|([.,:!?])/gu;
       var out=[],m;
       while((m=re.exec(text))!==null){
         if(m[1]) out.push({t:m[1],type:'word'});
@@ -184,6 +191,55 @@
       }
       return out.length?out:[{t:text,type:'word'}];
     }
+
+    // JSON Export a Import
+    document.getElementById('btnExportJson').onclick = function() {
+      var data = {
+        title: document.getElementById('testTitle').value,
+        author: document.getElementById('testAuthor').value,
+        year: document.getElementById('testYear').value,
+        text: document.getElementById('inputText').value
+      };
+      var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = (data.title || 'cloze_nastavenia').trim().replace(/\s+/g,'_') + '.json';
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    };
+
+    document.getElementById('btnImportJson').onclick = function() {
+      document.getElementById('fileImport').click();
+    };
+
+    document.getElementById('fileImport').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          var data = JSON.parse(evt.target.result);
+          if (data.title !== undefined) document.getElementById('testTitle').value = data.title;
+          if (data.author !== undefined) document.getElementById('testAuthor').value = data.author;
+          if (data.year !== undefined) document.getElementById('testYear').value = data.year;
+          if (data.text !== undefined) document.getElementById('inputText').value = data.text;
+          
+          // Ulož do LocalStorage
+          localStorage.setItem('cloze_testTitle', document.getElementById('testTitle').value);
+          localStorage.setItem('cloze_testAuthor', document.getElementById('testAuthor').value);
+          localStorage.setItem('cloze_testYear', document.getElementById('testYear').value);
+          localStorage.setItem('cloze_inputText', document.getElementById('inputText').value);
+          
+        } catch (err) {
+          console.error('Chyba pri čítaní JSON súboru:', err);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // reset vstupu
+    });
 
     // Jedno-úlohové premenné
     var tokens=[], hiddenSet=new Set(), correctAnswers={}, userAnswers={}, selectedGapEl=null;
@@ -265,12 +321,11 @@
     document.getElementById('testArea').addEventListener('keydown', function(e){ if(e.key==='Tab'){ e.preventDefault(); var sel=window.getSelection(); if(!sel.rangeCount) return; var range=sel.getRangeAt(0); var spaces=document.createTextNode('    '); range.insertNode(spaces); range.setStartAfter(spaces); range.collapse(true); sel.removeAllRanges(); sel.addRange(range); } });
 
     // Viacúlohový režim
-    var tasks = []; // {id, blockText, tokens, hiddenSet, correctAnswers, userAnswers, selectedGap, score}
+    var tasks = []; 
 
     document.getElementById('btnSplit').onclick = function(){
       var container=document.getElementById('tasksContainer'); container.innerHTML=''; document.getElementById('summary').textContent=''; tasks=[];
       var input=(document.getElementById('inputText').value||'').replace(/\r\n?/g,'\n');
-      // presné delenie na bloky: dva prázdne riadky (teda aspoň tri \n medzi blokmi)
       var blocks=input.split(/\n\s*\n\s*\n/).map(function(b){ return b; }).filter(function(b){ return b.trim().length>0; });
       if(!blocks.length){ alert('Neboli nájdené žiadne bloky. Oddelte úlohy dvoma prázdnymi riadkami.'); return; }
       blocks.forEach(function(block,i){
@@ -357,7 +412,15 @@
     };
 
     // Export (download)
-function buildStandaloneHTML(title, sections){
+function buildStandaloneHTML(title, author, year, sections){
+  var metaInfo = '';
+  if(author || year) {
+    metaInfo = '<p style="font-size:1.1em; color:#555;">';
+    if(author) metaInfo += '<b>Autor:</b> ' + escapeHtml(author) + '&nbsp;&nbsp;&nbsp;';
+    if(year) metaInfo += '<b>Rok:</b> ' + escapeHtml(year);
+    metaInfo += '</p>';
+  }
+
   var head = '<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' +
     'body{font-family:Courier bold, monospace;margin:20px;font-size:115%;line-height:1.6}h1{margin-top:0}' +
     '.gap{display:inline-block;margin:0 2px;padding:0 2px;border-radius:2px;font-family:monospace;letter-spacing:0.3em;color:#0b3d91;font-size:130%;font-weight:bold;cursor:pointer}' +
@@ -369,11 +432,12 @@ function buildStandaloneHTML(title, sections){
     '.test-block{border:1px solid #ddd;padding:10px;margin-bottom:14px;white-space:pre-wrap}' +
     '.meta{margin-top:12px}' +
     '.choices-label{margin-top:12px;font-weight:bold}' +
+    'button{padding:8px 12px; font-size:1em; cursor:pointer; margin-right:10px;}' +
     '</style></head><body>';
 
-  var body = '<h1>' + escapeHtml(title) + '</h1>' +
+  var body = '<h1>' + escapeHtml(title) + '</h1>' + metaInfo +
     '<p style="font-weight: bold;">Klikni na miesto, kde niečo chýba a potom klikni na niektorú z položiek.<br>Ak si to rozmyslíš, klikni na uvedenú položku dvakrát a tá sa vráti na miesto.</p>' +
-    '<label>Meno žiaka: <input id="studentName" type="text" style="padding:6px;width:300px"></label>';
+    '<label>Meno žiaka: <input id="studentName" type="text" style="padding:6px;width:300px"></label><br><br>';
 
   sections.forEach(function(s, idx){
     body += '<div class="test-block" data-section="' + idx + '">' +
@@ -385,7 +449,9 @@ function buildStandaloneHTML(title, sections){
       '</div>';
   });
 
-  body += '<button id="btnEvaluateAll">Vyhodnotiť všetky</button><div id="summary" class="meta"></div>';
+  body += '<button id="btnEvaluateAll">Vyhodnotiť všetky</button>' +
+          '<button id="btnShowDetails" style="display:none; background:#007bff; color:white; border:none; border-radius:4px;">Detailný prehľad odpovedí</button>' +
+          '<div id="summary" class="meta"></div>';
 
   var script = `<script>(function(){
     function codePointLen(s){return Array.from(s||"").length;}
@@ -451,10 +517,21 @@ function buildStandaloneHTML(title, sections){
 
     document.getElementById("btnEvaluateAll").addEventListener("click", function(){
       var sumOk = 0, sumTotal = 0;
+      var name = document.getElementById("studentName").value || "";
+      
+      window._detailData = {
+          title: "${escapeHtml(title)}",
+          studentName: name,
+          blocks: []
+      };
+
       document.querySelectorAll(".test-block").forEach(function(block,idx){
         var answers = secData[idx].answers || {};
         var total = Object.keys(answers).length;
         var ok = 0;
+        
+        var blockData = { id: idx + 1, gaps: [] };
+
         block.querySelectorAll(".gap").forEach(function(g){
           g.classList.remove("correct","incorrect");
           var num = g.dataset.gap;
@@ -463,26 +540,60 @@ function buildStandaloneHTML(title, sections){
           var clen = Number(g.dataset.correctLen) || 0;
           var miss = Math.max(0, clen - codePointLen(user));
           g.textContent = (user || "") + "_".repeat(miss) + "(" + num + ")";
-          if(user === correct){ g.classList.add("correct"); ok++; }
-          else{ g.classList.add("incorrect"); }
+          
+          var status = "";
+          if(!user) { status = "❗"; }
+          else if(user === correct) { g.classList.add("correct"); ok++; status = "✅"; }
+          else { g.classList.add("incorrect"); status = "❌"; }
+          
+          blockData.gaps.push({ num: num, user: user, correct: correct, status: status });
         });
+        
+        window._detailData.blocks.push(blockData);
         sumOk += ok;
         sumTotal += total;
       });
       var pct = Math.round((sumOk / (sumTotal || 1)) * 100);
-      var name = document.getElementById("studentName").value || "";
       var now = new Date();
       document.getElementById("summary").innerHTML =
-        "<b>Názov testu:</b> " + escapeHtml("${escapeHtml(title)}") +
+        "<br><b>Názov testu:</b> " + escapeHtml("${escapeHtml(title)}") +
         "<br><b>Meno žiaka:</b> " + escapeHtml(name) +
         "<br><b>Hodnotenie:</b> " + sumOk + "/" + sumTotal + " (" + pct + "%)" +
         "<br><b>Dátum a čas:</b> " + now.toLocaleString();
+        
+      document.getElementById("btnShowDetails").style.display = "inline-block";
+    });
+
+    document.getElementById("btnShowDetails").addEventListener("click", function(){
+        var w = window.open('', '_blank');
+        if(!w) { alert("Povoľte vyskakovacie okná (pop-ups) pre zobrazenie detailov."); return; }
+        var d = window._detailData;
+        var html = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Detailný prehľad odpovedí</title>" +
+          "<style>body{font-family:sans-serif;margin:20px;line-height:1.6} table{border-collapse:collapse;width:100%;margin-bottom:20px;} th,td{border:1px solid #ccc;padding:8px;text-align:left;} th{background:#eee;} .legend{margin-top:20px;font-size:1em;background:#f9f9f9;padding:15px;border:1px solid #ddd;} @media print{ button{display:none;} }</style></head><body>" +
+          "<h2>Detailný prehľad odpovedí</h2>" +
+          "<p><b>Test:</b> " + d.title + "<br><b>Žiak:</b> " + (d.studentName || "Nezadané") + "</p>";
+          
+        d.blocks.forEach(function(b) {
+          html += "<h3>Úloha " + b.id + "</h3><table><tr><th style='width:10%'>Medzera</th><th style='width:40%'>Odpoveď žiaka</th><th style='width:40%'>Správna odpoveď</th><th style='width:10%; text-align:center;'>Výsledok</th></tr>";
+          b.gaps.forEach(function(g) {
+             html += "<tr><td>" + g.num + "</td>" +
+                     "<td>" + (g.user || "<i>(žiadna)</i>") + "</td>" +
+                     "<td>" + g.correct + "</td>" +
+                     "<td style='text-align:center;font-size:1.2em;'>" + g.status + "</td></tr>";
+          });
+          html += "</table>";
+        });
+        
+        html += "<div class='legend'><b>Vysvetlivky symbolov:</b><br><br>✅ - Správna odpoveď<br>❌ - Nesprávna odpoveď<br>❗ - Chýbajúca odpoveď (žiak nedoplnil slovo)<br><br><hr><br><button onclick='window.print()' style='padding:8px 12px; cursor:pointer;'>🖨️ Tlačiť / Uložiť ako PDF</button></div>";
+        html += "</body></html>";
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
     });
   })();<\/script>`;
 
   return head + body + script + '</body></html>';
 }
-
 
     function downloadHtml(filename, html){
       var blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -491,13 +602,12 @@ function buildStandaloneHTML(title, sections){
       setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },3000);
     }
 
-    // Z jedného testu (globálny testArea)
+    // Z jedného testu
     function createSectionFromSingle(){
       var testArea=document.getElementById('testArea');
       var choicesArea=document.getElementById('choicesArea');
       if(!testArea || !choicesArea) return null;
       if(!testArea.querySelector('.gap')) return null;
-      // pridáme data-current do každého gapu (ak chýba)
       testArea.querySelectorAll('.gap').forEach(function(g){ if(!g.dataset.current) g.dataset.current=''; });
       var contentHtml = testArea.innerHTML;
       var choicesHtml = choicesArea.innerHTML;
@@ -505,16 +615,15 @@ function buildStandaloneHTML(title, sections){
       return { id:1, contentHtml:contentHtml, choicesHtml:choicesHtml, answers:answers };
     }
 
-    // Z viacerých úloh (tasks[])
+    // Z viacerých úloh
     function createSectionsFromTasks(){
       var sections=[];
       tasks.forEach(function(task){
         var div=document.getElementById('task'+task.id);
         if(!div) return;
-        if(!task.correctAnswers || Object.keys(task.correctAnswers).length===0) return; // len vygenerované
+        if(!task.correctAnswers || Object.keys(task.correctAnswers).length===0) return; 
         var contentEl=div.querySelector('.testContent');
         var choicesEl=div.querySelector('.choicesArea');
-        // doplníme data-current do gapov (ak chýba)
         contentEl.querySelectorAll('.gap').forEach(function(g){ if(!g.dataset.current) g.dataset.current=''; });
         var contentHtml=contentEl.innerHTML;
         var choicesHtml=choicesEl.innerHTML;
@@ -525,18 +634,22 @@ function buildStandaloneHTML(title, sections){
 
     document.getElementById('btnDownloadSingle').onclick = function(){
       var title = document.getElementById('testTitle').value || 'Cloze_test';
+      var author = document.getElementById('testAuthor').value || '';
+      var year = document.getElementById('testYear').value || '';
       var section = createSectionFromSingle();
       if(!section){ alert('Najprv vygenerujte test v jednoúlohovom režime (Generovať test).'); return; }
-      var html = buildStandaloneHTML(title, [section]);
+      var html = buildStandaloneHTML(title, author, year, [section]);
       var fname = title.trim().replace(/\s+/g,'_')+'.html';
       downloadHtml(fname, html);
     };
 
     document.getElementById('btnDownloadAll').onclick = function(){
       var title = document.getElementById('testTitle').value || 'Cloze_test_multi';
+      var author = document.getElementById('testAuthor').value || '';
+      var year = document.getElementById('testYear').value || '';
       var sections = createSectionsFromTasks();
       if(!sections.length){ alert('Najprv vygenerujte testy pre jednotlivé úlohy (Generovať test v každom paneli).'); return; }
-      var html = buildStandaloneHTML(title, sections);
+      var html = buildStandaloneHTML(title, author, year, sections);
       var fname = title.trim().replace(/\s+/g,'_')+'_multi.html';
       downloadHtml(fname, html);
     };
@@ -563,22 +676,27 @@ function buildStandaloneHTML(title, sections){
 	// --- LocalStorage pre vstupný text a názov testu ---
 const inputTextEl = document.getElementById('inputText');
 const testTitleEl = document.getElementById('testTitle');
+const testAuthorEl = document.getElementById('testAuthor');
+const testYearEl = document.getElementById('testYear');
 
 // pri načítaní stránky obnovíme uložené hodnoty
 window.addEventListener('DOMContentLoaded', () => {
   const savedText = localStorage.getItem('cloze_inputText');
   const savedTitle = localStorage.getItem('cloze_testTitle');
+  const savedAuthor = localStorage.getItem('cloze_testAuthor');
+  const savedYear = localStorage.getItem('cloze_testYear');
+  
   if (savedText !== null) inputTextEl.value = savedText;
   if (savedTitle !== null) testTitleEl.value = savedTitle;
+  if (savedAuthor !== null) testAuthorEl.value = savedAuthor;
+  if (savedYear !== null) testYearEl.value = savedYear;
 });
 
 // pri zmene obsahu uložíme do localStorage
-inputTextEl.addEventListener('input', () => {
-  localStorage.setItem('cloze_inputText', inputTextEl.value);
-});
-testTitleEl.addEventListener('input', () => {
-  localStorage.setItem('cloze_testTitle', testTitleEl.value);
-});
+inputTextEl.addEventListener('input', () => localStorage.setItem('cloze_inputText', inputTextEl.value));
+testTitleEl.addEventListener('input', () => localStorage.setItem('cloze_testTitle', testTitleEl.value));
+testAuthorEl.addEventListener('input', () => localStorage.setItem('cloze_testAuthor', testAuthorEl.value));
+testYearEl.addEventListener('input', () => localStorage.setItem('cloze_testYear', testYearEl.value));
 
   </script>
 
