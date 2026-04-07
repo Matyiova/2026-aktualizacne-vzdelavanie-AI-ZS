@@ -8,6 +8,7 @@
         :root {
             --primary-color: #2c3e50;
             --secondary-color: #27ae60;
+            --action-color: #3498db;
             --bg-color: #ecf0f1;
             --panel-bg: #ffffff;
             --text-color: #333;
@@ -99,7 +100,7 @@
             font-size: 1.1em;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 25px;
+            margin-top: 15px;
             width: 100%;
             transition: background 0.2s;
             font-weight: bold;
@@ -107,6 +108,30 @@
 
         .btn-generate:hover {
             background-color: #219150;
+        }
+
+        .btn-action {
+            background-color: var(--action-color);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 0.9em;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+            transition: background 0.2s;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .btn-action:hover {
+            background-color: #2980b9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
         }
 
         .info {
@@ -128,6 +153,7 @@
 
         @media (max-width: 768px) {
             .container { grid-template-columns: 1fr; }
+            .action-buttons { flex-direction: column; }
         }
     </style>
 </head>
@@ -189,6 +215,12 @@
                 </tbody>
             </table>
 
+            <div class="action-buttons">
+                <button class="btn-action" onclick="exportSettings()">💾 Export (.json)</button>
+                <button class="btn-action" onclick="document.getElementById('importFile').click()">📂 Import (.json)</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importSettings(event)">
+            </div>
+
             <button class="btn-generate" onclick="generateRTF()">Stiahnuť .rtf test</button>
         </div>
 
@@ -207,17 +239,17 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
 
 <script>
     // --- 1. LOCAL STORAGE ---
-    const inputs = document.querySelectorAll('input, select, textarea');
+    const inputs = document.querySelectorAll('input:not([type="file"]), select, textarea');
 
     function saveToStorage() {
         inputs.forEach(el => {
-            if (el.id) localStorage.setItem('gen_v9_align_' + el.id, el.value);
+            if (el.id && el.id !== 'importFile') localStorage.setItem('gen_v9_align_' + el.id, el.value);
         });
     }
 
     function loadFromStorage() {
         inputs.forEach(el => {
-            if (el.id) {
+            if (el.id && el.id !== 'importFile') {
                 const saved = localStorage.getItem('gen_v9_align_' + el.id);
                 if (saved !== null) el.value = saved;
             }
@@ -244,7 +276,6 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
     });
 
     // --- 3. HELPER FUNCTIONS ---
-    
     function toRTF(str) {
         if (!str) return "";
         let rtfStr = "";
@@ -283,7 +314,48 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
         return String.fromCharCode(65 + index);
     }
 
-    // --- 4. GENERATION LOGIC ---
+    // --- 4. IMPORT / EXPORT NASTAVENÍ ---
+    function exportSettings() {
+        const settings = {};
+        inputs.forEach(el => {
+            if (el.id && el.id !== 'importFile') {
+                settings[el.id] = el.value;
+            }
+        });
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "test_nastavenia.json");
+        document.body.appendChild(dlAnchorElem);
+        dlAnchorElem.click();
+        document.body.removeChild(dlAnchorElem);
+    }
+
+    function importSettings(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const settings = JSON.parse(e.target.result);
+                for (const key in settings) {
+                    const el = document.getElementById(key);
+                    if (el && el.id !== 'importFile') {
+                        el.value = settings[key];
+                    }
+                }
+                saveToStorage(); 
+            } catch (error) {
+                console.error("Nepodarilo sa načítať nastavenia zo súboru.", error);
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    // --- 5. GENERATION LOGIC ---
     function generateRTF() {
         const rawText = document.getElementById('taskInput').value;
         const title = document.getElementById('testTitle').value;
@@ -307,12 +379,28 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
             return;
         }
 
-        // Hlavička RTF
+        // --- Generovanie upraveného názvu súboru ---
+        let safeTitle = title.trim();
+        if (safeTitle === "") {
+            safeTitle = "test";
+        } else {
+            // Odstránenie diakritiky
+            safeTitle = safeTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            // Nahradenie medzier, pomlčiek a zátvoriek podčiarkovníkom
+            safeTitle = safeTitle.replace(/[\s\-\(\)]+/g, "_");
+            // Odstránenie duplicitných podčiarkovníkov
+            safeTitle = safeTitle.replace(/_+/g, "_");
+            // Orezanie prípadného podčiarkovníka na začiatku a konci
+            safeTitle = safeTitle.replace(/^_|_$/g, "");
+        }
+        const fileName = `${safeTitle}.rtf`;
+
+        // Hlavička RTF so zúženými okrajmi (margl a margr nastavené na 567 twips = 1 cm)
         let rtf = `{\\rtf1\\ansi\\ansicpg1250\\deff0\\nouicompat\\deflang1051
 {\\fonttbl{\\f0\\fnil\\fcharset238 Comic Sans MS;}}
 {\\colortbl ;\\red0\\green0\\blue0;\\red0\\green0\\blue0;}
 \\viewkind4\\uc1\\pard\\sa200\\sl276\\slmult1\\f0\\fs24 
-\\margl720\\margr720\\margt720\\margb720 `; 
+\\margl567\\margr567\\margt720\\margb720 `; 
 
         let solutionsContent = "";
 
@@ -328,23 +416,19 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
             rtf += `\\par `; 
             rtf += `\\pard\\qc\\b\\fs28 ${toRTF("Skupina " + groupLetter)}\\b0\\fs24\\par`;
             rtf += `\\par `; 
-            // Dôležité: Tu nedávame extra \\par, aby sa nevytvoril prázdny riadok pred sekciou
             rtf += `\\pard\\ql\\b ${toRTF(instructions)}\\b0\\sa320`;
             
             // --- ČASŤ 2: ÚLOHY ---
             if (cols > 1) {
-                // sbknone = Continuous section break
                 rtf += `\\sect\\sbknone\\cols${cols}\\colsx720 `;
-                rtf += `\\pard\\fs23 `; 
+                rtf += `\\pard\\fs22 `; 
             } else {
-                 rtf += `\\pard\\fs23 `; 
+                 rtf += `\\pard\\fs22 `; 
             }
 
             selectedTasks.forEach((task, idx) => {
                 const num = getNumbering(idx, numberingStyle);
-                // OPRAVA: Namiesto \\par\\par používame \\sa320 (Space After)
-                // To zabezpečí, že ak stĺpec začína týmto odsekom, medzera sa ignoruje a text je hore.
-                rtf += `\\pard\\keepn\\fi-360\\li360\\sa320 ${num}\\tab ${toRTF(task.question)}: .................................\\par`;
+                rtf += `\\pard\\keepn\\fi-360\\li360\\sa320 ${num}\\tab ${toRTF(task.question)}: .......................\\par`;
             });
 
             // --- ČASŤ 3: NÁVRAT DO 1 STĹPCA ---
@@ -353,31 +437,30 @@ Jablko[TAB]Apfel[TAB]Apple"></textarea>
             }
             rtf += `\\pard\\fs24`;
 
-          // --- Hodnotiaca tabuľka ---
-rtf += `\\b ${toRTF("Hodnotenie")}:\\b0\\par `;
-rtf += `\\pard\\keepn`; 
+            // --- Hodnotiaca tabuľka ---
+            // Pridané \sa115 pre odstup cca 2 mm po nadpise Hodnotenie
+            rtf += `\\pard\\sa115\\b ${toRTF("Hodnotenie")}:\\b0\\par `;
+            rtf += `\\pard\\keepn`; 
 
-// Riadok 1: Hlavička so zúženými rozmermi
-rtf += `\\trowd\\trgaph108\\trleft-108`;
-rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx1200`; // Úzky stĺpec
-rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx3000`; // Celková šírka
-rtf += `\\pard\\intbl ${toRTF("Známka")}\\cell ${toRTF("Počet percent")}\\cell\\row`;
+            // Riadok 1: Hlavička so zúženými rozmermi
+            rtf += `\\trowd\\trgaph108\\trleft-108`;
+            rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx1200`; // Úzky stĺpec
+            rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx3000`; // Celková šírka
+            rtf += `\\pard\\intbl ${toRTF("Známka")}\\cell ${toRTF("Počet percent")}\\cell\\row`;
 
-// --- CYKLUS PRE RIADKY S DÁTAMI ---
-for(let i=1; i<=5; i++) {
-    const max = document.getElementById(`g${i}max`).value;
-    const min = document.getElementById(`g${i}min`).value;
-    
-    // ZOPAKOVANIE NASTAVENIA RIADKU A HRANÍC BUNIEK (kľúčová oprava!)
-    rtf += `\\trowd\\trgaph108\\trleft-108`;
-    
-    // NASTAVENIE ZÚŽENEJ ŠÍRKY STĹPCOV (1200 a 3000)
-    rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx1200`; 
-    rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx3000`;
-    
-    rtf += `\\pard\\intbl ${i}\\cell ${max} % - ${min} %\\cell\\row`;
-}
-rtf += `\\pard`;
+            // --- CYKLUS PRE RIADKY S DÁTAMI ---
+            for(let i=1; i<=5; i++) {
+                const max = document.getElementById(`g${i}max`).value;
+                const min = document.getElementById(`g${i}min`).value;
+                
+                rtf += `\\trowd\\trgaph108\\trleft-108`;
+                
+                rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx1200`; 
+                rtf += `\\clbrdrt\\brdrs\\brdrw10 \\clbrdrl\\brdrs\\brdrw10 \\clbrdrb\\brdrs\\brdrw10 \\clbrdrr\\brdrs\\brdrw10 \\cellx3000`;
+                
+                rtf += `\\pard\\intbl ${i}\\cell ${max} % - ${min} %\\cell\\row`;
+            }
+            rtf += `\\pard`;
 
             // Pätička
             rtf += `\\par ${toRTF("Počet bodov: _______________")}\\par`;
@@ -395,7 +478,6 @@ rtf += `\\pard`;
             selectedTasks.forEach((task, idx) => {
                 const num = getNumbering(idx, numberingStyle);
                 const answers = task.answers.join(" / ");
-                // Aj tu pre istotu použijeme space after namiesto hard enterov, vyzerá to profesionálnejšie
                 solutionsContent += `\\pard\\keepn\\fi-360\\li360\\sa150 ${num}\\tab ${toRTF(task.question)} - \\b ${toRTF(answers)}\\b0\\par`;
             });
 
@@ -410,7 +492,8 @@ rtf += `\\pard`;
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `test_${Date.now()}.rtf`;
+        // Použitie vygenerovaného bezpečného názvu
+        link.download = fileName; 
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
