@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -12,7 +11,8 @@
         th, td { border: 1px solid #bbb; padding: 12px; text-align: center; height: 50px; vertical-align: middle; word-wrap: break-word; }
         th { background: #f8f9fa; font-weight: bold; }
         
-        /* Zväčšené tlačidlá so slovami */
+        .instruction-box { background: #e7f3ff; padding: 15px; border-radius: 8px; border-left: 5px solid #2196F3; margin-bottom: 20px; font-size: 0.95em; color: #0d47a1; }
+        
         .pool { display: flex; flex-wrap: wrap; gap: 12px; padding: 20px; background: #fafafa; border: 1px dashed #ccc; margin-top: 20px; border-radius: 8px; }
         .word-btn { padding: 12px 20px; background: white; border: 2px solid #34495e; border-radius: 6px; cursor: pointer; user-select: none; font-size: 18px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .word-btn.selected { background: #3498db; color: white; border-color: #2980b9; }
@@ -69,6 +69,11 @@
 
         <div id="test-area">
             <h3 id="ex-title"></h3>
+            
+            <div class="instruction-box no-print">
+                Klikni na jedno z tlačidiel a potom na bunku, kam ho chceš umiestniť. Ak si to rozmyslíš, klikni na už umiestnený text dvakrát, čím ho vrátiš pod tabuľku.
+            </div>
+
             <table>
                 <thead><tr><th>1. stupeň</th><th>2. stupeň</th><th>3. stupeň</th></tr></thead>
                 <tbody id="ex-table"></tbody>
@@ -92,14 +97,14 @@
             <div id="res-detail"></div>
             <div style="margin-top: 30px; font-size: 0.95em; border-top: 2px solid #eee; padding-top: 15px;">
                 <strong>Vysvetlivky symbolov:</strong> ✓ Správne priradené | ✗ Nesprávne priradené | ! Pole ostalo prázdne<br>
-                <em>Poznámka: Hodnotilo sa správne zaradenie slova do príslušného stĺpca. Do výsledku sa počítal len 1. pokus.</em>
+                <em>Poznámka: Hodnotilo sa správne zaradenie slova do príslušného stĺpca. Do celkového výsledku sa počítal len 1. pokus.</em>
             </div>
             <button class="btn btn-next no-print" onclick="window.print()" style="margin-top: 25px; background: #34495e;">Uložiť / Tlačiť výsledky (PDF)</button>
         </div>
     </div>
 
     <script>
-        const rawDataBlocks = [[["zlý","horší","najhorší"],["pekný","krajší","najkrajší"],["ostrý","ostrejší","najostrejší"],["chladný","chladnejší","najchladnejší"]],[["teplý","teplejší","najteplejší"],["ľahký","ľahší","najľahší"],["ťažký","ťažší","najťažší"],["starý","starší","najstarší"]],[["mladý","mladší","najmladší"],["múdry","múdrejší","najmúdrejší"],["smutný","smutnejší","najsmutnejší"],["veselý","veselší","najveselší"]],[["dobrý","lepší","najlepší"],["veľký","väčší","najväčší"],["malý","menší","najmenší"],["vysoký","vyšší","najvyšší"]],[["nízky","nižší","najnižší"],["rýchly","rýchlejší","najrýchlejší"],["pomalý","pomalší","najpomalší"],["krátky","kratší","najkratší"]],[["dlhý","dlhší","najdlhší"],["široký","širší","najširší"],["úzky","uzší","najuzší"],["tenký","tenší","najtenší"]],[["hrubý","hrubší","najhrubší"],["bohatý","bohatší","najbohatší"],["chudobný","chudobnejší","najchudobnejší"],["šťastný","šťastnejší","najšťastnejší"]],[["nešťastný","nešťastnejší","najnešťastnejší"],["sladký","sladší","najsladší"],["slaný","slanší","najslanší"],["krivý","krivší","najkrivší"]],[["tichý","tichší","najtichší"],["hlučný","hlučnejší","najhlučnejší"],["trpezlivý","trpezlivejší","najtrpezlivejší"],["pokojný","pokojnejší","najpokojnejší"]],[["tvrdý","tvrdší","najtvrdší"],["mäkký","mäkší","najmäkší"],["jemný","jemnejší","najjemnejší"],["kyslý","kyslejší","najkyslejší"]],[["jednoduchý","jednoduchší","najjednoduchší"],["komplikovaný","komplikovanejší","najkomplikovanejší"],["jasný","jasnejší","najjasnejší"],["svetlý","svetlejší","najsvetlejší"]],[["tmavý","tmavší","najtmavší"],["nervózny","nervóznejší","najnervóznejší"],["milý","milší","najmilší"],["nový","novší","najnovší"]],[["hlúpy","hlúpejší","najhlúpejší"],["čistý","čistejší","najčistejší"],["špinavý","špinavší","najšpinavší"],["častý","častejší","najčastejší"]],[["bystrý","bystrejší","najbystrejší"],["šikovný","šikovnejší","najšikovnejší"],["hladný","hladnejší","najhladnejší"],["sýty","sýtejší","najsýtejší"]],[["štipľavý","štipľavejší","najštipľavejší"],["horký","horkejší","najhorkejší"],["pevný","pevnejší","najpevnejší"],["silný","silnejší","najsilnejší"]],[["slabý","slabší","najslabší"],["mocný","mocnejší","najmocnejší"],["odolný","odolnejší","najodolnejší"],["tuhý","tuhší","najtuhší"]],[["svieži","sviežejší","najsviežejší"],["rozumnejší","rozumnejší","najrozumnejší"],["citlivý","citlivejší","najcitlivejší"],["krutý","krutejší","najkrutejší"]]];
+        const rawDataBlocks = [[["zlý","horší","najhorší"],["pekný","krajší","najkrajší"],["ostrý","ostrejší","najostrejší"],["chladný","chladnejší","najchladnejší"]],[["teplý","teplejší","najteplejší"],["ľahký","ľahší","najľahší"],["ťažký","ťažší","najťažší"],["starý","starší","najstarší"]],[["mladý","mladší","najmladší"],["múdry","múdrejší","najmúdrejší"],["smutný","smutnejší","najsmutnejší"],["veselý","veselší","najveselší"]],[["dobrý","lepší","najlepší"],["veľký","väčší","najväčší"],["malý","menší","najmenší"],["vysoký","vyšší","najvyšší"]],[["nízky","nižší","najnižší"],["rýchly","rýchlejší","najrýchlejší"],["pomalý","pomalší","najpomalší"],["krátky","kratší","najkratší"]],[["dlhý","dlhší","najdlhší"],["široký","širší","najširší"],["úzky","uzší","najuzší"],["tenký","tenší","najtenší"]],[["hrubý","hrubší","najhrubší"],["bohatý","bohatší","najbohatší"],["chudobný","chudobnejší","najchudobnejší"],["šťastný","šťastnejší","najšťastnejší"]],[["nešťastný","nešťastnejší","najnešťastnejší"],["sladký","sladší","najsladší"],["slaný","slanší","najslanší"],["krivý","krivší","najkrivší"]],[["tichý","tichší","najtichší"],["hlučný","hlučnejší","najhlučnejší"],["trpezlivý","trpezlivejší","najtrpezlivejší"],["pokojný","pokojnejší","najpokojnejší"]],[["tvrdý","tvrdší","najtvrdší"],["mäkký","mäkší","najmäkší"],["jemný","jemnejší","najjemnejší"],["kyslý","kyslejší","najkyslejší"]],[["jednoduchý","jednoduchší","najjednoduchší"],["komplikovaný","komplikovanejší","najkomplikovanejší"],["jasný","jasnejší","najjasnejší"],["svetlý","svetlejší","najsvetlejší"]],[["tmavý","tmavší","najtmavší"],["nervózny","nervóznejší","najnervóznejší"],["milý","milší","najmilší"],["nový","novší","najnovší"]],[["hlúpy","hlúpejší","najhlúpejší"],["čistý","čistejší","najčistejší"],["špinavý","špinavší","najšpinavší"],["častý","častejší","najčastejší"]],[["bystrý","bystrejší","najbystrejší"],["šikovný","šikovnejší","najšikovnejší"],["hladný","hladnejší","najhladnejší"],["sýty","sýtejší","najsýtejší"]],[["štipľavý","štipľavejší","najštipľavejší"],["horký","horkejší","najhorkejší"],["pevný","pevnejší","najpevnejší"],["silný","silnejší","najsilnejší"]],[["slabý","slabší","najslabší"],["mocný","mocnejší","najmocnejší"],["odolný","odolnejší","najodolnejší"],["tuhý","tuhší","najtuhší"]],[["svieži","sviežejší","najsviežejší"],["rozumný","rozumnejší","najrozumnejší"],["citlivý","citlivejší","najcitlivejší"],["krutý","krutejší","najkrutejší"]]];
         let selectedBlocks = [];
         let currentIdx = 0;
         let student = "";
@@ -194,27 +199,38 @@
                 const userRow = Array.from(cells).map(c => c.innerHTML.trim());
                 let cellCorrects = [false, false, false];
 
+                // Identifikácia správneho riadku úloh na základe odpovedí žiaka
+                let matchedTask = tasks[rIdx]; 
+                for (let c = 0; c < 3; c++) {
+                    if (userRow[c] !== "") {
+                        let found = tasks.find(t => t[c] === userRow[c]);
+                        if (found) {
+                            matchedTask = found;
+                            break;
+                        }
+                    }
+                }
+
                 cells.forEach((cell, cIdx) => {
                     const val = cell.innerHTML.trim();
-                    // Vyhodnocuje správnosť podľa stĺpca nezávisle od riadka
                     const isCellCorrect = val !== "" && tasks.some(t => t[cIdx] === val);
+                    const expectedVal = matchedTask[cIdx] || "";
                     cellCorrects[cIdx] = isCellCorrect;
 
                     if(!val) {
                         cell.parentElement.className = 'missing';
-                        cell.innerHTML = '- <span class="feedback">!</span>';
+                        cell.innerHTML = '- <span class="feedback">!</span> <span style="font-size: 0.8em; margin-left: 5px; font-weight: normal; color: #555;">(Správne: ' + expectedVal + ')</span>';
                     } else if(isCellCorrect) {
                         cell.parentElement.className = 'correct';
                         cell.innerHTML += ' <span class="feedback">✓</span>';
                     } else {
                         cell.parentElement.className = 'incorrect';
-                        cell.innerHTML += ' <span class="feedback">✗</span>';
+                        cell.innerHTML += ' <span class="feedback">✗</span> <span style="font-size: 0.8em; margin-left: 5px; font-weight: normal; color: #555;">(Správne: ' + expectedVal + ')</span>';
                     }
                 });
-                results.push({ user: userRow, cellCorrects: cellCorrects });
+                results.push({ user: userRow, cellCorrects: cellCorrects, expectedRow: matchedTask });
             });
 
-            // Uložiť výsledky len z prvého pokusu
             if (!firstAttempts[currentIdx]) {
                 firstAttempts[currentIdx] = true;
                 finalHistory.push({ title: "Cvičenie " + (currentIdx+1), data: results });
@@ -266,12 +282,21 @@
                     const tr = document.createElement('tr');
                     r.user.forEach((val, cIdx) => {
                         const isCellCorrect = r.cellCorrects[cIdx];
+                        const expectedVal = r.expectedRow[cIdx] || "";
                         if(isCellCorrect) score++;
                         total++;
                         const td = document.createElement('td');
-                        td.innerHTML = (val || "-") + (isCellCorrect ? " ✓" : " ✗");
-                        if(isCellCorrect) td.className = "correct";
-                        else td.className = val ? "incorrect" : "missing";
+                        
+                        if(isCellCorrect) {
+                            td.innerHTML = (val || "-") + " ✓";
+                            td.className = "correct";
+                        } else if (!val) {
+                            td.innerHTML = "- ! <br><span style='font-size: 0.85em; color: #555;'>(Správne: " + expectedVal + ")</span>";
+                            td.className = "missing";
+                        } else {
+                            td.innerHTML = val + " ✗ <br><span style='font-size: 0.85em; color: #555;'>(Správne: " + expectedVal + ")</span>";
+                            td.className = "incorrect";
+                        }
                         tr.appendChild(td);
                     });
                     body.appendChild(tr);
