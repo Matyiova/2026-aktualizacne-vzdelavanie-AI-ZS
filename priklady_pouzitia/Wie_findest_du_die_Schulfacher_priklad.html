@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prieskum - Wie findest du die Schulfächer?</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-success { background-color: #2ecc71; }
+        .btn-success:hover { background-color: #27ae60; }
+        .btn-warning { background-color: #e67e22; }
+        .btn-warning:hover { background-color: #d35400; }
+        
+        .dynamic-inputs {
+            background: #f1f2f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        #survey-table-container {
+            max-height: 70vh; 
+            overflow-y: auto;
+            border: 1px solid #bdc3c7;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse; 
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px 12px; 
+            text-align: center;
+            background-color: #fff;
+            height: 45px; 
+            box-sizing: border-box;
+        }
+        thead th {
+            position: sticky;
+            z-index: 10;
+            background-color: #ecf0f1;
+            box-shadow: inset 0 0 0 1px #bdc3c7; 
+        }
+        thead tr:nth-child(1) th {
+            top: 0;
+            z-index: 11; 
+        }
+
+        .text-left { text-align: left; }
+        .clickable {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            width: 50px;
+        }
+        .clickable:hover {
+            background-color: #e8f4f8;
+        }
+        .instruction {
+            text-align: center;
+            font-weight: bold;
+            color: #c0392b;
+            margin-bottom: 20px;
+        }
+        #survey-view, #survey-actions {
+            display: none;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .file-input-wrapper { display: inline-block; }
+        input[type="file"] { display: none; }
+    
+        #survey-view { display: block !important; }
+        body { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+<div class="container" id="survey-view">
+    
+    <div id="survey-header" style="text-align: center;"></div>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn-warning" onclick="generateEmptyPDF()">Vygenerovať prázdny pracovný list na vyplnenie</button>
+    </div>
+    <p class="instruction">Klikni v každom riadku do stĺpca, ktorý najviac vystihuje tvoj názor/pocit. Ak si rozmyslíš svoje rozhodnutie, klikni do danej bunky dvakrát. V každom riadku môžeš kliknúť len do jedného stĺpca.</p>
+    <div id="survey-table-container"></div>
+    <div id="survey-actions" style="margin-top: 20px; text-align: center;">
+        <button class="btn-success" onclick="nextPerson()">Ďalšia osoba</button>
+        <button onclick="evaluateSurvey()">Vyhodnotiť prieskum</button>
+    </div>
+
+</div>
+<script>
+    let surveyConfig = {"author":"Mgr. Erika Matyiová","year":"2026","subject":"Nemecký jazyk - 7. ročník","topic":"Wie findest du die Schulfächer?","itemColName":"Schulfach","optColName":"Möglichkeiten","items":["Biologie","Deutsch","Englisch","Ethik","Geografie","Gesellschaftslehre","Geschichte","Chemie","Informatik","Kunst","Lesekompetenzförderung","Mathematik","Musik","Religion","Slowakisch","Sport","Technik","Physik"],"options":["toll","interessant","cool","okay","ganz gut","nützlich","langweilig","uninteressant","ich weiß nicht"]};
+    let totalParticipants = 0;
+    let aggregateResults = Array(surveyConfig.items.length).fill(null).map(() => Array(surveyConfig.options.length).fill(0));
+
+    function sanitizeForFilename(text) {
+        if (!text) return "";
+        return text
+            .normalize("NFD")                           // Rozloží znaky na základ + diakritiku
+            .replace(/[\u0300-\u036f]/g, "")           // Odstráni diakritické znamienka
+            .replace(/[\s\(\)\-\[\]\–\—]/g, "_")       // Medzery, zátvorky, pomlčky, spojovníky -> _
+            .replace(/[^a-zA-Z0-9_]/g, "")             // Odstráni všetko ostatné (interpunkcia) okrem písmen, čísiel a _
+            .replace(/_+/g, "_")                        // Odstráni viacnásobné podčiarkovníky
+            .replace(/(^_|_$)/g, "");                   // Odstráni podčiarkovník na začiatku a konci
+    }
+    function renderSurvey() {
+        const header = document.getElementById('survey-header');
+        header.innerHTML = `<h2>${surveyConfig.topic} (${surveyConfig.subject})</h2>
+                            <p><strong>Autor:</strong> ${surveyConfig.author} | <strong>Rok:</strong> ${surveyConfig.year}</p>`;
+
+        let tableHTML = `<table id="survey-table">
+            <thead>
+                <tr>
+                    <th rowspan="2">${surveyConfig.itemColName}</th>
+                    <th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th>
+                </tr>
+                <tr>`;
+        surveyConfig.options.forEach(opt => { tableHTML += `<th>${opt}</th>`; });
+        tableHTML += `</tr></thead><tbody>`;
+
+        surveyConfig.items.forEach((item, rIndex) => {
+            tableHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach((opt, cIndex) => {
+                tableHTML += `<td class="clickable" data-row="${rIndex}" data-col="${cIndex}" onclick="markCell(${rIndex}, ${cIndex})" ondblclick="clearCell(${rIndex}, ${cIndex})"></td>`;
+            });
+            tableHTML += `</tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        document.getElementById('survey-table-container').innerHTML = tableHTML;
+        checkSurveyCompletion();
+
+        setTimeout(() => {
+            const firstRowTh = document.querySelector('#survey-table thead tr:nth-child(1) th:nth-child(2)');
+            if (firstRowTh) {
+                const exactHeight = firstRowTh.offsetHeight;
+                const secondRowThs = document.querySelectorAll('#survey-table thead tr:nth-child(2) th');
+                secondRowThs.forEach(th => {
+                    th.style.top = (exactHeight - 1) + 'px'; 
+                });
+            }
+        }, 50);
+    }
+    function markCell(rIndex, cIndex) {
+        const cells = document.querySelectorAll(`td[data-row="${rIndex}"]`);
+        cells.forEach(cell => cell.innerHTML = '');
+        const targetCell = document.querySelector(`td[data-row="${rIndex}"][data-col="${cIndex}"]`);
+        targetCell.innerHTML = 'X';
+        checkSurveyCompletion();
+    }
+    function clearCell(rIndex, cIndex) {
+        const targetCell = document.querySelector(`td[data-row="${rIndex}"][data-col="${cIndex}"]`);
+        targetCell.innerHTML = '';
+        checkSurveyCompletion();
+        if (window.getSelection) window.getSelection().removeAllRanges();
+    }
+    function checkSurveyCompletion() {
+        let allRowsFilled = true;
+        for (let i = 0; i < surveyConfig.items.length; i++) {
+            const cells = document.querySelectorAll(`td[data-row="${i}"]`);
+            let hasMark = false;
+            cells.forEach(cell => { if (cell.innerHTML === 'X') hasMark = true; });
+            if (!hasMark) { allRowsFilled = false; break; }
+        }
+        const actionsDiv = document.getElementById('survey-actions');
+        if(actionsDiv) actionsDiv.style.display = allRowsFilled ? 'block' : 'none';
+    }
+    function nextPerson() {
+        saveCurrentAnswers();
+        document.querySelectorAll('.clickable').forEach(cell => cell.innerHTML = '');
+        checkSurveyCompletion();
+        document.getElementById('survey-table-container').scrollTop = 0;
+    }
+    function saveCurrentAnswers() {
+        for (let r = 0; r < surveyConfig.items.length; r++) {
+            const cells = document.querySelectorAll(`td[data-row="${r}"]`);
+            cells.forEach((cell, c) => { if (cell.innerHTML === 'X') aggregateResults[r][c]++; });
+        }
+        totalParticipants++;
+    }
+    function evaluateSurvey() {
+    const firstRowCells = document.querySelectorAll(`td[data-row="0"]`);
+    let hasActiveData = false;
+    firstRowCells.forEach(cell => { if(cell.innerHTML === 'X') hasActiveData = true; });
+    if(hasActiveData) {
+        saveCurrentAnswers();
+        document.querySelectorAll('.clickable').forEach(cell => cell.innerHTML = '');
+        checkSurveyCompletion();
+    }
+
+    if(totalParticipants === 0) { alert("Žiadne dáta na vyhodnotenie."); return; }
+
+    let evalHTML = `
+    <!DOCTYPE html>
+    <html lang="sk"><head><meta charset="UTF-8"><title>Vyhodnotenie</title><style>
+        @page { 
+            size: auto; 
+            margin: 10mm; 
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 10px; 
+            margin: 0; 
+        }
+        h1, p { text-align: center; }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            /* Automatické rozloženie umožní stĺpcom prispôsobiť sa obsahu */
+            table-layout: auto; 
+        }
+        
+        th, td { 
+            border: 1px solid #000; 
+            padding: 8px 6px; 
+            text-align: center; 
+            font-size: 0.9em;
+        }
+        
+        th { background-color: #f2f2f2; }
+
+        /* 1. stĺpec: Fixná šírka 18% */
+        .text-left { 
+            text-align: left; 
+            width: 18% !important; 
+            padding-left: 10px;
+            word-wrap: break-word;
+        }
+
+        /* Ostatné stĺpce: Prispôsobia sa šírke textu (22,00 %) a nezalamujú sa */
+        td:not(.text-left), th:not(.text-left) {
+            white-space: nowrap;
+            width: 1%; /* Tento trik prinúti stĺpce byť len také široké, ako je text */
+        }
+        
+        @media print { 
+            button { display: none; } 
+            body { padding: 0; }
+        }
+    </style></head><body>
+        <h1>Vyhodnotenie prieskumu: ${surveyConfig.topic}</h1>
+        <p><strong>Predmet:</strong> ${surveyConfig.subject} | <strong>Autor:</strong> ${surveyConfig.author} | <strong>Rok:</strong> ${surveyConfig.year}</p>
+        <p><strong>Celkový počet zúčastnených osôb:</strong> ${totalParticipants}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2" class="text-left">${surveyConfig.itemColName}</th>
+                    <th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th>
+                </tr>
+                <tr>`;
+        surveyConfig.options.forEach(opt => { evalHTML += `<th>${opt}</th>`; });
+        evalHTML += `</tr></thead><tbody>`;
+        
+        surveyConfig.items.forEach((item, r) => {
+            evalHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach((opt, c) => {
+                let percentage = ((aggregateResults[r][c] / totalParticipants) * 100).toFixed(2);
+                evalHTML += `<td>${percentage}%</td>`;
+            });
+            evalHTML += `</tr>`;
+        });
+        
+        evalHTML += `
+            </tbody>
+        </table>
+        <br>
+        <div style="text-align:center;">
+            <button onclick="window.print()" style="padding:10px 20px; font-size:16px; cursor:pointer;">Vytlačiť / Uložiť ako PDF</button>
+        </div>
+    </body></html>`;
+
+    const evalWindow = window.open('', '_blank');
+    evalWindow.document.write(evalHTML);
+    evalWindow.document.close();
+}
+    function generateEmptyPDF() {
+        let safeTitle = sanitizeForFilename(surveyConfig.topic);
+        if(!safeTitle) safeTitle = "Pracovny_list";
+
+        let pdfHTML = `
+        <!DOCTYPE html>
+        <html lang="sk"><head><meta charset="UTF-8"><title>${safeTitle}</title><style>
+            @page { size: landscape; margin: 10mm 15mm; }
+            body { font-family: Arial, sans-serif; padding: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px 10px; text-align: center; word-break: break-word; } 
+            th { background-color: #f9f9f9; }
+            .text-left { text-align: left; }
+            h2, h3 { text-align: center; margin: 5px 0; }
+            .instructions { text-align: center; font-weight: bold; margin: 15px 0; font-size: 1.1em; }
+            @media print { button { display: none; } body { padding: 0; } }
+        </style></head><body>
+            <h2>${surveyConfig.topic}</h2><h3>Predmet: ${surveyConfig.subject}</h3>
+            <p class="instructions">Vyplň tento pracovný list. V každom riadku označ krížikom ten stĺpec, ktorý najviac vystihuje tvoj názor/tvoje pocity. <br>V každom riadku uvádzaj len jeden krížik.</p>
+            <table><thead><tr><th rowspan="2">${surveyConfig.itemColName}</th><th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th></tr><tr>`;
+        surveyConfig.options.forEach(opt => { pdfHTML += `<th>${opt}</th>`; });
+        pdfHTML += `</tr></thead><tbody>`;
+        surveyConfig.items.forEach(item => {
+            pdfHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach(() => { pdfHTML += `<td></td>`; });
+            pdfHTML += `</tr>`;
+        });
+        pdfHTML += `</tbody></table><script>window.onload = function() { window.print(); }<\/script></body></html>`;
+
+        const pdfWindow = window.open('', '_blank');
+        pdfWindow.document.write(pdfHTML);
+        pdfWindow.document.close();
+    }
+
+    window.onload = function() {
+        renderSurvey();
+    };
+</script>
+</body>
+</html>
