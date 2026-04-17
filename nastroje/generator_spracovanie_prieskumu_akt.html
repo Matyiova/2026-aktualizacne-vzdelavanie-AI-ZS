@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spracovanie prieskumu - generátor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-success { background-color: #2ecc71; }
+        .btn-success:hover { background-color: #27ae60; }
+        .btn-warning { background-color: #e67e22; }
+        .btn-warning:hover { background-color: #d35400; }
+        
+        .dynamic-inputs {
+            background: #f1f2f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        #survey-table-container {
+            max-height: 70vh; 
+            overflow-y: auto;
+            border: 1px solid #bdc3c7;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse; 
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px 12px; 
+            text-align: center;
+            background-color: #fff;
+            height: 45px; 
+            box-sizing: border-box;
+        }
+        thead th {
+            position: sticky;
+            z-index: 10;
+            background-color: #ecf0f1;
+            box-shadow: inset 0 0 0 1px #bdc3c7; 
+        }
+        thead tr:nth-child(1) th {
+            top: 0;
+            z-index: 11; 
+        }
+
+        .text-left { text-align: left; }
+        .clickable {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            width: 50px;
+        }
+        .clickable:hover {
+            background-color: #e8f4f8;
+        }
+        .instruction {
+            text-align: center;
+            font-weight: bold;
+            color: #c0392b;
+            margin-bottom: 20px;
+        }
+        #survey-view, #survey-actions {
+            display: none;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .file-input-wrapper { display: inline-block; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="generator-view">
+    <h1>Spracovanie prieskumu - generátor</h1>
+    
+    <div class="grid-2">
+        <div class="form-group">
+            <label>Autor:</label>
+            <input type="text" id="gen-author" placeholder="Meno autora">
+        </div>
+        <div class="form-group">
+            <label>Rok:</label>
+            <input type="text" id="gen-year" placeholder="napr. 2026">
+        </div>
+        <div class="form-group">
+            <label>Predmet:</label>
+            <input type="text" id="gen-subject" placeholder="Názov predmetu">
+        </div>
+        <div class="form-group">
+            <label>Téma:</label>
+            <input type="text" id="gen-topic" placeholder="Téma prieskumu">
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="grid-2">
+        <div class="form-group">
+            <label>Názov stĺpca pre položky (prvý stĺpec):</label>
+            <input type="text" id="gen-item-col-name" placeholder="napr. Schulfach">
+        </div>
+        <div class="form-group">
+            <label>Názov skupiny pre možnosti:</label>
+            <input type="text" id="gen-opt-col-name" placeholder="napr. Möglichkeiten">
+        </div>
+        <div class="form-group">
+            <label>Počet položiek:</label>
+            <input type="number" id="gen-items-count" min="1" value="0">
+        </div>
+        <div class="form-group">
+            <label>Počet možností:</label>
+            <input type="number" id="gen-options-count" min="1" value="0">
+        </div>
+    </div>
+
+    <div id="dynamic-items-container" class="dynamic-inputs" style="display:none;">
+        <h3>Definícia položiek (možno použiť HTML tagy)</h3>
+        <div id="items-inputs"></div>
+    </div>
+
+    <div id="dynamic-options-container" class="dynamic-inputs" style="display:none;">
+        <h3>Definícia možností (možno použiť HTML tagy)</h3>
+        <div id="options-inputs"></div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button class="btn-success" onclick="downloadSurveyHTML()">Stiahnuť html rozhranie na prieskum</button>
+        <button class="btn-warning" onclick="exportConfig()">Exportovať nastavenia (.json)</button>
+        <div class="file-input-wrapper">
+            <button class="btn-warning" onclick="document.getElementById('import-file').click()">Importovať nastavenia (.json)</button>
+            <input type="file" id="import-file" accept=".json" onchange="importConfig(event)">
+        </div>
+    </div>
+
+    <div class="footer">
+        Spracovala pomocou UI: Mgr. Erika Matyiová (2026)
+    </div>
+</div>
+
+<div id="survey-view-template" style="display:none;">
+    <div id="survey-header" style="text-align: center;"></div>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn-warning" onclick="generateEmptyPDF()">Vygenerovať prázdny pracovný list na vyplnenie</button>
+    </div>
+    <p class="instruction">Klikni v každom riadku do stĺpca, ktorý najviac vystihuje tvoj názor/pocit. Ak si rozmyslíš svoje rozhodnutie, klikni do danej bunky dvakrát. V každom riadku môžeš kliknúť len do jedného stĺpca.</p>
+    <div id="survey-table-container"></div>
+    <div id="survey-actions" style="margin-top: 20px; text-align: center;">
+        <button class="btn-success" onclick="nextPerson()">Ďalšia osoba</button>
+        <button onclick="evaluateSurvey()">Vyhodnotiť prieskum</button>
+    </div>
+</div>
+
+<script>
+    let surveyConfig = {};
+    let totalParticipants = 0;
+    let aggregateResults = [];
+
+    // Pomocná funkcia na čistenie názvu (odstránenie diakritiky, interpunkcie, prevod znakov na _)
+    function sanitizeForFilename(text) {
+        if (!text) return "";
+        return text
+            .normalize("NFD")                           // Rozloží znaky na základ + diakritiku
+            .replace(/[\u0300-\u036f]/g, "")           // Odstráni diakritické znamienka
+            .replace(/[\s\(\)\-\[\]\–\—]/g, "_")       // Medzery, zátvorky, pomlčky, spojovníky -> _
+            .replace(/[^a-zA-Z0-9_]/g, "")             // Odstráni všetko ostatné (interpunkcia) okrem písmen, čísiel a _
+            .replace(/_+/g, "_")                        // Odstráni viacnásobné podčiarkovníky
+            .replace(/(^_|_$)/g, "");                   // Odstráni podčiarkovník na začiatku a konci
+    }
+
+    document.getElementById('gen-items-count').addEventListener('input', function() {
+        const count = parseInt(this.value) || 0;
+        const container = document.getElementById('items-inputs');
+        
+        // Zapamätáme si súčasné hodnoty
+        const currentValues = Array.from(document.querySelectorAll('.item-input')).map(el => el.value);
+        
+        container.innerHTML = '';
+        if (count > 0) {
+            document.getElementById('dynamic-items-container').style.display = 'block';
+            for (let i = 0; i < count; i++) {
+                const val = currentValues[i] || '';
+                container.innerHTML += `<div class="form-group"><label>Položka ${i + 1}:</label><input type="text" class="item-input" id="item-${i}" value="${val.replace(/"/g, '&quot;')}"></div>`;
+            }
+        } else {
+            document.getElementById('dynamic-items-container').style.display = 'none';
+        }
+    });
+
+    document.getElementById('gen-options-count').addEventListener('input', function() {
+        const count = parseInt(this.value) || 0;
+        const container = document.getElementById('options-inputs');
+        
+        // Zapamätáme si súčasné hodnoty
+        const currentValues = Array.from(document.querySelectorAll('.option-input')).map(el => el.value);
+        
+        container.innerHTML = '';
+        if (count > 0) {
+            document.getElementById('dynamic-options-container').style.display = 'block';
+            for (let i = 0; i < count; i++) {
+                const val = currentValues[i] || '';
+                container.innerHTML += `<div class="form-group"><label>Možnosť ${i + 1}:</label><input type="text" class="option-input" id="option-${i}" value="${val.replace(/"/g, '&quot;')}"></div>`;
+            }
+        } else {
+            document.getElementById('dynamic-options-container').style.display = 'none';
+        }
+    });
+
+    function exportConfig() {
+        const config = {
+            author: document.getElementById('gen-author').value,
+            year: document.getElementById('gen-year').value,
+            subject: document.getElementById('gen-subject').value,
+            topic: document.getElementById('gen-topic').value,
+            itemColName: document.getElementById('gen-item-col-name').value,
+            optColName: document.getElementById('gen-opt-col-name').value,
+            itemsCount: document.getElementById('gen-items-count').value,
+            optionsCount: document.getElementById('gen-options-count').value,
+            items: [],
+            options: []
+        };
+        document.querySelectorAll('.item-input').forEach(el => config.items.push(el.value));
+        document.querySelectorAll('.option-input').forEach(el => config.options.push(el.value));
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "nastavenia_prieskumu.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function importConfig(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const config = JSON.parse(e.target.result);
+                document.getElementById('gen-author').value = config.author || '';
+                document.getElementById('gen-year').value = config.year || '';
+                document.getElementById('gen-subject').value = config.subject || '';
+                document.getElementById('gen-topic').value = config.topic || '';
+                document.getElementById('gen-item-col-name').value = config.itemColName || '';
+                document.getElementById('gen-opt-col-name').value = config.optColName || '';
+                
+                const itemsCountInput = document.getElementById('gen-items-count');
+                itemsCountInput.value = config.itemsCount || 0;
+                itemsCountInput.dispatchEvent(new Event('input'));
+
+                const optionsCountInput = document.getElementById('gen-options-count');
+                optionsCountInput.value = config.optionsCount || 0;
+                optionsCountInput.dispatchEvent(new Event('input'));
+
+                setTimeout(() => {
+                    if (config.items) config.items.forEach((val, i) => { if(document.getElementById(`item-${i}`)) document.getElementById(`item-${i}`).value = val; });
+                    if (config.options) config.options.forEach((val, i) => { if(document.getElementById(`option-${i}`)) document.getElementById(`option-${i}`).value = val; });
+                }, 50);
+            } catch (err) {}
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function downloadSurveyHTML() {
+        const config = {
+            author: document.getElementById('gen-author').value,
+            year: document.getElementById('gen-year').value,
+            subject: document.getElementById('gen-subject').value,
+            topic: document.getElementById('gen-topic').value,
+            itemColName: document.getElementById('gen-item-col-name').value,
+            optColName: document.getElementById('gen-opt-col-name').value,
+            items: Array.from(document.querySelectorAll('.item-input')).map(el => el.value),
+            options: Array.from(document.querySelectorAll('.option-input')).map(el => el.value)
+        };
+
+        if(config.items.length === 0 || config.options.length === 0) {
+            alert("Prosím, zadajte aspoň jednu položku a jednu možnosť.");
+            return;
+        }
+
+        const styles = document.querySelector('style').innerHTML;
+        const surveyViewHTML = document.getElementById('survey-view-template').innerHTML;
+
+        const generatedHTML = `<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prieskum - ${config.topic}</title>
+    <style>
+        ${styles}
+        #survey-view { display: block !important; }
+        body { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+<div class="container" id="survey-view">
+    ${surveyViewHTML}
+</div>
+<` + `script>
+    let surveyConfig = ${JSON.stringify(config)};
+    let totalParticipants = 0;
+    let aggregateResults = Array(surveyConfig.items.length).fill(null).map(() => Array(surveyConfig.options.length).fill(0));
+
+    ${sanitizeForFilename.toString()}
+    ${renderSurvey.toString()}
+    ${markCell.toString()}
+    ${clearCell.toString()}
+    ${checkSurveyCompletion.toString()}
+    ${nextPerson.toString()}
+    ${saveCurrentAnswers.toString()}
+    ${evaluateSurvey.toString()}
+    ${generateEmptyPDF.toString()}
+
+    window.onload = function() {
+        renderSurvey();
+    };
+<` + `/script>
+</body>
+</html>`;
+
+        const blob = new Blob([generatedHTML], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        
+        let safeName = sanitizeForFilename(config.topic);
+        if (!safeName) safeName = 'prieskum';
+        a.download = `${safeName}.html`;
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function renderSurvey() {
+        const header = document.getElementById('survey-header');
+        header.innerHTML = `<h2>${surveyConfig.topic} (${surveyConfig.subject})</h2>
+                            <p><strong>Autor:</strong> ${surveyConfig.author} | <strong>Rok:</strong> ${surveyConfig.year}</p>`;
+
+        let tableHTML = `<table id="survey-table">
+            <thead>
+                <tr>
+                    <th rowspan="2">${surveyConfig.itemColName}</th>
+                    <th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th>
+                </tr>
+                <tr>`;
+        surveyConfig.options.forEach(opt => { tableHTML += `<th>${opt}</th>`; });
+        tableHTML += `</tr></thead><tbody>`;
+
+        surveyConfig.items.forEach((item, rIndex) => {
+            tableHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach((opt, cIndex) => {
+                tableHTML += `<td class="clickable" data-row="${rIndex}" data-col="${cIndex}" onclick="markCell(${rIndex}, ${cIndex})" ondblclick="clearCell(${rIndex}, ${cIndex})"></td>`;
+            });
+            tableHTML += `</tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        document.getElementById('survey-table-container').innerHTML = tableHTML;
+        checkSurveyCompletion();
+
+        setTimeout(() => {
+            const firstRowTh = document.querySelector('#survey-table thead tr:nth-child(1) th:nth-child(2)');
+            if (firstRowTh) {
+                const exactHeight = firstRowTh.offsetHeight;
+                const secondRowThs = document.querySelectorAll('#survey-table thead tr:nth-child(2) th');
+                secondRowThs.forEach(th => {
+                    th.style.top = (exactHeight - 1) + 'px'; 
+                });
+            }
+        }, 50);
+    }
+
+    function markCell(rIndex, cIndex) {
+        const cells = document.querySelectorAll(`td[data-row="${rIndex}"]`);
+        cells.forEach(cell => cell.innerHTML = '');
+        const targetCell = document.querySelector(`td[data-row="${rIndex}"][data-col="${cIndex}"]`);
+        targetCell.innerHTML = 'X';
+        checkSurveyCompletion();
+    }
+
+    function clearCell(rIndex, cIndex) {
+        const targetCell = document.querySelector(`td[data-row="${rIndex}"][data-col="${cIndex}"]`);
+        targetCell.innerHTML = '';
+        checkSurveyCompletion();
+        if (window.getSelection) window.getSelection().removeAllRanges();
+    }
+
+    function checkSurveyCompletion() {
+        let allRowsFilled = true;
+        for (let i = 0; i < surveyConfig.items.length; i++) {
+            const cells = document.querySelectorAll(`td[data-row="${i}"]`);
+            let hasMark = false;
+            cells.forEach(cell => { if (cell.innerHTML === 'X') hasMark = true; });
+            if (!hasMark) { allRowsFilled = false; break; }
+        }
+        const actionsDiv = document.getElementById('survey-actions');
+        if(actionsDiv) actionsDiv.style.display = allRowsFilled ? 'block' : 'none';
+    }
+
+    function nextPerson() {
+        saveCurrentAnswers();
+        document.querySelectorAll('.clickable').forEach(cell => cell.innerHTML = '');
+        checkSurveyCompletion();
+        document.getElementById('survey-table-container').scrollTop = 0;
+    }
+
+    function saveCurrentAnswers() {
+        for (let r = 0; r < surveyConfig.items.length; r++) {
+            const cells = document.querySelectorAll(`td[data-row="${r}"]`);
+            cells.forEach((cell, c) => { if (cell.innerHTML === 'X') aggregateResults[r][c]++; });
+        }
+        totalParticipants++;
+    }
+
+   function evaluateSurvey() {
+    const firstRowCells = document.querySelectorAll(`td[data-row="0"]`);
+    let hasActiveData = false;
+    firstRowCells.forEach(cell => { if(cell.innerHTML === 'X') hasActiveData = true; });
+    if(hasActiveData) {
+        saveCurrentAnswers();
+        document.querySelectorAll('.clickable').forEach(cell => cell.innerHTML = '');
+        checkSurveyCompletion();
+    }
+
+    if(totalParticipants === 0) { alert("Žiadne dáta na vyhodnotenie."); return; }
+
+    let evalHTML = `
+    <!DOCTYPE html>
+    <html lang="sk"><head><meta charset="UTF-8"><title>Vyhodnotenie</title><style>
+        @page { 
+            size: auto; 
+            margin: 10mm; 
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 10px; 
+            margin: 0; 
+        }
+        h1, p { text-align: center; }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            /* Automatické rozloženie umožní stĺpcom prispôsobiť sa obsahu */
+            table-layout: auto; 
+        }
+        
+        th, td { 
+            border: 1px solid #000; 
+            padding: 8px 6px; 
+            text-align: center; 
+            font-size: 0.9em;
+        }
+        
+        th { background-color: #f2f2f2; }
+
+        /* 1. stĺpec: Fixná šírka 18% */
+        .text-left { 
+            text-align: left; 
+            width: 18% !important; 
+            padding-left: 10px;
+            word-wrap: break-word;
+        }
+
+        /* Ostatné stĺpce: Prispôsobia sa šírke textu (22,00 %) a nezalamujú sa */
+        td:not(.text-left), th:not(.text-left) {
+            white-space: nowrap;
+            width: 1%; /* Tento trik prinúti stĺpce byť len také široké, ako je text */
+        }
+        
+        @media print { 
+            button { display: none; } 
+            body { padding: 0; }
+        }
+    </style></head><body>
+        <h1>Vyhodnotenie prieskumu: ${surveyConfig.topic}</h1>
+        <p><strong>Predmet:</strong> ${surveyConfig.subject} | <strong>Autor:</strong> ${surveyConfig.author} | <strong>Rok:</strong> ${surveyConfig.year}</p>
+        <p><strong>Celkový počet zúčastnených osôb:</strong> ${totalParticipants}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2" class="text-left">${surveyConfig.itemColName}</th>
+                    <th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th>
+                </tr>
+                <tr>`;
+        surveyConfig.options.forEach(opt => { evalHTML += `<th>${opt}</th>`; });
+        evalHTML += `</tr></thead><tbody>`;
+        
+        surveyConfig.items.forEach((item, r) => {
+            evalHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach((opt, c) => {
+                let percentage = ((aggregateResults[r][c] / totalParticipants) * 100).toFixed(2);
+                evalHTML += `<td>${percentage}%</td>`;
+            });
+            evalHTML += `</tr>`;
+        });
+        
+        evalHTML += `
+            </tbody>
+        </table>
+        <br>
+        <div style="text-align:center;">
+            <button onclick="window.print()" style="padding:10px 20px; font-size:16px; cursor:pointer;">Vytlačiť / Uložiť ako PDF</button>
+        </div>
+    </body></html>`;
+
+    const evalWindow = window.open('', '_blank');
+    evalWindow.document.write(evalHTML);
+    evalWindow.document.close();
+}
+    function generateEmptyPDF() {
+        let safeTitle = sanitizeForFilename(surveyConfig.topic);
+        if(!safeTitle) safeTitle = "Pracovny_list";
+
+        let pdfHTML = `
+        <!DOCTYPE html>
+        <html lang="sk"><head><meta charset="UTF-8"><title>${safeTitle}</title><style>
+            @page { size: landscape; margin: 10mm 15mm; }
+            body { font-family: Arial, sans-serif; padding: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px 10px; text-align: center; word-break: break-word; } 
+            th { background-color: #f9f9f9; }
+            .text-left { text-align: left; }
+            h2, h3 { text-align: center; margin: 5px 0; }
+            .instructions { text-align: center; font-weight: bold; margin: 15px 0; font-size: 1.1em; }
+            @media print { button { display: none; } body { padding: 0; } }
+        </style></head><body>
+            <h2>${surveyConfig.topic}</h2><h3>Predmet: ${surveyConfig.subject}</h3>
+            <p class="instructions">Vyplň tento pracovný list. V každom riadku označ krížikom ten stĺpec, ktorý najviac vystihuje tvoj názor/tvoje pocity. <br>V každom riadku uvádzaj len jeden krížik.</p>
+            <table><thead><tr><th rowspan="2">${surveyConfig.itemColName}</th><th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th></tr><tr>`;
+        surveyConfig.options.forEach(opt => { pdfHTML += `<th>${opt}</th>`; });
+        pdfHTML += `</tr></thead><tbody>`;
+        surveyConfig.items.forEach(item => {
+            pdfHTML += `<tr><td class="text-left">${item}</td>`;
+            surveyConfig.options.forEach(() => { pdfHTML += `<td></td>`; });
+            pdfHTML += `</tr>`;
+        });
+        pdfHTML += `</tbody></table><script>window.onload = function() { window.print(); }<\/script></body></html>`;
+
+        const pdfWindow = window.open('', '_blank');
+        pdfWindow.document.write(pdfHTML);
+        pdfWindow.document.close();
+    }
+</script>
+</body>
+</html>
