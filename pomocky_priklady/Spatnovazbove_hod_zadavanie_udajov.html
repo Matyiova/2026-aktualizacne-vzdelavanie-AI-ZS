@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Spracovanie výsledkov spätnoväzbového hodnotenia</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        h1 { font-size: 22px; }
+        .info-block p { margin: 5px 0; }
+        .student-list { margin-top: 30px; }
+        .student-row { display: flex; align-items: center; margin-bottom: 10px; }
+        .student-name { width: 250px; font-weight: bold; }
+        .btn-group { display: flex; gap: 10px; }
+        .color-btn { 
+            width: 40px; height: 40px; 
+            background-color: #f0f0f0; 
+            border: 2px solid #ccc; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .color-btn.selected { border: 2px solid #333; background-color: #e0e0e0; }
+        .circle { width: 20px; height: 20px; border-radius: 50%; }
+        .circle.green { background-color: #28a745; }
+        .circle.darkblue { background-color: #2e2eff; }
+        .circle.black { background-color: #000000; }
+        .selected-color-text { margin-left: 15px; font-weight: bold; width: 160px; }
+        .submit-btn { margin-top: 30px; padding: 12px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .submit-btn:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Spracovanie výsledkov spätnoväzbového hodnotenia</h1>
+    <div class="info-block">
+        <p><strong>Dátum:</strong> <span id="out-datum">17. 04. 2026</span></p>
+        <p><strong>Trieda:</strong> <span id="out-trieda">II. A</span></p>
+        <p><strong>Predmet:</strong> <span id="out-predmet">Matematika</span></p>
+        <p><strong>Aktivita:</strong> <span id="out-aktivita">Cvičenie 2</span></p>
+        <p><strong>Meno vyučujúceho:</strong> <span id="out-ucitel">Mgr. Jana Novotná</span></p>
+    </div>
+    <div class="student-list">
+        
+        <div class="student-row" data-name="Anna Mrkvičková">
+            <div class="student-name">Anna Mrkvičková</div>
+            <div class="btn-group">
+                <div class="color-btn" onclick="selectColor(this, 'úplne dokáže', 'green')">
+                    <div class="circle green"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'čiastočne dokáže', 'darkblue')">
+                    <div class="circle darkblue"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'ešte to nedokáže', 'black')">
+                    <div class="circle black"></div>
+                </div>
+            </div>
+            <div class="selected-color-text"></div>
+        </div>
+        
+        <div class="student-row" data-name="Ivana Šikovná">
+            <div class="student-name">Ivana Šikovná</div>
+            <div class="btn-group">
+                <div class="color-btn" onclick="selectColor(this, 'úplne dokáže', 'green')">
+                    <div class="circle green"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'čiastočne dokáže', 'darkblue')">
+                    <div class="circle darkblue"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'ešte to nedokáže', 'black')">
+                    <div class="circle black"></div>
+                </div>
+            </div>
+            <div class="selected-color-text"></div>
+        </div>
+        
+        <div class="student-row" data-name="Peter Usilovný">
+            <div class="student-name">Peter Usilovný</div>
+            <div class="btn-group">
+                <div class="color-btn" onclick="selectColor(this, 'úplne dokáže', 'green')">
+                    <div class="circle green"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'čiastočne dokáže', 'darkblue')">
+                    <div class="circle darkblue"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'ešte to nedokáže', 'black')">
+                    <div class="circle black"></div>
+                </div>
+            </div>
+            <div class="selected-color-text"></div>
+        </div>
+        
+        <div class="student-row" data-name="Marek Vytrvalý">
+            <div class="student-name">Marek Vytrvalý</div>
+            <div class="btn-group">
+                <div class="color-btn" onclick="selectColor(this, 'úplne dokáže', 'green')">
+                    <div class="circle green"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'čiastočne dokáže', 'darkblue')">
+                    <div class="circle darkblue"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'ešte to nedokáže', 'black')">
+                    <div class="circle black"></div>
+                </div>
+            </div>
+            <div class="selected-color-text"></div>
+        </div>
+        
+        <div class="student-row" data-name="Klaudia Tichá">
+            <div class="student-name">Klaudia Tichá</div>
+            <div class="btn-group">
+                <div class="color-btn" onclick="selectColor(this, 'úplne dokáže', 'green')">
+                    <div class="circle green"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'čiastočne dokáže', 'darkblue')">
+                    <div class="circle darkblue"></div>
+                </div>
+                <div class="color-btn" onclick="selectColor(this, 'ešte to nedokáže', 'black')">
+                    <div class="circle black"></div>
+                </div>
+            </div>
+            <div class="selected-color-text"></div>
+        </div>
+        
+    </div>
+    <button class="submit-btn" onclick="processResults()">Spracovať zadané výsledky</button>
+
+    <script>
+        function selectColor(btnElement, textName, colorClass) {
+            const row = btnElement.closest('.student-row');
+            row.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            const textEl = row.querySelector('.selected-color-text');
+            textEl.textContent = textName;
+            row.dataset.color = textName;
+        }
+
+        function processResults() {
+            const datum = document.getElementById('out-datum').innerText;
+            const trieda = document.getElementById('out-trieda').innerText;
+            const predmet = document.getElementById('out-predmet').innerText;
+            const aktivita = document.getElementById('out-aktivita').innerText;
+            const ucitel = document.getElementById('out-ucitel').innerText;
+            const rows = document.querySelectorAll('.student-row');
+            const results = { 'úplne dokáže': [], 'čiastočne dokáže': [], 'ešte to nedokáže': [] };
+
+            rows.forEach(row => {
+                const name = row.dataset.name;
+                const color = row.dataset.color;
+                if (color && results[color]) results[color].push(name);
+            });
+
+            const now = new Date();
+            const d = String(now.getDate()).padStart(2, '0');
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const y = now.getFullYear();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const generatedTime = `${d}.${m}.${y}, ${hh}:${mm}`;
+
+            const win = window.open('', '_blank');
+            win.document.write(`<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Výsledky spätnoväzbového hodnotenia</title>
+    <style>
+        body { font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif; margin: 40px; color: #000; }
+        h2 { text-align: center; font-weight: bold; margin-bottom: 30px; font-size: 28px; }
+        .header-info { font-size: 16px; text-align: left; }
+        .header-info div { margin-bottom: 5px; }
+        .spacer { height: 20px; }
+        table.results-table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+        table.results-table td { vertical-align: top; padding: 10px 15px 10px 0; font-size: 16px; text-align: left; }
+        .icon { display: inline-block; vertical-align: middle; width: 28px; height: 28px; margin-right: 8px; }
+        .footer-note { margin-top: 50px; font-size: 12px; color: #555; }
+    </style>
+</head>
+<body>
+    <h2>Výsledky spätnoväzbového hodnotenia</h2>
+    <div class="spacer"></div>
+    <div class="header-info">
+        <div><strong>Dátum:</strong> ${datum}</div>
+        <div><strong>Trieda:</strong> ${trieda}</div>
+        <div><strong>Predmet:</strong> ${predmet}</div>
+        <div><strong>Aktivita:</strong> ${aktivita}</div>
+        <div><strong>Meno vyučujúceho:</strong> ${ucitel}</div>
+    </div>
+    <div class="spacer"></div>
+   <table class="results-table">
+        <tr>
+            <td style="width: 250px; white-space: nowrap;">
+                <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <circle cx="16" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                </svg>
+                - úplne dokáže (${results['úplne dokáže'].length})
+            </td>
+            <td>${results['úplne dokáže'].join('<br>')}</td>
+        </tr>
+        <tr>
+            <td style="white-space: nowrap;">
+                <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <circle cx="16" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <line x1="8" y1="14" x2="16" y2="14"></line>
+                </svg>
+                - čiastočne dokáže (${results['čiastočne dokáže'].length})
+            </td>
+            <td>${results['čiastočne dokáže'].join('<br>')}</td>
+        </tr>
+        <tr>
+            <td style="white-space: nowrap;">
+                <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <circle cx="16" cy="9" r="1" fill="currentColor" stroke="none"></circle>
+                    <path d="M8 16s1.5-2 4-2 4 2 4 2"></path>
+                </svg>
+                - ešte to nedokáže (${results['ešte to nedokáže'].length})
+            </td>
+            <td>${results['ešte to nedokáže'].join('<br>')}</td>
+        </tr>
+    </table>
+    <div class="footer-note">Vygenerované: ${generatedTime}</div>
+</body>
+</html>`);
+            win.document.close();
+        }
+    </script>
+</body>
+</html>
