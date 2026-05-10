@@ -477,9 +477,12 @@
     }
 
    function evaluateSurvey() {
+    const optionColors = ['#3498db', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f1c40f', '#34495e'];
+
     const firstRowCells = document.querySelectorAll(`td[data-row="0"]`);
     let hasActiveData = false;
     firstRowCells.forEach(cell => { if(cell.innerHTML === 'X') hasActiveData = true; });
+
     if(hasActiveData) {
         saveCurrentAnswers();
         document.querySelectorAll('.clickable').forEach(cell => cell.innerHTML = '');
@@ -489,91 +492,97 @@
     if(totalParticipants === 0) { alert("Žiadne dáta na vyhodnotenie."); return; }
 
     let evalHTML = `
-    <!DOCTYPE html>
-    <html lang="sk"><head><meta charset="UTF-8"><title>Vyhodnotenie</title><style>
-        @page { 
-            size: auto; 
-            margin: 10mm; 
-        }
+        <!DOCTYPE html>
+        <html lang="sk"><head><meta charset="UTF-8"><title>Vyhodnotenie</title><style>
+        @page { size: auto; margin: 10mm; }
         body { 
             font-family: Arial, sans-serif; 
             padding: 10px; 
             margin: 0; 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
         }
         h1, p { text-align: center; }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-            /* Automatické rozloženie umožní stĺpcom prispôsobiť sa obsahu */
-            table-layout: auto; 
-        }
-        
-        th, td { 
-            border: 1px solid #000; 
-            padding: 8px 6px; 
-            text-align: center; 
-            font-size: 0.9em;
-        }
-        
-        th { background-color: #f2f2f2; }
 
-        /* 1. stĺpec: Fixná šírka 18% */
-        .text-left { 
-            text-align: left; 
-            width: 18% !important; 
-            padding-left: 10px;
-            word-wrap: break-word;
+        /* Prehľad bez tabuľky */
+        .overview { margin-top: 20px; }
+        .item-block {
+            border: 1px solid #000;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            page-break-inside: avoid;
         }
-
-        /* Ostatné stĺpce: Prispôsobia sa šírke textu (22,00 %) a nezalamujú sa */
-        td:not(.text-left), th:not(.text-left) {
+        .item-title {
+            font-weight: bold;
+            font-size: 1.02em;
+            margin-bottom: 6px;
+            text-align: left;
+        }
+        .option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 18px;
+            margin-top: 6px;
+        }
+        .option-label {
+            flex: 0 0 40%;
+            min-width: 160px;
+            text-align: left;
+            word-break: break-word;
+        }
+        .bar-container {
+            flex: 1 1 auto;
+            height: 16px;
+            background-color: #e6e6e6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .bar { height: 100%; width: 0%; }
+        .percent {
+            flex: 0 0 70px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
             white-space: nowrap;
-            width: 1%; /* Tento trik prinúti stĺpce byť len také široké, ako je text */
         }
-        
-        @media print { 
-            button { display: none; } 
-            body { padding: 0; }
-        }
-    </style></head><body>
+
+        @media print { button { display: none; } body { padding: 0; } }
+        </style></head><body>
         <h1>Vyhodnotenie prieskumu: ${surveyConfig.topic}</h1>
         <p><strong>Predmet:</strong> ${surveyConfig.subject} | <strong>Autor:</strong> ${surveyConfig.author} | <strong>Rok:</strong> ${surveyConfig.year}</p>
         <p><strong>Celkový počet zúčastnených osôb:</strong> ${totalParticipants}</p>
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2" class="text-left">${surveyConfig.itemColName}</th>
-                    <th colspan="${surveyConfig.options.length}">${surveyConfig.optColName}</th>
-                </tr>
-                <tr>`;
-        surveyConfig.options.forEach(opt => { evalHTML += `<th>${opt}</th>`; });
-        evalHTML += `</tr></thead><tbody>`;
-        
-        surveyConfig.items.forEach((item, r) => {
-            evalHTML += `<tr><td class="text-left">${item}</td>`;
-            surveyConfig.options.forEach((opt, c) => {
-                let percentage = ((aggregateResults[r][c] / totalParticipants) * 100).toFixed(2);
-                evalHTML += `<td>${percentage}%</td>`;
-            });
-            evalHTML += `</tr>`;
+        <div class="overview">`;
+
+    surveyConfig.items.forEach((item, r) => {
+        evalHTML += `<div class="item-block"><div class="item-title">${item}</div>`;
+        surveyConfig.options.forEach((opt, c) => {
+            let percentage = ((aggregateResults[r][c] / totalParticipants) * 100).toFixed(2);
+            let color = optionColors[c % optionColors.length];
+            evalHTML += `<div class="option-row">`
+                     + `<div class="option-label">${opt}</div>`
+                     + `<div class="bar-container" title="${percentage}%" aria-label="${percentage}%">`
+                     +   `<div class="bar" style="width:${percentage}%; background-color:${color};"></div>`
+                     + `</div>`
+                     + `<div class="percent">${percentage}%</div>`
+                     + `</div>`;
         });
-        
-        evalHTML += `
-            </tbody>
-        </table>
+        evalHTML += `</div>`;
+    });
+
+    evalHTML += `
+        </div>
         <br>
         <div style="text-align:center;">
             <button onclick="window.print()" style="padding:10px 20px; font-size:16px; cursor:pointer;">Vytlačiť / Uložiť ako PDF</button>
         </div>
-    </body></html>`;
+        </body></html>`;
 
     const evalWindow = window.open('', '_blank');
     evalWindow.document.write(evalHTML);
     evalWindow.document.close();
 }
-    function generateEmptyPDF() {
+function generateEmptyPDF() {
         let safeTitle = sanitizeForFilename(surveyConfig.topic);
         if(!safeTitle) safeTitle = "Pracovny_list";
 
