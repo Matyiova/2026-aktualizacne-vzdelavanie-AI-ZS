@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Výstupný lístok pre 1. cyklus (generátor)</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --secondary-color: #2196F3;
+            --secondary-hover: #1976D2;
+            --bg-color: #f4f7f6;
+            --container-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #ccc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+			font-size: 18px;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+			font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .buttons-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-export {
+            background-color: var(--secondary-color);
+            flex: 1;
+        }
+        .btn-export:hover { background-color: var(--secondary-hover); }
+
+        .btn-import {
+            background-color: #607D8B;
+            flex: 1;
+        }
+        .btn-import:hover { background-color: #455A64; }
+
+        .btn-generate {
+            background-color: var(--primary-color);
+            width: 100%;
+            font-size: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .btn-generate:hover { background-color: var(--primary-hover); }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #e0e0e0;
+            margin: 30px 0;
+        }
+
+        .footer-credit {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Výstupný lístok pre 1. cyklus (generátor)</h1>
+
+        <div class="form-group">
+            <label for="title">Názov výstupného lístka:</label>
+            <input type="text" id="title" value="Výstupný lístok (Exit ticket)">
+        </div>
+
+        <div class="form-group">
+            <label for="topic">Téma:</label>
+            <input type="text" id="topic" value="Mäkké spoluhlásky">
+        </div>
+
+        <div class="form-group">
+            <label for="instruction">Inštrukcia k sebahodnoteniu:</label>
+            <textarea id="instruction">Ako sa ti dnes pracovalo s mäkkými spoluhláskami? Vyfarbi jedného smajlíka.</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="eval1">Hodnotenie 1 (usmievavý smajlík 🙂︎ - podporuje HTML):</label>
+            <textarea id="eval1">Mäkké spoluhlásky sypem z rukáva a viem, aké "i" po nich napísať.</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="eval2">Hodnotenie 2 (neutrálny smajlík 😐︎ - podporuje HTML):</label>
+            <textarea id="eval2">Väčšinu viem, ale občas sa pri niektorom slovíčku pomýlim.</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="eval3">Hodnotenie 3 (smutnejší smajlík 🙁︎ - podporuje HTML):</label>
+            <textarea id="eval3">Zatiaľ sa mi tie spoluhlásky pletú.</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="footerText">Záverečný text/Poďakovanie:</label>
+            <input type="text" id="footerText" value="Ďakujem za spoluprácu a prajem veľa úspechov v učení 🙂︎">
+        </div>
+
+        <div class="form-group">
+            <label for="author">Autor:</label>
+            <input type="text" id="author" value="">
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="twoPerPage">
+            <label for="twoPerPage">Generovať 2 lístky na jednu A4 stranu (2. lístok zarovnaný na spodok)</label>
+        </div>
+
+        <div class="buttons-row">
+            <button class="btn-export" id="btnExport">Exportovať nastavenia do súboru .json</button>
+            <input type="file" id="inputFile" accept=".json" style="display: none;">
+            <button class="btn-import" id="btnImport">Importovať nastavenia zo súboru .json</button>
+        </div>
+
+        <hr>
+
+        <button class="btn-generate" id="btnGenerate">Zobraziť výstupný lístok na vyplnenie (CTRL + P pre uloženie)</button>
+
+        <div class="footer-credit">
+            <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová
+        </div>
+    </div>
+
+    <script>
+        function getFormData() {
+            return {
+                title: document.getElementById('title').value,
+                topic: document.getElementById('topic').value,
+                instruction: document.getElementById('instruction').value,
+                eval1: document.getElementById('eval1').value,
+                eval2: document.getElementById('eval2').value,
+                eval3: document.getElementById('eval3').value,
+                footerText: document.getElementById('footerText').value,
+                author: document.getElementById('author').value,
+                twoPerPage: document.getElementById('twoPerPage').checked
+            };
+        }
+
+
+        // Bezpečný názov ukladaného výstupného lístka/PDF:
+        // - odstráni diakritiku,
+        // - medzery a zátvorky nahradí podčiarkovníkom,
+        // - ostatnú interpunkciu odstráni,
+        // - viac podčiarkovníkov zlúči do jedného.
+        function createSafeFileName(fileName) {
+            const safeName = (fileName || 'vystupny_listok')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .replace(/[()\s]+/g, '_')
+                .replace(/[^a-zA-Z0-9_\-]/g, '')
+                .replace(/_+/g, '_')
+                .replace(/^_+|_+$/g, '');
+
+            return safeName || 'vystupny_listok';
+        }
+
+        // Export do JSON
+        document.getElementById('btnExport').addEventListener('click', () => {
+            const data = getFormData();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vystupny_listok_nastavenia.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Trigger pre skrytý input súboru
+        document.getElementById('btnImport').addEventListener('click', () => {
+            document.getElementById('inputFile').click();
+        });
+
+        // Import z JSON
+        document.getElementById('inputFile').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.title !== undefined) document.getElementById('title').value = data.title;
+                    if(data.topic !== undefined) document.getElementById('topic').value = data.topic;
+                    if(data.instruction !== undefined) document.getElementById('instruction').value = data.instruction;
+                    if(data.eval1 !== undefined) document.getElementById('eval1').value = data.eval1;
+                    if(data.eval2 !== undefined) document.getElementById('eval2').value = data.eval2;
+                    if(data.eval3 !== undefined) document.getElementById('eval3').value = data.eval3;
+                    if(data.footerText !== undefined) document.getElementById('footerText').value = data.footerText;
+                    if(data.author !== undefined) document.getElementById('author').value = data.author;
+                    if(data.twoPerPage !== undefined) document.getElementById('twoPerPage').checked = data.twoPerPage;
+                    
+                    alert('Nastavenia boli úspešne načítané!');
+                } catch (error) {
+                    alert('Chyba: Súbor nie je platný JSON.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        });
+
+        // Generovanie lístka do nového okna
+        document.getElementById('btnGenerate').addEventListener('click', () => {
+            const data = getFormData();
+            const safeFileName = createSafeFileName(data.title);
+            
+            const singleTicketContent = `
+                <div class="ticket">
+                    <h1>${data.title}</h1>
+                    <h2>Téma: ${data.topic}</h2>
+                    
+                    <div class="header-fields">
+                        <div class="field field-meno"><span>Meno:</span> <div class="line"></div></div>
+                        <div class="field field-trieda"><span>Trieda:</span> <div class="line"></div></div>
+                        <div class="field field-datum"><span>Dátum:</span> <div class="line"></div></div>
+                    </div>
+                    
+                    <div class="instruction">${data.instruction}</div>
+                    
+                    <div class="smileys-row">
+                        <div class="smiley-col">
+                            <svg class="smiley-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" stroke="black" stroke-width="4" fill="none" />
+                                <circle cx="35" cy="40" r="5" fill="black" />
+                                <circle cx="65" cy="40" r="5" fill="black" />
+                                <path d="M 30 60 A 20 20 0 0 0 70 60" stroke="black" stroke-width="4" fill="none" />
+                            </svg>
+                            <div class="emoji-text">${data.eval1}</div>
+                        </div>
+                        <div class="smiley-col">
+                            <svg class="smiley-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" stroke="black" stroke-width="4" fill="none" />
+                                <circle cx="35" cy="40" r="5" fill="black" />
+                                <circle cx="65" cy="40" r="5" fill="black" />
+                                <line x1="30" y1="60" x2="70" y2="60" stroke="black" stroke-width="4" />
+                            </svg>
+                            <div class="emoji-text">${data.eval2}</div>
+                        </div>
+                        <div class="smiley-col">
+                            <svg class="smiley-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" stroke="black" stroke-width="4" fill="none" />
+                                <circle cx="35" cy="40" r="5" fill="black" />
+                                <circle cx="65" cy="40" r="5" fill="black" />
+                                <path d="M 30 70 A 20 20 0 0 1 70 70" stroke="black" stroke-width="4" fill="none" />
+                            </svg>
+                            <div class="emoji-text">${data.eval3}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-note">${data.footerText}</div>
+                    <div class="author">Autor: ${data.author}</div>
+                </div>
+            `;
+
+            let bodyContent = `<div class="page-container">${singleTicketContent}</div>`;
+            if (data.twoPerPage) {
+                bodyContent = `
+                    <div class="page-container two-per-page">
+                        ${singleTicketContent}
+                        <div class="divider"></div>
+                        ${singleTicketContent}
+                    </div>
+                `;
+            }
+
+            const ticketHTML = `
+            <!DOCTYPE html>
+            <html lang="sk">
+            <head>
+                <meta charset="UTF-8">
+                <title>${safeFileName}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+                    
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                    }
+
+                    body {
+                        font-family: 'Roboto', sans-serif;
+                        color: #000;
+                        background-color: #fff;
+                        box-sizing: border-box;
+                    }
+                    
+                    .page-container {
+                        width: 100%;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px 40px;
+                        box-sizing: border-box;
+                    }
+
+                    /* Zobrazenie dvoch lístkov v náhľade bez prekrývania */
+                    .page-container.two-per-page {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: flex-start;
+                        min-height: 100vh;
+                    }
+                    
+                    .ticket {
+                        padding: 10px 40px;
+                        width: 100%;
+                        box-sizing: border-box;
+                    }
+                    
+                    h1 {
+                        text-align: center;
+                        font-size: 26px;
+                        margin-top: 0;
+                        margin-bottom: 20px;
+                    }
+                    
+                    h2 {
+                        text-align: center;
+                        font-size: 20px;
+                        font-weight: normal;
+                        margin-top: 0;
+                        margin-bottom: 40px;
+                    }
+                    
+                    .header-fields {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 35px;
+                        font-size: 18px;
+                        gap: 20px;
+                    }
+                    
+                    .field {
+                        display: flex;
+                        align-items: flex-end;
+                    }
+
+                    .field-meno { flex: 2.7; }
+                    .field-trieda { flex: 1.2; }
+                    .field-datum { flex: 1.8; }
+                    
+                    .field span {
+                        font-weight: bold;
+                        margin-right: 10px;
+                        white-space: nowrap;
+                    }
+                    
+                    .line {
+                        flex-grow: 1;
+                        border-bottom: 1px solid #000;
+                        height: 20px;
+                    }
+                    
+                    .instruction {
+                        font-weight: bold;
+                        font-size: 18px;
+                        text-align: center;
+                        margin-bottom: 35px;
+                    }
+                    
+                    .smileys-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 45px;
+                        gap: 30px;
+                    }
+                    
+                    .smiley-col {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        text-align: center;
+                    }
+                    
+                    .smiley-svg {
+                        width: 65px;
+                        height: 65px;
+                        margin-bottom: 15px;
+                    }
+                    
+                    .emoji-text {
+                        font-size: 16px;
+                        line-height: 1.4;
+                        width: 100%;
+                        white-space: pre-wrap; /* Zachová ručne vložené odriadkovanie z poľa hodnotenia */
+                        overflow-wrap: break-word; /* Dlhší text sa zalomí v rámci stĺpca */
+                        word-break: normal;
+                    }
+                    
+                    .footer-note {
+                        text-align: center;
+                        font-size: 16px;
+                        margin-bottom: 20px;
+                    }
+                    
+                    .author {
+                        text-align: right;
+                        font-size: 13px;
+                        color: #000;
+                    }
+
+                    .divider {
+                        width: 100%;
+                        max-width: 800px;
+                        border-top: 1px dashed #ccc;
+                        margin: 10px 0;
+                    }
+
+                    @media print {
+                        body { background: none; }
+                        .page-container { padding: 20px 0; }
+                        .page-container.two-per-page {
+                            position: relative;
+                            display: block;
+                            height: 100vh;
+                            max-height: 100vh;
+                            padding: 40px 0; /* Bezpečný vnútorný okraj pre tlačiarne */
+                        }
+                        .page-container.two-per-page .ticket:first-of-type {
+                            position: absolute;
+                            top: 40px;
+                            left: 0;
+                            right: 0;
+                            width: auto;
+                        }
+                        .page-container.two-per-page .ticket:last-of-type {
+                            position: absolute;
+                            bottom: 40px;
+                            left: 0;
+                            right: 0;
+                            width: auto;
+                        }
+                        .page-container.two-per-page .divider {
+                            position: absolute;
+                            top: 51.5%;
+                            left: 0;
+                            right: 0;
+                            width: auto;
+                            max-width: none;
+                            margin: 0;
+                        }
+                        .ticket { box-shadow: none; }
+                        .divider { border-top: 1px dashed #000; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${bodyContent}
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.open();
+                newWindow.document.write(ticketHTML);
+                newWindow.document.close();
+            } else {
+                alert('Prehliadač zablokoval vyskakovacie okno. Prosím, povoľte otváranie okien pre túto stránku.');
+            }
+        });
+    </script>
+</body>
+</html>

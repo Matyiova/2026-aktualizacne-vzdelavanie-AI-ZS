@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vyhodnocovací nástroj na výstupné lístky</title>
+  <style>
+    :root {
+      --primary-color: #4CAF50; --primary-hover: #45a049;
+      --secondary-color: #2196F3; --secondary-hover: #1976D2;
+      --import-color: #607D8B; --import-hover: #455A64;
+      --bg-color: #f4f7f6; --container-bg: #ffffff; --text-color: #333;
+      --border-color: #ccc; --success-color: #43A047; --neutral-color: #F9A825; --sad-color: #E53935;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { background-color: var(--container-bg); font-size: 18px; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 850px; width: 100%; box-sizing: border-box; }
+    h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+    .subtitle { text-align: center; color: #607D8B; margin: 0 0 30px; font-size: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; color: #34495e; }
+    input[type="text"], input[type="date"], input[type="number"], textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 16px; box-sizing: border-box; transition: border-color 0.3s ease; background: #fff; }
+    input:focus, textarea:focus { outline: none; border-color: var(--secondary-color); }
+    textarea { resize: vertical; min-height: 58px; }
+    .section-title { margin: 28px 0 14px; padding: 10px 12px; background: #f2f6f8; border-left: 5px solid var(--secondary-color); border-radius: 6px; font-weight: 700; color: #2c3e50; }
+    .rating-row { display: grid; grid-template-columns: 1.4fr 2fr 0.8fr; gap: 15px; align-items: end; margin-bottom: 15px; padding: 14px; border: 1px solid #e5e5e5; border-radius: 10px; background: #fbfbfb; }
+    .rating-label { font-weight: 700; font-size: 18px; }
+    .rating-label.success { color: var(--success-color); } .rating-label.neutral { color: #B77900; } .rating-label.sad { color: var(--sad-color); }
+    .buttons-row { display: flex; gap: 15px; margin-top: 20px; margin-bottom: 20px; }
+    button { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background-color 0.3s ease, transform 0.1s ease; color: white; display: inline-flex; align-items: center; justify-content: center; }
+    button:active { transform: scale(0.98); }
+    .btn-export { background-color: var(--secondary-color); flex: 1; } .btn-export:hover { background-color: var(--secondary-hover); }
+    .btn-import { background-color: var(--import-color); flex: 1; } .btn-import:hover { background-color: var(--import-hover); }
+    .btn-evaluate { background-color: var(--primary-color); width: 100%; font-size: 17px; padding: 15px; margin-top: 5px; } .btn-evaluate:hover { background-color: var(--primary-hover); }
+    .hint { font-size: 14px; color: #666; margin-top: 6px; }
+    .warning { display: none; margin: 15px 0; padding: 12px 14px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 6px; font-size: 15px; }
+    hr { border: 0; height: 1px; background: #e0e0e0; margin: 24px 0; }
+    .footer-credit { text-align: center; font-size: 14px; color: #555; margin-top: 10px; }
+    @media (max-width: 760px) { .container { padding: 22px; } .form-grid, .rating-row { grid-template-columns: 1fr; } .buttons-row { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Vyhodnocovací nástroj na výstupné lístky</h1>
+    <p class="subtitle">Zadajte údaje z vyzbieraných výstupných lístkov a vygenerujte prehľad s percentami a farebnými pásmi.</p>
+    <div class="form-grid">
+      <div class="form-group full"><label for="title">Názov výstupného lístka:</label><input type="text" id="title" value="Výstupný lístok (Exit ticket)"></div>
+      <div class="form-group"><label for="topic">Téma:</label><input type="text" id="topic" value="Mäkké spoluhlásky"></div>
+      <div class="form-group"><label for="className">Trieda:</label><input type="text" id="className" value=""></div>
+      <div class="form-group"><label for="date">Dátum:</label><input type="date" id="date"></div>
+      <div class="form-group"><label for="author">Autor:</label><input type="text" id="author" value=""></div>
+    </div>
+    <div class="section-title">Texty hodnotení</div>
+    <div class="rating-row"><div class="rating-label success">1 – usmievavý smajlík 🙂</div><div><label for="eval1">Text hodnotenia 1:</label><textarea id="eval1">Mäkké spoluhlásky sypem z rukáva a viem, aké "i" po nich napísať.</textarea></div><div><label for="count1">Počet žiakov:</label><input type="number" id="count1" min="0" step="1" value="0"></div></div>
+    <div class="rating-row"><div class="rating-label neutral">2 – neutrálny smajlík 😐</div><div><label for="eval2">Text hodnotenia 2:</label><textarea id="eval2">Väčšinu viem, ale občas sa pri niektorom slovíčku pomýlim.</textarea></div><div><label for="count2">Počet žiakov:</label><input type="number" id="count2" min="0" step="1" value="0"></div></div>
+    <div class="rating-row"><div class="rating-label sad">3 – smutnejší smajlík 🙁</div><div><label for="eval3">Text hodnotenia 3:</label><textarea id="eval3">Zatiaľ sa mi tie spoluhlásky pletú.</textarea></div><div><label for="count3">Počet žiakov:</label><input type="number" id="count3" min="0" step="1" value="0"></div></div>
+    <div class="section-title">Celkový počet žiakov</div>
+    <div class="form-group"><label for="totalStudents">Celkový počet žiakov:</label><input type="number" id="totalStudents" min="1" step="1" value="0"><div class="hint">Ak sa súčet hodnotení nezhoduje s celkovým počtom, nástroj vás upozorní, ale prehľad aj tak vygeneruje.</div></div>
+    <div class="warning" id="warningBox"></div>
+    <div class="buttons-row"><button class="btn-export" id="btnExport">Exportovať nastavenia do súboru .json</button><input type="file" id="inputFile" accept=".json,application/json" style="display: none;"><button class="btn-import" id="btnImport">Importovať nastavenia zo súboru .json</button></div>
+    <hr><button class="btn-evaluate" id="btnEvaluate">Vyhodnotiť</button>
+    <div class="footer-credit"><b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová</div>
+  </div>
+<script>
+function setTodayIfEmpty(){const d=document.getElementById('date');if(!d.value){const t=new Date();d.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}}
+setTodayIfEmpty();
+function getNumberValue(id){const v=parseInt(document.getElementById(id).value,10);return Number.isFinite(v)&&v>=0?v:0;}
+function escapeHTML(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function nl2brEscaped(value){return escapeHTML(value).replace(/\n/g,'<br>');}
+function getFormData(){return{title:document.getElementById('title').value,topic:document.getElementById('topic').value,className:document.getElementById('className').value,date:document.getElementById('date').value,author:document.getElementById('author').value,eval1:document.getElementById('eval1').value,eval2:document.getElementById('eval2').value,eval3:document.getElementById('eval3').value,totalStudents:getNumberValue('totalStudents'),count1:getNumberValue('count1'),count2:getNumberValue('count2'),count3:getNumberValue('count3')}}
+// Bezpečný názov ukladaného súboru: odstráni diakritiku, medzery a zátvorky nahradí podčiarkovníkom, ostatnú interpunkciu odstráni.
+function createSafeFileName(fileName){const safeName=(fileName||'vyhodnotenie_vystupnych_listkov').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[()\s]+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'').replace(/_+/g,'_').replace(/^_+|_+$/g,'');return safeName||'vyhodnotenie_vystupnych_listkov';}
+function buildSafeExportName(data){const parts=[data.title,data.topic,data.className,data.date].filter(Boolean).join('_');return createSafeFileName(parts||'vyhodnotenie_vystupnych_listkov');}
+function formatDateSK(dateValue){if(!dateValue)return'';const p=dateValue.split('-');return p.length===3?`${p[2]}.${p[1]}.${p[0]}`:dateValue;}
+function validateCounts(data){const w=document.getElementById('warningBox');const sum=data.count1+data.count2+data.count3;const m=[];if(data.totalStudents<=0)m.push('Zadajte celkový počet žiakov väčší ako 0.');if(sum!==data.totalStudents)m.push(`Súčet označených hodnotení je ${sum}, ale celkový počet žiakov je ${data.totalStudents}.`);if(sum>data.totalStudents&&data.totalStudents>0)m.push('Súčet hodnotení je vyšší ako celkový počet žiakov – skontrolujte zadané počty.');if(m.length){w.innerHTML=m.map(escapeHTML).join('<br>');w.style.display='block';}else{w.style.display='none';w.innerHTML='';}return m;}
+document.getElementById('btnExport').addEventListener('click',()=>{const data=getFormData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildSafeExportName(data)}_nastavenia.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);});
+document.getElementById('btnImport').addEventListener('click',()=>document.getElementById('inputFile').click());
+document.getElementById('inputFile').addEventListener('change',(event)=>{const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(e)=>{try{const data=JSON.parse(e.target.result);['title','topic','className','date','author','eval1','eval2','eval3','totalStudents','count1','count2','count3'].forEach(f=>{if(data[f]!==undefined&&document.getElementById(f))document.getElementById(f).value=data[f];});alert('Nastavenia boli úspešne načítané!');}catch(error){alert('Chyba: Súbor nie je platný JSON.');}};reader.readAsText(file);event.target.value='';});
+function svgPercentBar(percent,color){const w=Math.max(0,Math.min(100,percent));return `<svg class="pdf-bar" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="${percent.toFixed(1)} percent"><rect x="0" y="0" width="100" height="12" fill="#ffffff" stroke="#d0d7de" stroke-width="0.6"></rect><rect x="0" y="0" width="${w}" height="12" fill="${color}"></rect></svg>`;}
+document.getElementById('btnEvaluate').addEventListener('click',()=>{const data=getFormData();validateCounts(data);if(data.totalStudents<=0){alert('Prosím, zadajte celkový počet žiakov väčší ako 0.');return;}const safeFileName=buildSafeExportName(data);const ratings=[{number:1,emoji:'🙂',label:'usmievavý smajlík',text:data.eval1,count:data.count1,color:'#43A047',soft:'#E8F5E9'},{number:2,emoji:'😐',label:'neutrálny smajlík',text:data.eval2,count:data.count2,color:'#F9A825',soft:'#FFF8E1'},{number:3,emoji:'🙁',label:'smutnejší smajlík',text:data.eval3,count:data.count3,color:'#E53935',soft:'#FFEBEE'}];
+const rowsHTML=ratings.map(r=>{const percent=data.totalStudents>0?(r.count/data.totalStudents*100):0;return `<section class="result-card" style="border-left-color:${r.color}; background:${r.soft};"><div class="result-header"><div class="rating-title">Hodnotenie ${r.number} – ${r.label} <span class="emoji">${r.emoji}</span></div><div class="rating-count">${r.count} z ${data.totalStudents} žiakov</div></div><div class="rating-text">${nl2brEscaped(r.text)}</div><div class="percent-line"><strong>${percent.toFixed(1).replace('.',',')} %</strong></div>${svgPercentBar(percent,r.color)}</section>`;}).join('');
+const sum=data.count1+data.count2+data.count3;const summaryWarning=sum!==data.totalStudents?`<div class="summary-warning">Poznámka: Súčet hodnotení je ${sum}, celkový počet žiakov je ${data.totalStudents}. Skontrolujte, či sú zadané údaje správne.</div>`:'';
+const resultHTML=`<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHTML(safeFileName)}</title><style>
+*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:26px;background:#f4f7f6;color:#25313b}.report{max-width:900px;margin:0 auto;background:#fff;padding:30px 36px;border-radius:14px;box-shadow:0 4px 15px rgba(0,0,0,.12)}h1{text-align:center;margin:0 0 8px;color:#2c3e50}.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 20px;margin:24px 0;padding:16px;background:#f7fafc;border:1px solid #e3edf2;border-radius:10px}.meta div{font-size:16px}.meta strong{color:#34495e}.result-card{border-left:8px solid;border-radius:12px;padding:18px 20px;margin:18px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)}.result-header{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}.rating-title{font-size:20px;font-weight:800}.emoji{font-size:26px;vertical-align:middle}.rating-count{font-weight:700;color:#34495e;white-space:nowrap}.rating-text{margin:12px 0;line-height:1.45;font-size:17px}.percent-line{margin:8px 0 7px;font-size:18px}.pdf-bar{display:block;width:100%;height:28px;margin-top:7px}.summary-warning{margin:16px 0;padding:12px 14px;background:#fff3cd;color:#856404;border:1px solid #ffeeba;border-radius:8px;font-weight:600}.actions{display:flex;gap:12px;margin-top:24px}button{border:0;border-radius:7px;padding:11px 18px;color:#fff;font-weight:700;cursor:pointer;background:#2196F3}button.print{background:#4CAF50}.author{text-align:right;margin-top:22px;font-size:14px;color:#555}@media print{body{background:#fff!important;padding:0}.report{background:#fff!important;box-shadow:none;border-radius:0}.meta{background:#fff!important}.result-card{background:#fff!important;box-shadow:none}.summary-warning{background:#fff!important}.actions{display:none}.pdf-bar rect{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}@media(max-width:680px){body{padding:12px}.report{padding:20px}.meta{grid-template-columns:1fr}.result-header{align-items:flex-start;flex-direction:column}.rating-count{white-space:normal}.actions{flex-direction:column}}</style></head><body><main class="report"><h1>Vyhodnotenie výstupných lístkov</h1><div class="meta"><div><strong>Názov:</strong> ${escapeHTML(data.title)}</div><div><strong>Téma:</strong> ${escapeHTML(data.topic)}</div><div><strong>Trieda:</strong> ${escapeHTML(data.className)}</div><div><strong>Dátum:</strong> ${escapeHTML(formatDateSK(data.date))}</div><div><strong>Celkový počet žiakov:</strong> ${data.totalStudents}</div><div><strong>Autor:</strong> ${escapeHTML(data.author)}</div></div>${summaryWarning}${rowsHTML}<div class="actions"><button class="print" onclick="window.print()">Uložiť / tlačiť prehľad</button><button onclick="downloadHTML()">Stiahnuť prehľad ako HTML</button></div><div class="author">Spracovala pomocou UI: Mgr. Erika Matyiová</div></main><script>function createDownload(){return '<!DOCTYPE html>\\n'+document.documentElement.outerHTML;}function downloadHTML(){const blob=new Blob([createDownload()],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='${safeFileName}_prehlad.html';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}<\/script></body></html>`;
+const newWindow=window.open('','_blank');if(newWindow){newWindow.document.open();newWindow.document.write(resultHTML);newWindow.document.close();}else{alert('Prehliadač zablokoval vyskakovacie okno. Prosím, povoľte otváranie okien pre túto stránku.');}});
+</script>
+</body>
+</html>
