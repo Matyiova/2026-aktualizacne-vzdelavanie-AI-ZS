@@ -299,8 +299,8 @@
 
     function aggregateQ1() {
         const map = new Map();
-        q1Options.forEach(opt => {
-            map.set(opt.value, { label: opt.label, count: 0, students: [], includeAlways: true });
+        q1Options.forEach((opt, index) => {
+            map.set(opt.value, { label: opt.label, count: 0, students: [], includeAlways: true, order: index });
         });
         students.forEach((s, idx) => {
             const baseKey = q1Options.some(opt => opt.value === s.q1) ? s.q1 : '';
@@ -312,13 +312,14 @@
             if (s.q1 === 'iné' && s.q1_other && s.q1_other.trim()) {
                 const customLabel = `iné – ${s.q1_other.trim()}`;
                 const customKey = 'other:' + normalizeItem(s.q1_other);
-                if (!map.has(customKey)) map.set(customKey, { label: customLabel, count: 0, students: [] });
+                if (!map.has(customKey)) map.set(customKey, { label: customLabel, count: 0, students: [], order: q1Options.length });
                 const customRec = map.get(customKey);
                 customRec.count++;
                 customRec.students.push(`Žiak ${idx + 1}`);
             }
         });
         return Array.from(map.values()).sort((a, b) => {
+            if (a.includeAlways && b.includeAlways) return a.order - b.order;
             if (a.includeAlways && !b.includeAlways) return -1;
             if (!a.includeAlways && b.includeAlways) return 1;
             return b.count - a.count || a.label.localeCompare(b.label, 'sk');
