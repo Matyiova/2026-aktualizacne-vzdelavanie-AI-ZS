@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vyhodnotenie výstupných lístkov</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f4f7f6; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { font-size: 1.2em; color: #2980b9; margin-top: 25px; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .radio-group { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 6px 0 14px; }
+        .radio-option { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; font-weight: normal; cursor: pointer; }
+        .radio-option input { margin: 0; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .btn-add { background-color: #27ae60; color: white; }
+        .btn-add:hover { background-color: #219150; }
+        .btn-eval { background-color: #3498db; color: white; }
+        .btn-eval:hover { background-color: #2980b9; }
+        .btn-json { background-color: #8e44ad; color: white; }
+        .btn-json:hover { background-color: #76368f; }
+        .counter { margin-top: 10px; font-style: italic; color: #666; }
+        .student-overview { margin-top: 22px; }
+        .student-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-top: 10px; background: #fafafa; }
+        .student-card-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .student-card-title { font-weight: bold; color: #2c3e50; }
+        .student-card dl { display: grid; grid-template-columns: 190px 1fr; gap: 6px 10px; margin: 0; }
+        .student-card dt { font-weight: bold; color: #555; }
+        .student-card dd { margin: 0; white-space: pre-wrap; }
+        .btn-remove { background-color: #e74c3c; color: white; padding: 7px 12px; }
+        .btn-remove:hover { background-color: #c0392b; }
+        .empty-overview { color: #666; font-style: italic; margin: 8px 0 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        @media(max-width:700px){ .student-card dl { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 style="text-align:center">Nástroj na vyhodnotenie <br>všeobecných výstupných lístkov</h1>
+    <div class="section" id="headerInfo">
+        <label>Názov výstupného lístka:</label>
+        <input type="text" id="title" value="NEJ - Nakupovanie oblečenia (8. ročník)">
+        <label>Autor:</label>
+        <input type="text" id="author" value="Mgr. Erika Matyiová">
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <label>Trieda:</label>
+                <input type="text" id="class" placeholder="napr. 8.A">
+            </div>
+            <div style="flex: 1;">
+                <label>Dátum:</label>
+                <input type="date" id="date">
+            </div>
+        </div>
+    </div>
+    <div class="section" id="studentForm">
+        <h2>Údaje od žiaka</h2>
+        <label>1. Ako sa žiak cítil:</label>
+        <div class="radio-group" role="radiogroup" aria-label="Ako sa žiak cítil">
+            <label class="radio-option"><input type="radio" name="q1" value="istý/istá" checked> a) istý/istá</label>
+            <label class="radio-option"><input type="radio" name="q1" value="neistý/neistá"> b) neistý/neistá</label>
+            <label class="radio-option"><input type="radio" name="q1" value="zmätený/zmätená"> c) zmätený/zmätená</label>
+            <label class="radio-option"><input type="radio" name="q1" value="bavilo ma to"> d) bavilo ma to</label>
+            <label class="radio-option"><input type="radio" name="q1" value="iné"> e) iné</label>
+            <input type="text" id="q1_other" placeholder="Upresni odpoveď, ak je označené iné" disabled>
+        </div>
+
+        <label>2. Čo sa žiakovi dnes podarilo:</label>
+        <textarea id="q2" rows="2"></textarea>
+        <label>3. Čo bolo pre žiaka najťažšie:</label>
+        <textarea id="q3" rows="2"></textarea>
+        <label>4. Najlepšie zapamätaná veta/fráza:</label>
+        <input type="text" id="q4">
+        <label>5. Vlastné hodnotenie výkonu (1-5 hviezd):</label>
+        <div class="radio-group" role="radiogroup" aria-label="Hodnotenie výkonu">
+            <label class="radio-option"><input type="radio" name="q5" value="1" checked> ☆ (bolo to pre mňa náročné)</label>
+            <label class="radio-option"><input type="radio" name="q5" value="2"> ☆☆ (potrebujem viac trénovať)</label>
+            <label class="radio-option"><input type="radio" name="q5" value="3"> ☆☆☆ (priemerný výkon)</label>
+            <label class="radio-option"><input type="radio" name="q5" value="4"> ☆☆☆☆ (dobrý výkon)</label>
+            <label class="radio-option"><input type="radio" name="q5" value="5"> ☆☆☆☆☆ (veľmi dobrý výkon)</label>
+        </div>
+        <div class="btn-group">
+            <button class="btn-add" onclick="addStudent()">Uložiť a pridať ďalšieho žiaka</button>
+            <button class="btn-eval" onclick="evaluateAll()">Vyhodnotiť</button>
+		</div>
+		<div class="btn-group">
+            <button class="btn-json" onclick="exportSettings()">Exportovať nastavenia JSON</button>
+            <button class="btn-json" onclick="document.getElementById('importFile').click()">Importovať nastavenia JSON</button>
+            <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importSettings(event)">
+        </div>
+        <div class="counter" id="studentCount">Počet zadaných žiakov: 0</div>
+    </div>
+    <div class="section student-overview" id="studentOverviewSection">
+        <h2>Prehľad zadaných žiakov</h2>
+        <div id="studentOverview" class="empty-overview">Zatiaľ nie sú pridané žiadne údaje od žiakov.</div>
+    </div>
+	<b>Spracované pomocou UI:</b> Mgr. Erika Matyiová (2026)
+</div>
+<script>
+    let students = [];
+
+    const q1Options = [
+        { value: 'istý/istá', label: 'a) istý/istá' },
+        { value: 'neistý/neistá', label: 'b) neistý/neistá' },
+        { value: 'zmätený/zmätená', label: 'c) zmätený/zmätená' },
+        { value: 'bavilo ma to', label: 'd) bavilo ma to' },
+        { value: 'iné', label: 'e) iné' }
+    ];
+
+    const q5Options = [
+        { value: '1', label: '☆ (náročné)' },
+        { value: '2', label: '☆☆ (viac trénovať)' },
+        { value: '3', label: '☆☆☆ (priemerný)' },
+        { value: '4', label: '☆☆☆☆ (dobrý)' },
+        { value: '5', label: '☆☆☆☆☆ (veľmi dobrý)' }
+    ];
+
+    function getRadioValue(name) {
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        return checked ? checked.value : '';
+    }
+
+    function setRadioValue(name, value) {
+        const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+        if (input) input.checked = true;
+    }
+
+    function safeFileName(value) {
+        const base = String(value || 'nastavenia_vystupneho_listka')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/_+/g, '_');
+        return base || 'nastavenia_vystupneho_listka';
+    }
+
+    function currentMeta() {
+        return {
+            title: document.getElementById('title').value,
+            author: document.getElementById('author').value,
+            className: document.getElementById('class').value,
+            date: document.getElementById('date').value
+        };
+    }
+
+    function applyMeta(meta) {
+        if (!meta) return;
+        document.getElementById('title').value = meta.title || '';
+        document.getElementById('author').value = meta.author || '';
+        document.getElementById('class').value = meta.className || meta.class || '';
+        document.getElementById('date').value = meta.date || '';
+    }
+
+    function currentForm() {
+        return {
+            q1: getRadioValue('q1'),
+            q1_other: document.getElementById('q1_other').value,
+            q2: document.getElementById('q2').value,
+            q3: document.getElementById('q3').value,
+            q4: document.getElementById('q4').value,
+            q5: getRadioValue('q5')
+        };
+    }
+
+    function applyCurrentForm(form) {
+        if (!form) return;
+        setRadioValue('q1', form.q1 || 'istý/istá');
+        document.getElementById('q1_other').value = form.q1_other || '';
+        document.getElementById('q2').value = form.q2 || '';
+        document.getElementById('q3').value = form.q3 || '';
+        document.getElementById('q4').value = form.q4 || '';
+        setRadioValue('q5', form.q5 || '1');
+        toggleOtherInput();
+    }
+
+    function toggleOtherInput() {
+        const otherInput = document.getElementById('q1_other');
+        if (!otherInput) return;
+        const isOther = getRadioValue('q1') === 'iné';
+        otherInput.disabled = !isOther;
+        if (!isOther) otherInput.value = '';
+    }
+
+    function formatDateSK(dateValue) {
+        if (!dateValue) return '—';
+        const parts = String(dateValue).split('-');
+        if (parts.length !== 3) return dateValue;
+        return `${parts[2]}. ${parts[1]}. ${parts[0]}`;
+    }
+
+    function updateStudentCounter() {
+        document.getElementById('studentCount').innerText = "Počet zadaných žiakov: " + students.length;
+        renderStudentOverview();
+    }
+
+    function q1Label(value) {
+        const found = q1Options.find(opt => opt.value === value);
+        return found ? found.label : (value || '—');
+    }
+
+    function q1DisplayValue(student) {
+        if (student.q1 === 'iné') {
+            return student.q1_other && student.q1_other.trim() ? student.q1_other.trim() : 'e) iné';
+        }
+        return q1Label(student.q1);
+    }
+
+    function q5Label(value) {
+        const found = q5Options.find(opt => opt.value === value);
+        return found ? found.label : (value || '—');
+    }
+
+    function renderStudentOverview() {
+        const overview = document.getElementById('studentOverview');
+        if (!overview) return;
+        if (students.length === 0) {
+            overview.className = 'empty-overview';
+            overview.innerHTML = 'Zatiaľ nie sú pridané žiadne údaje od žiakov.';
+            return;
+        }
+        overview.className = '';
+        overview.innerHTML = students.map((s, idx) => `
+            <div class="student-card">
+                <div class="student-card-header">
+                    <div class="student-card-title">Žiak ${idx + 1}</div>
+                    <button class="btn-remove" type="button" onclick="removeStudent(${idx})">Odstrániť</button>
+                </div>
+                <dl>
+                    <dt>1. Pocit</dt><dd>${escapeHtml(q1DisplayValue(s))}</dd>
+                    <dt>2. Podarilo sa</dt><dd>${escapeHtml(s.q2 || '—')}</dd>
+                    <dt>3. Najťažšie</dt><dd>${escapeHtml(s.q3 || '—')}</dd>
+                    <dt>4. Veta/fráza</dt><dd>${escapeHtml(s.q4 || '—')}</dd>
+                    <dt>5. Hodnotenie</dt><dd>${escapeHtml(q5Label(s.q5))}</dd>
+                </dl>
+            </div>
+        `).join('');
+    }
+
+    function removeStudent(index) {
+        students.splice(index, 1);
+        updateStudentCounter();
+    }
+
+    function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+
+    function stripDiacritics(s) {
+        return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function normalizeItem(s) {
+        return stripDiacritics(String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' '));
+    }
+
+    function splitItems(value) {
+        // Opraveny regex, ktory v povodnom kode obsahoval zalomenie riadku a sposoboval chybu
+        return String(value ?? '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    }
+
+    function addStudent() {
+        const student = currentForm();
+        students.push(student);
+        updateStudentCounter();
+        // Reset textových polí a voľby pre ďalšieho žiaka
+        document.getElementById('q1_other').value = '';
+        document.getElementById('q2').value = '';
+        document.getElementById('q3').value = '';
+        document.getElementById('q4').value = '';
+        setRadioValue('q1', 'istý/istá');
+        setRadioValue('q5', '1');
+        toggleOtherInput();
+        alert("Údaje žiaka boli pridané.");
+    }
+
+    function aggregateText(kind) {
+        const map = new Map();
+        students.forEach((s, idx) => {
+            const seen = new Set();
+            splitItems(s[kind]).forEach(original => {
+                const key = normalizeItem(original);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                if (!map.has(key)) map.set(key, { label: original.trim(), count: 0, students: [] });
+                const rec = map.get(key);
+                rec.count++;
+                rec.students.push(`Žiak ${idx + 1}`);
+            });
+        });
+        return Array.from(map.values()).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'sk'));
+    }
+
+    function aggregateQ1() {
+        const map = new Map();
+        q1Options.forEach(opt => {
+            map.set(opt.value, { label: opt.label, count: 0, students: [], includeAlways: true });
+        });
+        students.forEach((s, idx) => {
+            const baseKey = q1Options.some(opt => opt.value === s.q1) ? s.q1 : '';
+            if (baseKey && map.has(baseKey)) {
+                const baseRec = map.get(baseKey);
+                baseRec.count++;
+                baseRec.students.push(`Žiak ${idx + 1}`);
+            }
+            if (s.q1 === 'iné' && s.q1_other && s.q1_other.trim()) {
+                const customLabel = `iné – ${s.q1_other.trim()}`;
+                const customKey = 'other:' + normalizeItem(s.q1_other);
+                if (!map.has(customKey)) map.set(customKey, { label: customLabel, count: 0, students: [] });
+                const customRec = map.get(customKey);
+                customRec.count++;
+                customRec.students.push(`Žiak ${idx + 1}`);
+            }
+        });
+        return Array.from(map.values()).sort((a, b) => {
+            if (a.includeAlways && !b.includeAlways) return -1;
+            if (!a.includeAlways && b.includeAlways) return 1;
+            return b.count - a.count || a.label.localeCompare(b.label, 'sk');
+        });
+    }
+
+    function aggregateChoice(kind, options) {
+        return options.map(opt => {
+            const count = students.filter(s => s[kind] === opt.value).length;
+            return { label: opt.label, count, students: students.map((s, idx) => s[kind] === opt.value ? `Žiak ${idx + 1}` : '').filter(Boolean) };
+        });
+    }
+
+    function colorFor(p) {
+        if (p >= 70) return '#16a34a';
+        if (p >= 40) return '#f59e0b';
+        return '#ef4444';
+    }
+
+    function renderBars(title, data, emptyText) {
+        const total = students.length;
+        const rows = data.filter(r => r.count > 0 || r.includeAlways || data.length <= 5);
+        if (!rows.length) {
+            return `<section><h2>${escapeHtml(title)}</h2><p class="muted">${escapeHtml(emptyText || 'Neboli zadané žiadne položky.')}</p></section>`;
+        }
+        return `
+            <section>
+                <h2>${escapeHtml(title)}</h2>
+                <p class="muted">Percento vyjadruje podiel žiakov, ktorí uviedli alebo zvolili danú položku.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Položka</th>
+                            <th>Počet žiakov</th>
+                            <th>Percentá</th>
+                            <th>Uviedli / zvolili</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(r => {
+                            const pct = total ? Math.round((r.count / total) * 1000) / 10 : 0;
+                            const c = colorFor(pct);
+                            return `
+                                <tr>
+                                    <td class="item">${escapeHtml(r.label)}</td>
+                                    <td>${r.count} / ${total}</td>
+                                    <td class="percentCell">
+                                        <div class="barWrap">
+                                            <div class="bar" style="width:${pct}%;background:${c}"></div>
+                                            <span>${pct.toLocaleString('sk-SK')} %</span>
+                                        </div>
+                                    </td>
+                                    <td>${r.students.length ? escapeHtml(r.students.join(', ')) : '<span class="muted">—</span>'}</td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </section>`;
+    }
+
+    function exportSettings() {
+        const data = {
+            meta: currentMeta(),
+            currentForm: currentForm(),
+            students: students,
+            exportedAt: new Date().toISOString(),
+            version: 'vseobecne-03'
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+        const a = document.createElement('a');
+        const meta = currentMeta();
+        a.href = URL.createObjectURL(blob);
+        a.download = safeFileName(`${meta.title}_${meta.className}_${meta.date}`) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function importSettings(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                applyMeta(data.meta || data.header || {});
+                if (Array.isArray(data.students)) {
+                    students = data.students.map(s => ({
+                        q1: s.q1 || 'istý/istá',
+                        q1_other: s.q1_other || '',
+                        q2: s.q2 || '',
+                        q3: s.q3 || '',
+                        q4: s.q4 || '',
+                        q5: s.q5 || '1'
+                    }));
+                    updateStudentCounter();
+                    applyCurrentForm(data.currentForm || null);
+                    alert('Nastavenia a údaje boli úspešne importované.');
+                } else {
+                    alert('Súbor neobsahuje platný zoznam žiakov.');
+                }
+            } catch (error) {
+                alert('Chyba: Nepodarilo sa načítať JSON súbor.');
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function evaluateAll() {
+        if (students.length === 0) {
+            alert("Najskôr pridajte aspoň jedného žiaka.");
+            return;
+        }
+        const title = document.getElementById('title').value;
+        const author = document.getElementById('author').value;
+        const className = document.getElementById('class').value;
+        const date = document.getElementById('date').value;
+        const now = new Date().toLocaleString('sk-SK');
+        const reportFileName = safeFileName(`Vyhodnotenie_${title}_${className}_${date}`);
+
+        const q1Data = aggregateQ1();
+        const q2Data = aggregateText('q2');
+        const q3Data = aggregateText('q3');
+        const q4Data = aggregateText('q4');
+        const q5Data = aggregateChoice('q5', q5Options);
+
+        const reportWindow = window.open('', '_blank');
+        let reportHtml = `
+        <!DOCTYPE html>
+        <html lang="sk">
+        <head>
+            <meta charset="UTF-8">
+            <title>${escapeHtml(reportFileName)}</title>
+            <style>
+                *{box-sizing:border-box}
+                body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;padding:28px;color:#333;background:#f8fafc;line-height:1.35}
+                h1{color:#2c3e50;margin:0 0 5px;font-size:1.7rem}
+                h2{font-size:1.2rem;color:#2980b9;margin:20px 0 7px}
+                .meta{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:10px 14px;margin-bottom:12px}
+                .meta-row,.summary-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;align-items:center}
+                .compact-item{font-size:.9rem;white-space:nowrap}
+                .compact-item .label{font-size:.78rem;color:#64748b;text-transform:none;letter-spacing:0;margin:0 3px 0 0;display:inline}
+                .compact-item .value{font-weight:800;font-size:.9rem;display:inline}
+                .box{border:1px solid #dbe3ef;background:#f8fafc;border-radius:8px;padding:7px 10px}
+                .label{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.03em;margin-bottom:1px}
+                .value{font-weight:800;font-size:.92rem}
+                .muted{color:#64748b;margin:0;font-size:.88rem}
+                table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;margin-top:6px}
+                th,td{padding:7px 10px;border-bottom:1px solid #e5eaf2;text-align:left;vertical-align:top;font-size:.9rem}
+                th{background:#eef4ff;color:#1e3a8a}
+                .item{font-weight:800}
+                .percentCell{min-width:240px}
+                .barWrap{position:relative;height:24px;border:1px solid #cbd5e1;border-radius:999px;background:#f1f5f9;overflow:hidden}
+                .bar{height:100%;border-radius:999px 0 0 999px}
+                .barWrap span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:800;color:#111827;font-size:.82rem;text-shadow:0 1px 0 rgba(255,255,255,.85)}
+                .no-print{padding:10px;margin-bottom:20px;cursor:pointer;background:#3498db;color:white;border:0;border-radius:6px;font-weight:700}
+                .foot{margin-top:16px;color:#64748b;font-size:.82rem}
+                @media(max-width:800px){.meta-row,.summary-row{display:block}.compact-item{display:block;white-space:normal;margin-top:3px}.percentCell{min-width:160px}}
+                @media print{
+                    body{padding:0;background:white}
+                    .no-print{display:none}
+                    .meta,table,.box,section{break-inside:avoid}
+                    .bar,.barWrap{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
+                    th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; background:#eef4ff!important; }
+                }
+            </style>
+        </head>
+        <body>
+            <button class="no-print" onclick="window.print()">Vytlačiť report (Ctrl + P)</button>
+            <div class="meta">
+                <h1>Vyhodnotenie: ${escapeHtml(title)}</h1>
+                <p class="muted">Prehľad odpovedí z výstupného lístka.</p>
+                <div class="meta-row">
+                    <span class="compact-item"><span class="label">Autor:</span><span class="value">${escapeHtml(author || '—')}</span></span>
+                    <span class="compact-item"><span class="label">Trieda:</span><span class="value">${escapeHtml(className || '—')}</span></span>
+                    <span class="compact-item"><span class="label">Dátum:</span><span class="value">${escapeHtml(formatDateSK(date))}</span></span>
+                </div>
+                <div class="summary-row">
+                    <span class="compact-item"><span class="label">Počet žiakov:</span><span class="value">${students.length}</span></span>
+                    <span class="compact-item"><span class="label">Unikátne slovíčka:</span><span class="value">${q2Data.length}</span></span>
+                    <span class="compact-item"><span class="label">Unikátne frázy:</span><span class="value">${q4Data.length}</span></span>
+                    <span class="compact-item"><span class="label">Unikátne otázky/problémy:</span><span class="value">${q3Data.length}</span></span>
+                </div>
+            </div>
+
+            ${renderBars('1. Pocity na hodine', q1Data)}
+            ${renderBars('2. Čo sa žiakom podarilo?', q2Data)}
+            ${renderBars('3. Čo bolo najťažšie?', q3Data)}
+            ${renderBars('4. Zapamätané frázy', q4Data)}
+            ${renderBars('5. Hodnotenie výkonu', q5Data)}
+            <p class="foot">Vygenerované: ${escapeHtml(now)}.</p>
+        </body>
+        </html>`;
+
+        reportWindow.document.write(reportHtml);
+        reportWindow.document.close();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input[name="q1"]').forEach(input => {
+            input.addEventListener('change', toggleOtherInput);
+        });
+        toggleOtherInput();
+        renderStudentOverview();
+    });
+</script>
+</body>
+</html>
