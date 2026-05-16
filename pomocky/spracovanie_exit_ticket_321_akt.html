@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="sk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nástroj na vyhodnotenie výstupného lístka 3-2-1</title>
+    
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --panel: #fff;
+            --ink: #1f2937;
+            --muted: #64748b;
+            --line: #d7dee8;
+            --primary: #2563eb;
+            --primaryDark: #1d4ed8;
+            --soft: #eef4ff;
+            --shadow: 0 10px 25px rgba(15,23,42,.08);
+            --radius: 18px;
+        } 
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            font-family: "Monaco", Consolas, Courier bold, monospace;
+            background: linear-gradient(180deg, #edf4ff 0%, var(--bg) 230px);
+            color: var(--ink);
+            line-height: 1.45;
+        }
+        
+        .wrap {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 28px 18px 42px;
+        } 
+        
+        header {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin: 0 0 6px;
+            font-size: clamp(1.55rem, 3vw, 2.35rem);
+            letter-spacing: -.03em;
+        } 
+        
+        .subtitle {
+            margin: 0;
+            color: var(--muted);
+            max-width: 1100px;
+        } 
+        
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin: 16px 0;
+        } 
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        } 
+        
+        .grid.two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        
+        /* Upravené pomery stĺpcov pre zväčšenie šírky autora */
+        .grid-meta {
+            grid-template-columns: 9fr 7fr 3fr 3fr;
+        }
+        
+        label {
+            display: block;
+            font-weight: 700;
+            font-size: .92rem;
+            margin-bottom: 6px;
+        }
+        
+        input, textarea {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #fff;
+            color: var(--ink);
+            font: inherit;
+            padding: 11px 12px;
+            outline: none;
+            transition: .15s;
+            border-bottom-width: 2px;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+        }
+        
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        } 
+        
+        .hint {
+            font-size: .82rem;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0 0 14px;
+        } 
+        
+        h2 {
+            font-size: 1.2rem;
+            margin: 0;
+            letter-spacing: -.02em;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--soft);
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: .84rem;
+        }
+        
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 11px 15px;
+            font-weight: 800;
+            cursor: pointer;
+            font: inherit;
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        } 
+        
+        .btn.primary { background: var(--primary); color: white; }
+        .btn.primary:hover { background: var(--primaryDark); } 
+        .btn.secondary { background: #e2e8f0; color: #0f172a; } 
+        .btn.danger { background: #fee2e2; color: #991b1b; }
+        .btn.ghost { background: #fff; border: 1px solid var(--line); color: #334155; }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        
+        .students { overflow: auto; }
+        .students table { width: 100%; border-collapse: collapse; min-width: 760px; }
+        .students th, .students td { text-align: left; border-bottom: 1px solid var(--line); padding: 10px 8px; vertical-align: top; }
+        .students th { font-size: .82rem; color: #475569; background: #f8fafc; }
+        
+        .small { font-size: .86rem; color: var(--muted); }
+        .empty { border: 1px dashed #cbd5e1; border-radius: 14px; padding: 18px; color: var(--muted); text-align: center; background: #fbfdff; } 
+        .pill { display: inline-block; border-radius: 999px; background: #f1f5f9; padding: 3px 8px; margin: 2px; font-size: .82rem; } 
+        
+        .toast {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            background: #0f172a;
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: .2s;
+            pointer-events: none;
+        } 
+        .toast.show { opacity: 1; transform: translateY(0); }
+        
+        @media(max-width:900px){
+            .grid, .grid.two, .grid-meta { grid-template-columns: 1fr; }
+            .wrap { padding-top: 18px; }
+            header { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header>
+            <div>
+                <h1>Vyhodnotenie výstupného lístka 3-2-1</h1>
+                <p class="subtitle">Zadajte údaje výstupného lístka a odpovede žiakov. Každé slovíčko alebo fráza na novom riadku sa počíta ako jedna samostatná položka.</p>
+            </div>
+            <span class="badge" id="studentCounter">0 žiakov</span>
+        </header>
+        
+        <section class="card" aria-labelledby="metaTitle">
+            <div class="section-title">
+                <h2 id="metaTitle">Údaje o výstupnom lístku</h2>
+            </div>
+            <div class="grid grid-meta">
+                <div>
+                    <label for="ticketTitle">Názov výstupného lístka</label>
+                    <input id="ticketTitle" value="Nakupovanie ovocia a zeleniny – 3-2-1" />
+                </div>
+                <div>
+                    <label for="author">Autor</label>
+                    <input id="author" value="Mgr. Erika Matyiová" />
+                </div>
+                <div>
+                    <label for="className">Trieda</label>
+                    <input id="className" placeholder="napr. 5.A" />
+                </div>
+                <div>
+                    <label for="date">Dátum</label>
+                    <input id="date" type="date" />
+                </div>
+            </div>
+        </section>
+        
+        <section class="card" aria-labelledby="studentTitle">
+            <div class="section-title">
+                <h2 id="studentTitle">Odpovede aktuálneho žiaka</h2>
+                <span class="badge">Nový záznam</span>
+            </div>
+            <div class="grid two">
+                <div>
+                    <label for="studentName">Meno žiaka/žiačky <span class="small">(voliteľné)</span></label>
+                    <input id="studentName" placeholder="napr. Adam K." />
+                </div>
+                <div>
+                    <label for="note">Poznámka <span class="small">(voliteľné)</span></label>
+                    <input id="note" placeholder="napr. chýbal, potreboval pomoc…" />
+                </div>
+            </div>
+            <div class="grid" style="grid-template-columns:1fr;margin-top:14px">
+                <div>
+                    <label for="words">3 nové slovíčka, ktoré sa žiak naučil/a</label>
+                    <textarea id="words" placeholder="jablko&#10;mrkva&#10;uhorka"></textarea>
+                    <div class="hint">Každý nový riadok = jedna položka. Nástroj vyhodnocuje rovnaké položky bez ohľadu na veľkosť písmen.</div>
+                </div>
+                <div>
+                    <label for="phrases">2 užitočné frázy, ktoré môže použiť</label>
+                    <textarea id="phrases" placeholder="How much is it?&#10;I would like…"></textarea>
+                </div>
+                <div>
+                    <label for="questions">1 otázka / problém</label>
+                    <textarea id="questions" placeholder="Ako vysloviť cucumber?&#10;Problém s výslovnosťou…"></textarea>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn primary" id="addStudent">＋ Pridať žiaka</button>
+                <button class="btn ghost" id="clearCurrent">Vymazať formulár žiaka</button>
+            </div>
+        </section>
+        
+        <section class="card students" aria-labelledby="listTitle">
+            <div class="section-title">
+                <h2 id="listTitle">Zadaní žiaci</h2>
+                <span class="small">Pred vyhodnotením môžete záznamy odstrániť.</span>
+            </div>
+            <div id="studentList" class="empty">Zatiaľ nie je pridaný žiadny žiak.</div>
+            
+            <div class="actions">
+                <button class="btn primary" id="evaluate" disabled>Vyhodnotiť</button>
+                <button class="btn secondary" id="downloadData" disabled>Stiahnuť údaje JSON</button>
+                
+                <button class="btn secondary" id="importDataBtn">Importovať údaje JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none">
+                
+                <button class="btn danger" id="clearAll" disabled>Vymazať všetkých žiakov</button>
+            </div>
+        </section>
+        
+        <br><br>
+        <b>Spracovala pomocou UI:</b> Mgr. Erika Matyiová (2026)
+        <br><br>
+    </div>
+    
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+    (function(){
+        // --- Základné premenné a nastavenie dátumu ---
+        const $ = (id) => document.getElementById(id); 
+        const students = []; 
+        $('date').valueAsDate = new Date();
+
+        // --- Pomocné funkcie na úpravu textu ---
+        function stripDiacritics(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+        function normalizeItem(s) { return stripDiacritics(String(s||'').trim().toLowerCase().replace(/\s+/g,' ')); }
+        function splitLines(value) { return String(value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+        function escapeHtml(s) { return String(s??'').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch])); }
+        function safeFileName(value) {
+            const fallback = 'prehlad_vystupneho_listka';
+            const base = String(value || fallback)
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')      // odstráni diakritiku
+                .replace(/[()\[\]{}]/g, '_')          // zátvorky nahradí podčiarkovníkom
+                .replace(/\s+/g, '_')                  // medzery nahradí podčiarkovníkom
+                .replace(/[^A-Za-z0-9_]+/g, '_')       // interpunkciu a iné znaky nahradí podčiarkovníkom
+                .replace(/_+/g, '_')                   // zjednotí viac podčiarkovníkov
+                .replace(/^_+|_+$/g, '');              // odstráni podčiarkovníky na začiatku/konci
+            return base || fallback;
+        }
+        function fmtDate(iso) {
+            if(!iso) return '';
+            const d = new Date(iso+'T00:00:00');
+            return d.toLocaleDateString('sk-SK');
+        }
+
+        // --- UI funkcie ---
+        function showToast(msg) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2200);
+        }
+        function plural(n) { return n === 1 ? '1 žiak' : (n >= 2 && n <= 4 ? n + ' žiaci' : n + ' žiakov'); }
+        function colorFor(p) { if(p>=70) return'#16a34a'; if(p>=40) return'#f59e0b'; return'#ef4444'; }
+        function pills(arr) { return arr.length ? arr.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join(' ') : '<span class="small">—</span>'; }
+        
+        // --- Správa formulára aktuálneho žiaka ---
+        function currentStudent() {
+            return {
+                name: $('studentName').value.trim(),
+                note: $('note').value.trim(),
+                words: splitLines($('words').value),
+                phrases: splitLines($('phrases').value),
+                questions: splitLines($('questions').value)
+            };
+        }
+        function hasAnswers(s) { return s.words.length || s.phrases.length || s.questions.length || s.name || s.note; }
+        function clearCurrent() {
+            ['studentName','note','words','phrases','questions'].forEach(id => $(id).value = '');
+            $('studentName').focus();
+        }
+
+        // --- Vykreslenie tabuľky pridaných žiakov ---
+        function renderStudents() { 
+            $('studentCounter').textContent = plural(students.length); 
+            $('evaluate').disabled = $('downloadData').disabled = $('clearAll').disabled = students.length === 0; 
+            
+            if(!students.length){
+                $('studentList').className = 'empty';
+                $('studentList').textContent = 'Zatiaľ nie je pridaný žiadny žiak.';
+                return;
+            } 
+            
+            $('studentList').className = ''; 
+            $('studentList').innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Meno</th>
+                            <th>Slovíčka</th>
+                            <th>Frázy</th>
+                            <th>Otázka/problém</th>
+                            <th>Poznámka</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map((s,i) => `
+                        <tr>
+                            <td>${i+1}</td>
+                            <td>${escapeHtml(s.name||'—')}</td>
+                            <td>${pills(s.words)}</td>
+                            <td>${pills(s.phrases)}</td>
+                            <td>${pills(s.questions)}</td>
+                            <td>${escapeHtml(s.note||'')}</td>
+                            <td><button class="btn ghost" data-remove="${i}" title="Odstrániť">Odstrániť</button></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>`; 
+                
+            document.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+                students.splice(Number(btn.dataset.remove), 1);
+                renderStudents();
+            }));
+        }
+
+        // --- Agregácia a vyhodnotenie dát ---
+        function aggregate(kind) {
+            const map = new Map();
+            students.forEach((s, idx) => {
+                const seen = new Set();
+                (s[kind] || []).forEach(original => {
+                    const key = normalizeItem(original);
+                    if(!key || seen.has(key)) return;
+                    seen.add(key);
+                    
+                    if(!map.has(key)) map.set(key, { label: original.trim(), count: 0, students: [] });
+                    const rec = map.get(key);
+                    rec.count++;
+                    rec.students.push(s.name || `Žiak ${idx+1}`);
+                });
+            });
+            return Array.from(map.values()).sort((a,b) => b.count - a.count || a.label.localeCompare(b.label, 'sk'));
+        }
+
+        function meta() {
+            return {
+                title: $('ticketTitle').value.trim() || 'Výstupný lístok',
+                author: $('author').value.trim(),
+                className: $('className').value.trim(),
+                date: $('date').value
+            };
+        }
+
+        // --- Tvorba HTML reportu na tlač ---
+        function categoryHtml(title, kind, expected) {
+            const data = aggregate(kind);
+            const total = students.length;
+            
+            if(!data.length) return `
+                <section>
+                    <h2>${escapeHtml(title)}</h2>
+                    <p class="muted">Neboli zadané žiadne položky.</p>
+                </section>`;
+                
+            return `
+                <section>
+                    <h2>${escapeHtml(title)}</h2>
+                    <p class="muted">Percento vyjadruje podiel žiakov, ktorí uviedli danú položku aspoň raz. Odporúčaný počet v lístku: ${expected}.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Položka</th>
+                                <th>Počet žiakov</th>
+                                <th>Percentá</th>
+                                <th>Uviedli</th>
+                            </tr>
+                        </thead>
+                        <tbody>${data.map(r => {
+                            const pct = Math.round((r.count/total)*1000)/10;
+                            const c = colorFor(pct);
+                            return `
+                            <tr>
+                                <td class="item">${escapeHtml(r.label)}</td>
+                                <td>${r.count} / ${total}</td>
+                                <td class="percentCell">
+                                    <div class="barWrap">
+                                        <div class="bar" style="width:${pct}%;background:${c}"></div>
+                                        <span>${pct.toLocaleString('sk-SK')} %</span>
+                                    </div>
+                                </td>
+                                <td>${escapeHtml(r.students.join(', '))}</td>
+                            </tr>`;
+                        }).join('')}
+                        </tbody>
+                    </table>
+                </section>`;
+        }
+
+        function reportHtml() {
+            const m = meta();
+            const now = new Date().toLocaleString('sk-SK');
+            const pdfFileName = safeFileName(`${m.title}_${m.className}_${m.date}`);
+            
+            return `<!doctype html>
+            <html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>${escapeHtml(pdfFileName)}</title>
+            <style>
+                *{box-sizing:border-box}
+                body{font-family: "Monaco", Consolas, Courier bold, monospace;color:#111827;margin:0;background:#f8fafc;line-height:1.35}
+                .page{max-width:1120px;margin:0 auto;padding:14px 18px} 
+                header{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:12px 16px;margin-bottom:10px} 
+                h1{margin:0 0 4px;font-size:1.55rem;letter-spacing:-.02em}
+                h2{margin:16px 0 6px;font-size:1.15rem;letter-spacing:-.01em;break-after:avoid;page-break-after:avoid}
+
+                section{break-inside:avoid-page;page-break-inside:avoid;margin-bottom:12px}
+
+                section > h2, section > .muted{break-after:avoid;page-break-after:avoid}
+                .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+                .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;margin-bottom:0}
+                .box{border:1px solid #dbe3ef;background:#f8fafc;border-radius:8px;padding:6px 10px}
+                .label{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.03em;margin-bottom:1px}
+                .value{font-weight:800;font-size:0.9rem}
+                .muted{color:#64748b;margin:0;font-size:0.86rem}
+                .toolbar{display:flex;gap:10px;margin:0 0 10px} 
+                .btn{border:0;background:#2563eb;color:#fff;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}
+                table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;break-inside:auto;page-break-inside:auto}
+
+                thead{display:table-header-group}
+
+                tr{break-inside:avoid;page-break-inside:avoid}
+
+                th,td{padding:7px 10px;border-bottom:1px solid #e5eaf2;text-align:left;vertical-align:top;font-size:0.9rem}
+                th{background:#eef4ff;color:#1e3a8a} 
+                .item{font-weight:800} 
+                .percentCell{min-width:240px}
+                .barWrap{position:relative;height:24px;border:1px solid #cbd5e1;border-radius:999px;background:#f1f5f9;overflow:hidden}
+                .bar{height:100%;border-radius:999px 0 0 999px}
+                .barWrap span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:800;color:#111827;font-size:0.82rem;text-shadow:0 1px 0 rgba(255,255,255,.85)} 
+                .foot{margin-top:16px;color:#64748b;font-size:.82rem} 
+                @media(max-width:800px){.meta,.summary{grid-template-columns:1fr} .percentCell{min-width:160px}}
+                @media print{
+
+                    @page{margin:12mm}
+
+                    body{background:white;orphans:3;widows:3}
+
+                    .page{max-width:none;padding:0}
+
+                    .toolbar{display:none}
+
+                    header,.box{break-inside:avoid-page;page-break-inside:avoid}
+
+                    section{break-inside:avoid-page;page-break-inside:avoid}
+
+                    h1,h2{break-after:avoid-page;page-break-after:avoid}
+
+                    section > .muted{break-after:avoid-page;page-break-after:avoid}
+
+                    table{break-inside:auto;page-break-inside:auto}
+
+                    thead{display:table-header-group}
+
+                    tr{break-inside:avoid-page;page-break-inside:avoid}
+
+                    .bar,.barWrap{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+
+                    th{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eef4ff!important}
+
+                }
+            </style>
+            </head>
+            <body>
+                <div class="page">
+                    <div class="toolbar"><button class="btn" onclick="window.print()">Tlačiť / Ctrl + P</button></div>
+                    <header>
+                        <h1>${escapeHtml(m.title)}</h1><p class="muted">Prehľad odpovedí z výstupného lístka 3-2-1.</p>
+                        <div class="meta">
+                            <div class="box"><div class="label">Autor</div><div class="value">${escapeHtml(m.author||'—')}</div></div>
+                            <div class="box"><div class="label">Trieda</div><div class="value">${escapeHtml(m.className||'—')}</div></div>
+                            <div class="box"><div class="label">Dátum</div><div class="value">${escapeHtml(fmtDate(m.date)||'—')}</div></div>
+                        </div>
+                        <div class="summary">
+                            <div class="box"><div class="label">Počet žiakov</div><div class="value">${students.length}</div></div>
+                            <div class="box"><div class="label">Unikátne slovíčka</div><div class="value">${aggregate('words').length}</div></div>
+                            <div class="box"><div class="label">Unikátne frázy</div><div class="value">${aggregate('phrases').length}</div></div>
+                            <div class="box"><div class="label">Unikátne otázky/problémy</div><div class="value">${aggregate('questions').length}</div></div>
+                        </div>
+                    </header>
+                    ${categoryHtml('3 nové slovíčka','words','3')}
+                    ${categoryHtml('2 užitočné frázy','phrases','2')}
+                    ${categoryHtml('1 otázka alebo problém','questions','1')}
+                    <p class="foot">Vygenerované: ${escapeHtml(now)}.</p>
+                </div>
+            </body>
+            </html>`;
+        }
+
+        // --- Event Listeners (Tlačidlá a udalosti) ---
+        $('addStudent').addEventListener('click', () => {
+            const s = currentStudent();
+            if(!hasAnswers(s)){ showToast('Najprv zadajte aspoň jednu odpoveď alebo meno žiaka.'); return; }
+            students.push(s);
+            clearCurrent();
+            renderStudents();
+            showToast('Žiak bol pridaný.');
+        });
+
+        $('clearCurrent').addEventListener('click', clearCurrent); 
+        
+        $('clearAll').addEventListener('click', () => {
+            if(confirm('Naozaj chcete vymazať všetkých zadaných žiakov?')){
+                students.length = 0;
+                renderStudents();
+            }
+        });
+
+        $('downloadData').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify({meta:meta(), students}, null, 2)], {type:'application/json'});
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob);
+            a.download = 'vystupny-listok-udaje.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+
+        $('evaluate').addEventListener('click', () => {
+            if(!students.length){ showToast('Nie je pridaný žiadny žiak.'); return; }
+            const w = window.open('','_blank');
+            if(w){
+                w.document.open(); w.document.write(reportHtml()); w.document.close(); w.focus();
+            } else {
+                const blob = new Blob([reportHtml()], {type:'text/html;charset=utf-8'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const m = meta();
+                a.href = url;
+                a.download = safeFileName(`${m.title}_${m.className}_${m.date}`)+'.html';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                showToast('Prehliadač zablokoval okno, preto sa prehľad stiahol ako HTML súbor.');
+            }
+        });
+
+        // --- Funkcionalita: Import JSON ---
+        $('importDataBtn').addEventListener('click', () => {
+            $('importFile').click();
+        });
+
+        $('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    // Obnova údajov o lístku
+                    if (data.meta) {
+                        $('ticketTitle').value = data.meta.title || '';
+                        $('author').value = data.meta.author || '';
+                        $('className').value = data.meta.className || '';
+                        $('date').value = data.meta.date || '';
+                    }
+                    
+                    // Obnova zoznamu žiakov
+                    if (data.students && Array.isArray(data.students)) {
+                        students.length = 0; 
+                        data.students.forEach(s => students.push(s));
+                        renderStudents();
+                        showToast('Údaje boli úspešne importované.');
+                    } else {
+                        showToast('Súbor neobsahuje platné údaje žiakov.');
+                    }
+                } catch (error) {
+                    showToast('Chyba: Nepodarilo sa načítať JSON súbor.');
+                }
+                $('importFile').value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        // --- Spustenie aplikácie ---
+        renderStudents();
+    })();
+    </script>
+</body>
+</html>
