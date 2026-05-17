@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nástroj na použitie a spracovanie brainstormingu (generátor)</title>
+  <style>
+    body { font-family:'Monaco', monospace; background:#f4f4f9; color:#333; margin:0; padding:20px; }
+    .container { max-width:1000px; margin:0 auto; background:#fff; padding:30px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,.1); }
+    h1 { text-align:center; font-size:24px; margin-bottom:30px; }
+    .form-group { margin-bottom:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .form-group label { width:150px; font-weight:bold; }
+    .form-group input[type="text"], .form-group input[type="number"] { flex:1; min-width:160px; padding:8px; font-family:'Monaco', monospace; border:1px solid #ccc; border-radius:4px; }
+    .form-group input[type="color"] { margin-right:10px; }
+    .editor-container { margin-top:20px; }
+    textarea { width:100%; box-sizing: border-box; height:300px; font-family:'Monaco', monospace; padding:10px; border:1px solid #ccc; border-radius:4px; resize:vertical; white-space:pre; }
+    .separator-info { margin:10px 0; font-size:14px; background:#eef; padding:10px; border-radius:4px; border-left:4px solid #55c; line-height:1.5; }
+    .actions { margin-top:30px; display:flex; flex-direction:column; align-items:center; gap:15px; }
+    .actions-row { display:flex; gap:15px; flex-wrap:wrap; justify-content:center; }
+    button.action-btn { font-family:'Monaco', monospace; padding:10px 20px; font-size:16px; cursor:pointer; background:#4CAF50; color:white; border:none; border-radius:5px; }
+    button.action-btn.secondary { background:#008CBA; }
+    button.action-btn:hover { opacity:.9; }
+    .footer { margin-top:40px; text-align:center; font-size:14px; border-top:1px solid #ccc; padding-top:20px; }
+    input[type="file"] { display:none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Nástroj na použitie a spracovanie brainstormingu (generátor)</h1>
+  <div class="form-group"><label>Autor:</label><input type="text" id="autor"></div>
+  <div class="form-group"><label>Rok:</label><input type="number" id="rok" value="2026"></div>
+  <div class="form-group"><label>Predmet:</label><input type="text" id="predmet"></div>
+  <div class="form-group"><label>Názov (Title):</label><input type="text" id="nazov"></div>
+  <div class="form-group"><label>Trieda:</label><input type="text" id="trieda"></div>
+  <hr style="margin:20px 0; border:0; border-top:1px solid #ccc;">
+  <div class="form-group"><label>Téma (Stred):</label><input type="text" id="tema"></div>
+  <div class="form-group">
+    <label>Nastavenia témy:</label>
+    Veľkosť písma (px): <input type="number" id="tema_velkost" value="50" style="width:70px; margin-right:15px; flex:0 0 auto; min-width:70px;">
+    Farba textu: <input type="color" id="tema_farba" value="#000000">
+    Farba pozadia: <input type="color" id="tema_pozadie" value="#ffffff">
+  </div>
+  <div class="separator-info">
+    <b>Pojmy brainstormingu:</b> Zadávajte jeden pojem na jeden riadok.<br>
+    Farbu konkrétnych pojmov budete môcť <b>pohodlne zmeniť priamo vo vygenerovanom súbore</b> kliknutím na pojem.<br>
+    Na zalomenie riadka priamo v pojme použite znak <b>|</b> alebo <b>\</b>. Tieto znaky sa vo výsledku nezobrazia, iba zalomia riadok.
+    <br><button type="button" onclick="insertText('|')" style="margin-top:5px; font-family:'Monaco'; cursor:pointer;">Vložiť znak "|" (zalomenie riadka)</button>
+  </div>
+  <div class="editor-container">
+    <textarea id="pojmy" placeholder="Zadajte pojmy sem..."></textarea>
+  </div>
+  <div class="actions">
+    <div class="actions-row">
+      <button class="action-btn secondary" onclick="exportJSON()">Exportovať nastavenia do súboru .json</button>
+      <button class="action-btn secondary" onclick="document.getElementById('importFile').click()">Importovať nastavenia zo súboru .json</button>
+      <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+    </div>
+    <button class="action-btn" style="font-size:18px; padding:15px 30px;" onclick="generateHTML()">Vygenerovať súbor HTML na stiahnutie</button>
+  </div>
+  <div class="footer">Spracované pomocou UI: Mgr. Erika Matyiová (2026)</div>
+</div>
+<script>
+document.getElementById('pojmy').addEventListener('keydown', function(e){ if(e.key==='Tab'){ e.preventDefault(); const s=this.selectionStart, en=this.selectionEnd; this.value=this.value.substring(0,s)+'    '+this.value.substring(en); this.selectionStart=this.selectionEnd=s+4; }});
+function insertText(text){ const t=document.getElementById('pojmy'); const s=t.selectionStart, e=t.selectionEnd; t.value=t.value.substring(0,s)+text+t.value.substring(e); t.selectionStart=t.selectionEnd=s+text.length; t.focus(); }
+function getSafeFilename(name){ if(!name) return 'Brainstorming'; return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'') || 'Brainstorming'; }
+function getFormData(){ return { autor:autor.value, rok:rok.value, predmet:predmet.value, nazov:nazov.value, trieda:trieda.value, tema:tema.value, tema_velkost:tema_velkost.value, tema_farba:tema_farba.value, tema_pozadie:tema_pozadie.value, pojmy:pojmy.value }; }
+function exportJSON(){ const data=getFormData(); const a=document.createElement('a'); a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2)); a.download=getSafeFilename(data.nazov)+'.json'; document.body.appendChild(a); a.click(); a.remove(); }
+function importJSON(event){ const file=event.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=function(e){ try{ const d=JSON.parse(e.target.result); autor.value=d.autor||''; rok.value=d.rok||'2026'; predmet.value=d.predmet||''; nazov.value=d.nazov||''; trieda.value=d.trieda||''; tema.value=d.tema||''; tema_velkost.value=d.tema_velkost||'50'; tema_farba.value=d.tema_farba||'#000000'; tema_pozadie.value=d.tema_pozadie||'#ffffff'; pojmy.value=d.pojmy||''; }catch(err){ alert('Chyba pri čítaní JSON súboru.'); }}; r.readAsText(file); event.target.value=''; }
+function esc(value){ return String(value||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function generateHTML(){
+  const data=getFormData(); const safeName=getSafeFilename(data.nazov);
+  const concepts=data.pojmy.split('\n').filter(p=>p.trim()!=='').map(p=>p.replace(/\\/g,'<br>').replace(/\|/g,'<br>'));
+  const payload={nazov:data.nazov||'Brainstorming', autor:data.autor||'', rok:data.rok||'', predmet:data.predmet||'', trieda:data.trieda||'', tema:data.tema||'Téma', tema_velkost:data.tema_velkost||'50', tema_farba:data.tema_farba||'#000000', tema_pozadie:data.tema_pozadie||'#ffffff', concepts, safeName};
+  const payloadJson=JSON.stringify(payload).replace(/<\//g,'<\\/');
+  const htmlTemplate=`<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(payload.nazov)}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+<style>
+*{box-sizing:border-box} html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Monaco',monospace;background:#fdfdfd;color:#111} #export-page{width:100%;min-height:100vh;background:#fff;display:flex;flex-direction:column}.header{flex:0 0 auto;text-align:center;padding:12px 70px 10px;font-size:23px;line-height:1.18;font-weight:bold;background:#fff;border-bottom:2px solid #111;z-index:10}.meta{font-size:13px;font-weight:normal;color:#444;margin-top:5px;line-height:1.35}#canvas-area{position:relative;flex:1 1 auto;width:100%;min-height:760px;overflow:hidden;background:#fff}.main-topic{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:var(--tema-font);color:var(--tema-color);background-color:var(--tema-bg);padding:12px 24px;border-radius:14px;border:3px solid #333;font-weight:bold;text-align:center;z-index:5;box-shadow:0 3px 9px rgba(0,0,0,.18);max-width:34vw;white-space:normal;overflow-wrap:anywhere;line-height:1.12}.concept{position:absolute;transform:translate(-50%,-50%);font-size:var(--concept-font,24px);padding:6px 9px;text-align:center;cursor:grab;z-index:2;max-width:220px;min-width:72px;white-space:normal;overflow-wrap:anywhere;line-height:1.13;background:rgba(255,255,255,.96);border-radius:10px;border:1px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);touch-action:none;user-select:none}.concept:hover{border-color:#777;z-index:30}.concept.dragging{cursor:grabbing;z-index:80;border-color:#008CBA;box-shadow:0 4px 12px rgba(0,0,0,.28)}.concept.manually-moved{border-color:#008CBA}.concept-text{display:block}.note-bubble{display:block;margin-top:6px;background:#fff;color:#000;font-size:20px;font-family:'Monaco',monospace;line-height:1.16;padding:5px 7px;border:1.5px solid #111;border-radius:8px;white-space:normal;overflow-wrap:anywhere;box-shadow:1px 1px 4px rgba(0,0,0,.18)}.note-link{width:2px;height:6px;margin:3px auto -2px;background:#111;display:block}.controls{position:fixed;bottom:16px;right:16px;z-index:100;display:flex;gap:10px;flex-wrap:wrap}.btn{font-family:'Monaco',monospace;padding:10px 16px;font-size:15px;color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.25)}.btn-layout{background:#008CBA}.btn-save{background:#4CAF50}.btn-pdf{background:#f44336}.hint{position:fixed;left:16px;bottom:16px;z-index:90;background:rgba(255,255,255,.92);border:1px solid #aaa;border-radius:8px;padding:8px 10px;font-size:12px;color:#333}
+.format-panel { position:fixed; top:80px; left:16px; z-index:100; background:rgba(255,255,255,.95); border:1px solid #ccc; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.2); font-family:'Monaco',monospace; }
+#format-panel-header { cursor:grab; background:#eee; padding:6px 10px; border-top-left-radius:8px; border-top-right-radius:8px; display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:13px; border-bottom:1px solid #ccc; touch-action:none; }
+#format-panel-header:active { cursor:grabbing; }
+#toggle-panel-btn { cursor:pointer; background:none; border:none; font-size:18px; font-weight:bold; line-height:1; padding:0 5px; color:#333; }
+#format-panel-content { padding:10px; display:flex; flex-direction:column; gap:8px; }
+.format-group-title { font-size:12px; font-weight:bold; text-align:center; margin-bottom:4px; }
+.color-row { display:flex; gap:4px; justify-content:center; }
+.color-btn { width:26px; height:26px; border:1px solid #777; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; }
+.color-btn:hover { opacity:0.8; transform:scale(1.05); }
+.concept.selected { outline:3px solid #ff9800; outline-offset:2px; z-index:40; }
+.btn-note { background:#ff9800; width:100%; padding:6px; font-size:12px; margin-top:5px; }
+.pdf-freeze,.pdf-freeze *{transition:none!important;animation:none!important}@media print{.controls,.hint,.format-panel{display:none!important}#canvas-area{min-height:760px}}
+<\/style>
+</head>
+<body>
+<div id="export-page"><div class="header" id="page-header"></div><div id="canvas-area"><div class="main-topic" id="main-topic"></div></div></div>
+
+<div class="format-panel" id="format-panel">
+  <div id="format-panel-header" title="Potiahnutím presuniete panel">
+    <span>Nástroje pojmu</span>
+    <button id="toggle-panel-btn" title="Minimalizovať/Maximalizovať panel">−</button>
+  </div>
+  <div id="format-panel-content">
+    <div>
+      <div class="format-group-title" style="font-weight:normal">Farba textu</div>
+      <div class="color-row">
+        <div class="color-btn" style="color:black; background:#fff" data-tc="black">A</div>
+        <div class="color-btn" style="color:red; background:#fff" data-tc="red">A</div>
+        <div class="color-btn" style="color:darkgreen; background:#fff" data-tc="darkgreen">A</div>
+        <div class="color-btn" style="color:blue; background:#fff" data-tc="blue">A</div>
+        <div class="color-btn" style="color:orange; background:#fff" data-tc="orange">A</div>
+        <div class="color-btn" style="color:deeppink; background:#fff" data-tc="deeppink">A</div>
+        <div class="color-btn" style="color:purple; background:#fff" data-tc="purple">A</div>
+      </div>
+    </div>
+    <div style="margin-top:5px">
+      <div class="format-group-title" style="font-weight:normal">Farba pozadia</div>
+      <div class="color-row">
+        <div class="color-btn" style="background:rgba(255,255,255,0.96); color:#000" data-bc="rgba(255,255,255,0.96)">P</div>
+        <div class="color-btn" style="background:yellow; color:#000" data-bc="yellow">P</div>
+        <div class="color-btn" style="background:lime; color:#000" data-bc="lime">P</div>
+        <div class="color-btn" style="background:lightpink; color:#000" data-bc="lightpink">P</div>
+        <div class="color-btn" style="background:lightblue; color:#000" data-bc="lightblue">P</div>
+      </div>
+    </div>
+    <button class="btn btn-note" onclick="handleNoteClick()">Pridať / Upraviť poznámku</button>
+  </div>
+</div>
+
+<div class="hint" id="hint">Tip: Pojem presuniete myšou. Kliknutím na pojem ho označíte (oranžový okraj) pre zmenu farby alebo pridanie poznámky v paneli.</div>
+<div class="controls" id="controls">
+  <button class="btn btn-layout" onclick="shuffleLayout()">Upraviť rozloženie</button>
+  <button class="btn btn-save" onclick="saveProgressAsHTML()">Uložiť rozpracované cvičenie ako súbor HTML</button>
+  <button class="btn btn-pdf" onclick="saveAsPDF()">Uložiť obrázok ako PDF</button>
+</div>
+<script>
+const DATA=${payloadJson}; let layoutSeed=0; const canvas=document.getElementById('canvas-area'), header=document.getElementById('page-header'), mainTopic=document.getElementById('main-topic');
+let drag=null; let selectedConcept=null;
+function text(v){return String(v||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+
+function selectConcept(el) {
+  if(selectedConcept) selectedConcept.classList.remove('selected');
+  selectedConcept = el;
+  if(selectedConcept) selectedConcept.classList.add('selected');
+}
+
+document.querySelectorAll('.color-btn').forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if(!selectedConcept) { alert('Najprv kliknite na pojem (získa oranžový okraj), ktorý chcete sformátovať.'); return; }
+    if(btn.dataset.tc) selectedConcept.style.color = btn.dataset.tc;
+    if(btn.dataset.bc) selectedConcept.style.background = btn.dataset.bc;
+  });
+});
+
+canvas.addEventListener('pointerdown', (e) => {
+  if(e.target === canvas || e.target === mainTopic) {
+    if(selectedConcept) selectedConcept.classList.remove('selected');
+    selectedConcept = null;
+  }
+});
+
+function handleNoteClick() {
+  if(!selectedConcept) { alert('Najprv kliknite na pojem (získa oranžový okraj), ku ktorému chcete pridať poznámku.'); return; }
+  addNote(selectedConcept);
+}
+
+// Logic pre minimalizaciu a posuvanie formatovacieho panelu
+const formatPanel = document.getElementById('format-panel');
+const panelHeader = document.getElementById('format-panel-header');
+const panelContent = document.getElementById('format-panel-content');
+const toggleBtn = document.getElementById('toggle-panel-btn');
+
+toggleBtn.addEventListener('click', () => {
+  if(panelContent.style.display === 'none') {
+    panelContent.style.display = 'flex';
+    toggleBtn.textContent = '−';
+  } else {
+    panelContent.style.display = 'none';
+    toggleBtn.textContent = '+';
+  }
+});
+
+let isDraggingPanel = false, panX = 0, panY = 0;
+panelHeader.addEventListener('pointerdown', (e) => {
+  if(e.target === toggleBtn) return;
+  isDraggingPanel = true;
+  const rect = formatPanel.getBoundingClientRect();
+  panX = e.clientX - rect.left;
+  panY = e.clientY - rect.top;
+  panelHeader.setPointerCapture(e.pointerId);
+});
+panelHeader.addEventListener('pointermove', (e) => {
+  if(!isDraggingPanel) return;
+  let newX = e.clientX - panX;
+  let newY = e.clientY - panY;
+  newX = Math.max(0, Math.min(window.innerWidth - formatPanel.offsetWidth, newX));
+  newY = Math.max(0, Math.min(window.innerHeight - formatPanel.offsetHeight, newY));
+  formatPanel.style.left = newX + 'px';
+  formatPanel.style.top = newY + 'px';
+  formatPanel.style.bottom = 'auto';
+  formatPanel.style.right = 'auto';
+});
+panelHeader.addEventListener('pointerup', (e) => {
+  isDraggingPanel = false;
+  panelHeader.releasePointerCapture?.(e.pointerId);
+});
+panelHeader.addEventListener('pointercancel', (e) => { isDraggingPanel = false; });
+
+
+function initPage(){document.documentElement.style.setProperty('--tema-font',Math.max(24,Math.min(parseInt(DATA.tema_velkost||'50',10)||50,82))+'px');document.documentElement.style.setProperty('--tema-color',DATA.tema_farba||'#000');document.documentElement.style.setProperty('--tema-bg',DATA.tema_pozadie||'#fff');header.innerHTML=text(DATA.nazov||'Brainstorming')+'<div class="meta">Predmet: '+text(DATA.predmet)+' &nbsp;|&nbsp; Trieda: '+text(DATA.trieda)+' &nbsp;|&nbsp; Autor: '+text(DATA.autor)+' ('+text(DATA.rok)+')</div>';mainTopic.textContent=DATA.tema||'Téma';DATA.concepts.forEach((html,index)=>{const el=document.createElement('div');el.className='concept';el.dataset.index=index;el.innerHTML='<span class="concept-text">'+html+'</span>';el.addEventListener('pointerdown',startDrag);canvas.appendChild(el);});}
+function rectsOverlap(a,b,gap){return !(a.right+gap<b.left||a.left>b.right+gap||a.bottom+gap<b.top||a.top>b.bottom+gap)} function inside(r,w,h,pad){return r.left>=pad&&r.top>=pad&&r.right<=w-pad&&r.bottom<=h-pad} function getRectAt(el,x,y){const w=el.offsetWidth,h=el.offsetHeight;return{left:x-w/2,top:y-h/2,right:x+w/2,bottom:y+h/2}} function currentCenterRect(){const c=mainTopic.getBoundingClientRect(),a=canvas.getBoundingClientRect();return{left:c.left-a.left,top:c.top-a.top,right:c.right-a.left,bottom:c.bottom-a.top}}
+function layoutConcepts(){const all=Array.from(document.querySelectorAll('.concept'));const count=all.length;const baseFont=count>36?18:count>28?19:count>20?21:24;document.documentElement.style.setProperty('--concept-font',baseFont+'px');canvas.style.minHeight=Math.max(720,window.innerHeight-header.offsetHeight,Math.ceil(count/10)*118+470)+'px';const w=canvas.clientWidth,h=canvas.clientHeight,cx=w/2,cy=h/2,pad=14,gap=8;const placed=[currentCenterRect()];const manual=all.filter(el=>el.dataset.manual==='1'), auto=all.filter(el=>el.dataset.manual!=='1');manual.forEach(el=>{let x=parseFloat(el.style.left)||cx,y=parseFloat(el.style.top)||cy;const r0=getRectAt(el,x,y);x=Math.max(pad+r0.right-x,Math.min(w-pad-(x-r0.left),x));y=Math.max(pad+r0.bottom-y,Math.min(h-pad-(y-r0.top),y));el.style.left=x+'px';el.style.top=y+'px';placed.push(getRectAt(el,x,y));});auto.forEach(el=>{el.style.left='-5000px';el.style.top='-5000px';});const maxRx=w/2-130,maxRy=h/2-80;auto.forEach((el,i)=>{let best=null;const baseAngle=-Math.PI/2+(i/Math.max(1,auto.length))*Math.PI*2+layoutSeed*.47;const rings=[.34,.44,.54,.64,.74,.84,.94];for(const ring of rings){const tries=Math.max(28,count*2);for(let t=0;t<tries;t++){const side=t%2===0?1:-1,step=Math.ceil(t/2),angle=baseAngle+side*step*(Math.PI/Math.max(10,count));const x=cx+Math.cos(angle)*maxRx*ring,y=cy+Math.sin(angle)*maxRy*ring,r=getRectAt(el,x,y);if(!inside(r,w,h,pad))continue;if(placed.every(p=>!rectsOverlap(r,p,gap))){best={x,y,r};break;}}if(best)break;}if(!best){const cols=Math.max(4,Math.floor(w/230));const rowH=82+Math.min(80,el.offsetHeight);for(let row=0;row<30&&!best;row++){for(let col=0;col<cols&&!best;col++){const x=pad+105+col*((w-2*pad-210)/Math.max(1,cols-1)),y=pad+62+row*rowH,r=getRectAt(el,x,y);if(inside(r,w,h,pad)&&placed.every(p=>!rectsOverlap(r,p,gap)))best={x,y,r};}}}if(!best){const y=h+60+i*78;canvas.style.minHeight=(y+130)+'px';best={x:cx,y,r:getRectAt(el,cx,y)}}el.style.left=best.x+'px';el.style.top=best.y+'px';placed.push(best.r);});}
+function shuffleLayout(){layoutSeed++;document.querySelectorAll('.concept').forEach(el=>{delete el.dataset.manual;el.classList.remove('manually-moved')});requestAnimationFrame(layoutConcepts)}
+function startDrag(e){if(e.button!==0)return;const el=e.currentTarget;selectConcept(el);const area=canvas.getBoundingClientRect();const x=parseFloat(el.style.left)||0,y=parseFloat(el.style.top)||0;drag={el,startX:e.clientX,startY:e.clientY,origX:x,origY:y,moved:false};el.setPointerCapture(e.pointerId);el.classList.add('dragging');el.addEventListener('pointermove',moveDrag);el.addEventListener('pointerup',endDrag);el.addEventListener('pointercancel',endDrag);}
+function moveDrag(e){if(!drag)return;const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;const r=canvas.getBoundingClientRect(),el=drag.el;const halfW=el.offsetWidth/2,halfH=el.offsetHeight/2;let x=drag.origX+dx,y=drag.origY+dy;x=Math.max(14+halfW,Math.min(r.width-14-halfW,x));y=Math.max(14+halfH,Math.min(r.height-14-halfH,y));el.style.left=x+'px';el.style.top=y+'px';}
+function endDrag(e){if(!drag)return;const el=drag.el;el.classList.remove('dragging');el.releasePointerCapture?.(e.pointerId);el.removeEventListener('pointermove',moveDrag);el.removeEventListener('pointerup',endDrag);el.removeEventListener('pointercancel',endDrag);if(drag.moved){el.dataset.manual='1';el.classList.add('manually-moved');}drag=null;}
+function addNote(element){let existing=element.querySelector('.note-bubble');const oldText=existing?existing.textContent.trim():'';const note=prompt('Zadajte poznámku k pojmu:',oldText);if(note!==null&&note.trim()!==''){if(!existing){const link=document.createElement('span');link.className='note-link';element.appendChild(link);existing=document.createElement('span');existing.className='note-bubble';element.appendChild(existing);}existing.textContent=note.trim();requestAnimationFrame(layoutConcepts);}else if(note!==null&&note.trim()===''&&existing){const link=element.querySelector('.note-link');if(link)link.remove();existing.remove();requestAnimationFrame(layoutConcepts);}}
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function saveAsPDF(){const controls=document.getElementById('controls'),hint=document.getElementById('hint'),panel=document.getElementById('format-panel'),page=document.getElementById('export-page');const oldC=controls.style.display,oldH=hint.style.display,oldP=panel.style.display;controls.style.display='none';hint.style.display='none';panel.style.display='none';if(selectedConcept) selectedConcept.classList.remove('selected');await wait(160);const pageWidth=Math.ceil(page.getBoundingClientRect().width),pageHeight=Math.ceil(page.scrollHeight);const oldPW=page.style.width,oldPMH=page.style.minHeight,oldCW=canvas.style.width,oldCMH=canvas.style.minHeight;page.classList.add('pdf-freeze');page.style.width=pageWidth+'px';page.style.minHeight=pageHeight+'px';canvas.style.width=Math.ceil(canvas.getBoundingClientRect().width)+'px';canvas.style.minHeight=Math.ceil(canvas.getBoundingClientRect().height)+'px';await wait(80);const opt={margin:0,filename:'Snimka_'+DATA.safeName+'.pdf',image:{type:'jpeg',quality:1},html2canvas:{scale:2,useCORS:true,scrollX:0,scrollY:0,width:pageWidth,height:pageHeight,windowWidth:pageWidth,windowHeight:pageHeight},jsPDF:{unit:'px',format:[pageWidth,pageHeight],orientation:pageWidth>=pageHeight?'landscape':'portrait'}};html2pdf().set(opt).from(page).save().then(()=>{page.classList.remove('pdf-freeze');page.style.width=oldPW;page.style.minHeight=oldPMH;canvas.style.width=oldCW;canvas.style.minHeight=oldCMH;controls.style.display=oldC||'flex';hint.style.display=oldH||'block';panel.style.display=oldP||'flex';}).catch(err=>{page.classList.remove('pdf-freeze');page.style.width=oldPW;page.style.minHeight=oldPMH;canvas.style.width=oldCW;canvas.style.minHeight=oldCMH;controls.style.display=oldC||'flex';hint.style.display=oldH||'block';panel.style.display=oldP||'flex';alert('PDF sa nepodarilo uložiť. Skúste to, prosím, znova.');console.error(err);});}
+
+function saveProgressAsHTML() {
+  if(selectedConcept) selectedConcept.classList.remove('selected');
+  document.body.setAttribute('data-restored', 'true');
+  const htmlContent = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Rozpracovane_' + DATA.safeName + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  document.body.removeAttribute('data-restored');
+}
+
+const isRestored = document.body.hasAttribute('data-restored');
+if (!isRestored) {
+  initPage();
+  window.addEventListener('load', () => { layoutConcepts(); setTimeout(layoutConcepts, 150); });
+} else {
+  document.querySelectorAll('.concept').forEach(el => el.addEventListener('pointerdown', startDrag));
+}
+window.addEventListener('resize', layoutConcepts);
+<\/script>
+</body></html>`;
+  const blob=new Blob([htmlTemplate],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=safeName+'.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
