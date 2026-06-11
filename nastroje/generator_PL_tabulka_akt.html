@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="sk">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+  <title>
+   Generátor pracovného listu s tabuľkou
+  </title>
+  <style>
+   
+:root {
+    --bg:#f5f7fb;
+    --panel:#fff;
+    --ink:#111827;
+    --muted:#64748b;
+    --line:#d1d5db;
+    --primary:#2563eb;
+    --dark:#475569;
+    --danger:#dc2626;
+    --radius:14px;
+    --m-top:10mm;
+    --m-right:16mm;
+    --m-bottom:8mm; 
+    --m-left:21mm
+}
+* {
+    box-sizing:border-box
+}
+body {
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,sans-serif
+}
+.app {
+    max-width:1100px;
+    margin:auto;
+    padding:22px
+}
+h1 {
+    margin:0 0 8px;
+    font-size:28px
+}
+.subtitle {
+    color:var(--muted);
+    margin:0 0 18px
+}
+.grid {
+    display:block
+}
+.panel {
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:0 8px 24px rgba(15,23,42,.06);
+    padding:16px;
+    margin-bottom:16px
+}
+.panel h2 {
+    font-size:18px;
+    margin:0 0 12px;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:8px
+}
+label {
+    font-weight:700;
+    font-size:13px;
+    display:block;
+    margin:10px 0 5px
+}
+input[type=text],input[type=number],textarea,select {
+    width:100%;
+    border:1px solid #cbd5e1;
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:14px;
+    background:#fff
+}
+textarea {
+    min-height:66px;
+    resize:vertical;
+    font-family:Consolas,monospace
+}
+.row {
+    display:grid;
+    grid-template-columns:1fr 52px;
+    gap:6px;
+    align-items:end
+}
+.brbtn {
+    border:1px solid #93c5fd;
+    background:#dbeafe;
+    color:#1e40af;
+    border-radius:9px;
+    padding:8px 6px;
+    font-weight:800;
+    cursor:pointer
+}
+.btns {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:12px
+}
+button,.fileLike {
+    border:0;
+    background:var(--primary);
+    color:#fff;
+    border-radius:10px;
+    padding:10px 12px;
+    font-weight:700;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center
+}
+button.secondary {
+    background:var(--dark)
+}
+button.light {
+    background:#e2e8f0;
+    color:#0f172a
+}
+button.danger {
+    background:var(--danger)
+}
+.mini {
+    padding:6px 8px;
+    border-radius:8px;
+    font-size:12px
+}
+.two {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px
+}
+.three {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px
+}
+.checkline {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:8px 0
+}
+.small {
+    font-size:12px;
+    color:var(--muted)
+}
+.box {
+    border:1px dashed #cbd5e1;
+    border-radius:12px;
+    padding:10px;
+    background:#f8fafc;
+    margin-top:10px
+}
+.cellRowGrid {
+    display:grid;
+    gap:10px;
+    grid-template-columns:repeat(var(--cols, 1), 1fr);
+}
+.row-separator {
+    border:0;
+    border-top:2px solid var(--primary);
+    margin:20px 0;
+}
+.cellEditor {
+    border:1px solid #e5e7eb;
+    background:#fff;
+    border-radius:12px;
+    padding:10px;
+    margin:0;
+}
+.cellEditor h4 {
+    font-size:13px;
+    color:var(--dark);
+    margin:0 0 8px
+}
+.imagePreview {
+    margin-top:8px;
+    min-height:20px
+}
+.imagePreview img {
+    max-width:120px;
+    max-height:90px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    background:#fff;
+    padding:3px;
+    display:block
+}
+.fontGrid {
+    display:grid;
+    grid-template-columns:1.15fr .7fr .55fr .55fr;
+    gap:8px;
+    align-items:end
+}
+.sectionSettings {
+    border-top:1px solid #e5e7eb;
+    padding-top:10px;
+    margin-top:10px
+}
+.hidden {
+    display:none!important
+}
+.credit {
+    text-align:center;
+    color:#334155;
+    margin:18px 0 4px
+}
+.previewWrap {
+    position:static;
+    margin-top:22px
+}
+.previewToolbar {
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px
+}
+.previewPanel {
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:0 8px 24px rgba(15,23,42,.06);
+    padding:16px;
+    margin-bottom:16px;
+    overflow:auto
+}
+#worksheet {
+    background:#fff;
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto;
+    padding:var(--m-top) var(--m-right) var(--m-bottom) var(--m-left);
+    border:1px solid #d1d5db;
+    box-shadow:0 10px 30px rgba(0,0,0,.1);
+    position:relative;
+    overflow:visible
+}
+.sheetHeader {
+    display:flex;
+    justify-content:flex-end;
+    text-align:right;
+    border-bottom:none;
+    padding-bottom:4px;
+    margin-bottom:8px
+}
+.sheetMeta {
+    font-size:12px;
+    line-height:1.35
+}
+.sheetGradeYear {
+    width:100%;
+    font-weight:700
+}
+.sheetTitle {
+    text-align:center;
+    margin:10px 0 8px
+}
+.sheetInstructions,.sheetContent {
+    margin:6px 0 10px;
+    line-height:1.35
+}
+.generatedTable {
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+    margin-top:6px
+}
+.generatedTable th,.generatedTable td {
+    vertical-align:middle;
+    padding:3px 5px;
+    word-wrap:break-word;
+    overflow-wrap:anywhere;
+    line-height:1.2
+}
+.generatedTable th {
+    font-weight:700
+}
+.generatedTable img {
+    height:auto;
+    max-width:100%;
+    display:block;
+    margin:0 auto 2px;
+    object-fit:contain
+}
+.footerText {
+    position:absolute;
+    left:var(--m-left);
+    right:var(--m-right);
+    bottom:8mm;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:11px
+}
+.pageNumber::after {
+    content:counter(page)
+}
+#printPages {
+    display:none
+}
+#printMeasure {
+    position:absolute;
+    left:-99999px;
+    top:0;
+    visibility:hidden;
+    pointer-events:none;
+    overflow:hidden;
+    display:block!important
+}
+.printPage {
+    background:#fff;
+    width:176mm;
+    height:278mm;
+    margin:0 auto 3mm;
+    position:relative;
+    box-sizing:border-box;
+    overflow:hidden;
+}
+.printPageContent {
+    width:176mm;
+    box-sizing:border-box;
+    padding-bottom:4mm; /* Minimálna oddeľovacia vrstva k pätičke */
+}
+.printPageFooter {
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:8px;
+    font-size:10px; /* Znížená veľkosť písma pre minimalizáciu */
+    line-height:1;
+    padding-bottom: 2mm; 
+}
+.printPageNo {
+    margin-left:auto;
+    min-width:18mm;
+    text-align:right
+}
+#printMeasure .printPage {
+    margin:0!important;
+    page-break-after:auto!important
+}
+.top-actions {
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 16px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(15,23,42,.06);
+}
+@media(max-width:900px) {
+    .app {
+        padding:10px
+    }
+    .two,.three,.fontGrid {
+        grid-template-columns:1fr
+    }
+    .cellRowGrid {
+        grid-template-columns: 1fr !important;
+    }
+    #worksheet {
+        transform:scale(.72);
+        transform-origin:top left;
+        margin:0
+    }
+    .previewPanel {
+        min-height:780px
+    }
+}
+@media print {
+    html,body {
+        margin:0!important;
+        padding:0!important;
+        background:#fff
+    }
+    .noPrint {
+        display:none!important
+    }
+    .app {
+        max-width:none;
+        width:auto;
+        margin:0!important;
+        padding:0!important
+    }
+    .grid {
+        display:block
+    }
+    .previewWrap {
+        position:static;
+        margin:0
+    }
+    .previewPanel {
+        border:0;
+        box-shadow:none;
+        padding:0;
+        margin:0;
+        overflow:visible;
+        background:#fff
+    }
+    #worksheet {
+        display:none!important
+    }
+    #printMeasure {
+        display:block!important
+    }
+    #printPages {
+        display:block!important
+    }
+    #printPages .printPage {
+        display:block!important;
+        margin:0!important;
+        break-after:page;
+        page-break-after:always
+    }
+    #printPages .printPage:last-child {
+        break-after:auto;
+        page-break-after:auto
+    }
+    #printPages .generatedTable {
+        width:100%!important
+    }
+    #printPages .generatedTable tr {
+        break-inside:avoid;
+        page-break-inside:avoid
+    }
+    #printPages .footerText {
+        display:none!important
+    }
+    @page {
+        size:A4;
+        margin:10mm 16mm 8mm 21mm 
+    }
+}
+
+  </style>
+ </head>
+ <body>
+  <div class="app">
+   <div class="noPrint">
+    <h1>
+     Generátor pracovného listu s tabuľkou
+    </h1>
+    <p class="subtitle">
+     Vyplňte údaje, nastavte tabuľku, vložte texty/obrázky a pracovný list vytlačte do PDF alebo stiahnite ako RTF.
+    </p>
+   </div>
+   
+   <div class="top-actions noPrint">
+       <label class="fileLike" for="loadJson" style="margin:0;">
+        Načítať nastavenia zo súboru .json
+       </label>
+       <input accept="application/json" class="hidden" id="loadJson" type="file"/>
+   </div>
+
+   <div class="grid">
+    <div class="controls noPrint">
+     <div class="panel">
+      <h2>
+       1. Základné údaje
+      </h2>
+      <label>
+       Autor
+      </label>
+      <div class="row">
+       <input id="author" type="text" value="Mgr. Erika Matyiová"/>
+       <button class="brbtn" data-br="author">
+        &lt;br&gt;
+       </button>
+      </div>
+      <div class="two">
+       <div>
+        <label>
+         Ročník
+        </label>
+        <div class="row">
+         <input id="grade" type="text" value="9. ročník"/>
+         <button class="brbtn" data-br="grade">
+          &lt;br&gt;
+         </button>
+        </div>
+       </div>
+       <div>
+        <label>
+         Rok
+        </label>
+        <div class="row">
+         <input id="year" type="text" value="2026"/>
+         <button class="brbtn" data-br="year">
+          &lt;br&gt;
+         </button>
+        </div>
+       </div>
+      </div>
+      
+      <label>
+       Názov pracovného listu
+      </label>
+      <div class="row" style="margin-bottom:8px;">
+       <input id="sheetTitleInput" type="text" value="Oblečenie - slovná zásoba s obrázkami (nemecký jazyk)"/>
+       <button class="brbtn" data-br="sheetTitleInput">
+        &lt;br&gt;
+       </button>
+      </div>
+      <div class="two" style="margin-bottom:12px;">
+         <div>
+             <label style="margin-top:0;">Odstup pod nadpisom (mm)</label>
+             <input id="spaceBelowTitle" type="number" value="8" min="0">
+         </div>
+      </div>
+
+      <label>
+       Pokyny pre žiaka
+      </label>
+      <div class="row" style="margin-bottom:8px;">
+       <textarea id="instructions">Nauč sa nižšie uvedenú slovnú zásobu.</textarea>
+       <button class="brbtn" data-br="instructions">
+        &lt;br&gt;
+       </button>
+      </div>
+      <div class="two" style="margin-bottom:12px;">
+         <div>
+             <label style="margin-top:0;">Odstup pod pokynmi (mm)</label>
+             <input id="spaceBelowInstructions" type="number" value="10" min="0">
+         </div>
+      </div>
+
+      <label>
+       Vstupné pole s podporou HTML tagov
+      </label>
+      <div class="row">
+       <textarea id="htmlContent" placeholder="Napr. &lt;b&gt;tučný text&lt;/b&gt;, &lt;i&gt;kurzíva&lt;/i&gt;, &lt;br&gt;..."></textarea>
+       <button class="brbtn" data-br="htmlContent">
+        &lt;br&gt;
+       </button>
+      </div>
+     </div>
+     <div class="panel">
+      <h2>
+       2. Tabuľka
+      </h2>
+      <div class="three" style="margin-bottom:10px;">
+       <div>
+        <label>
+         Počet stĺpcov
+        </label>
+        <input id="colCount" max="8" min="1" type="number" value="3"/>
+       </div>
+       <div>
+        <label>
+         Počet riadkov
+        </label>
+        <input id="rowCount" max="40" min="1" type="number" value="6"/>
+       </div>
+       <div>
+        <label>
+         Šírka obrázkov v PL (mm)
+        </label>
+        <input id="defaultImgWidth" type="number" value="25"/>
+       </div>
+      </div>
+      
+      <div class="two" style="margin-bottom:10px; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #e5e7eb;">
+        <div>
+            <label style="margin-top:0;">Vlastné rozdelenie strán pre PDF</label>
+            <input id="customPageBreaks" type="text" placeholder="Napr. 9, 10, 8 (prázdne = automaticky)">
+            <p class="small" style="margin:4px 0 0;">Zadajte počty riadkov na jednotlivé strany oddelené čiarkou.</p>
+        </div>
+        <div>
+            <label style="margin-top:0;">Odstup tabuľky zhora od 2. strany (mm)</label>
+            <input id="marginTopNextPages" type="number" value="0" min="0">
+            <p class="small" style="margin:4px 0 0;">Pre prípady, kedy tabuľka na ďalšej strane presahuje horný okraj.</p>
+        </div>
+      </div>
+
+      <div class="checkline">
+       <input checked="" id="borderVisible" type="checkbox"/>
+       <label for="borderVisible" style="margin:0">
+        Zobraziť čiary tabuľky
+       </label>
+      </div>
+      <div class="three">
+       <div>
+        <label>
+         Hrúbka čiar (px)
+        </label>
+        <input id="borderWidth" max="10" min="0" step="0.5" type="number" value="1"/>
+       </div>
+       <div>
+        <label>
+         Štýl čiar
+        </label>
+        <select id="borderStyle">
+         <option>
+          solid
+         </option>
+         <option>
+          dashed
+         </option>
+         <option>
+          dotted
+         </option>
+         <option>
+          double
+         </option>
+        </select>
+       </div>
+       <div>
+        <label>
+         Farba čiar
+        </label>
+        <input id="borderColor" type="text" value="#111111"/>
+       </div>
+      </div>
+      <div class="btns">
+       <button class="secondary" id="rebuild">
+        Obnoviť stĺpce/riadky
+       </button>
+      </div>
+      <div class="box">
+       <b>
+        Text, zarovnanie a šírka stĺpcov tabuľky
+       </b>
+       <p class="small">
+        Zadajte šírky stĺpcov v percentách (napr. pre 3 stĺpce: 28.8, 35.6, 35.6).
+       </p>
+       <div id="headerInputs">
+       </div>
+      </div>
+      <div class="box">
+       <b>
+        Obsah buniek a obrázky
+       </b>
+       <p class="small">
+        Po načítaní JSON sa obrázok zobrazí ako náhľad pod tlačidlom. Pole „Vybrať súbor“ prehliadač nedovolí vyplniť automaticky.
+       </p>
+       <div id="cellInputs">
+       </div>
+       <div class="btns">
+        <button class="light" id="addRow">
+         + Pridať riadok
+        </button>
+       </div>
+      </div>
+     </div>
+     <div class="panel">
+      <h2>
+       3. Písmo jednotlivých častí
+      </h2>
+      <div id="fontSettings">
+      </div>
+     </div>
+     <div class="panel">
+      <h2>
+       4. Export
+      </h2>
+      <div class="btns">
+       <button id="saveJson">
+        Uložiť nastavenia do súboru .json
+       </button>
+       <button class="secondary" id="downloadRtf">
+        Stiahnuť .rtf
+       </button>
+       <button class="secondary" id="printPdf">
+        PDF cez CTRL + P
+       </button>
+      </div>
+      <p class="small">
+       PDF: nastavte A4 a mierku 100 %. Pätička PDF aj RTF obsahuje autora a číslo strany.
+      </p>
+     </div>
+     <p class="credit noPrint">
+      <b>
+       Vytvorené pomocou UI:
+      </b>
+      Mgr. Erika Matyiová (2026)
+     </p>
+    </div>
+    <div class="previewWrap">
+     <div class="previewToolbar noPrint">
+      <b>
+       Náhľad pracovného listu
+      </b>
+      <span class="small">
+       Tabuľka sa pri PDF tlači roztiahne na dostupnú šírku A4.
+      </span>
+     </div>
+     <div class="previewPanel">
+      <div id="worksheet">
+       <div class="sheetHeader">
+        <div class="sheetMeta sheetGradeYear" id="gradeYearPreview">
+        </div>
+       </div>
+       <h1 class="sheetTitle" id="sheetTitlePreview">
+       </h1>
+       <div class="sheetInstructions" id="instructionsPreview">
+       </div>
+       <div class="sheetContent" id="htmlPreview">
+       </div>
+       <table class="generatedTable" id="generatedTable">
+       </table>
+       <div class="footerText">
+        <span id="footerAuthor">
+        </span>
+        <span class="pageNumber">
+         Strana
+        </span>
+       </div>
+      </div>
+      <div id="printPages"></div>
+      <div id="printMeasure"></div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+   
+const RTF_WIDTH_CORRECTION=1.5; 
+const sections={title:'Nadpis',instructions:'Pokyny',content:'HTML obsah',header:'Hlavička',footer:'Pätička/stránkovanie',tableHeader:'Hlavička tabuľky',tableBody:'Bunky tabuľky'};
+const fonts=['Comic Sans MS','Consolas','OpenDyslexic','Monaco'];let cellData=[],headerData=[],columnAlignData=[],columnWidthData=[];const $=id=>document.getElementById(id);
+function cmToPx(cm){return cm*37.7952755906}function cmToTwip(cm){return Math.round(cm*567)}function safeHtml(v){return(v||'').replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi,'')}function escAttr(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}function insertAtCursor(el,text){const s=el.selectionStart??el.value.length,e=el.selectionEnd??el.value.length;el.value=el.value.slice(0,s)+text+el.value.slice(e);el.focus();el.selectionStart=el.selectionEnd=s+text.length;updatePreview()}function slugify(name){let s=(name||'pracovny_list').normalize('NFD').replace(/[\u0300-\u036f]/g,'');s=s.replace(/ä/g,'a').replace(/Ä/g,'A').replace(/ô/g,'o').replace(/Ô/g,'O').replace(/[()\s]+/g,'_').replace(/[^A-Za-z0-9_]/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');return s||'pracovny_list'}function alignOptions(v){return`<option value="left" ${v==='left'?'selected':''}>vľavo</option><option value="center" ${v==='center'?'selected':''}>na stred</option><option value="right" ${v==='right'?'selected':''}>vpravo</option><option value="justify" ${v==='justify'?'selected':''}>do bloku</option>`}function imagePreviewHtml(src){return src?`<img src="${src}" alt="Načítaný obrázok">`:''}
+function getImageWidthMm(){return parseFloat($('defaultImgWidth').value)||25}function getImageWidthCm(){return getImageWidthMm()/10}
+function makeFontSettings(){const box=$('fontSettings');box.innerHTML='';Object.entries(sections).forEach(([key,label])=>{const w=document.createElement('div');w.className='sectionSettings';w.innerHTML=`<label>${label}</label><div class="fontGrid"><select id="font_${key}">${fonts.map(f=>`<option>${f}</option>`).join('')}</select><input id="size_${key}" type="number" min="7" max="48" value="${key==='title'?14:key==='footer'?10:12}"><select id="weight_${key}"><option value="400">normálne</option><option value="700" ${key==='title'||key==='tableHeader'||key==='header'?'selected':''}>tučné</option></select><select id="style_${key}"><option value="normal">rovné</option><option value="italic">kurzíva</option></select></div>${key==='header'?'<label>Zarovnanie textu v hlavičke</label><select id="align_header"><option value="left">vľavo</option><option value="center">na stred</option><option value="right" selected>vpravo</option><option value="justify">do bloku</option></select>':''}`;box.appendChild(w)})}function styleFor(k){return{fontFamily:$('font_'+k).value+', Arial, sans-serif',fontSize:$('size_'+k).value+'pt',fontWeight:$('weight_'+k).value,fontStyle:$('style_'+k).value}}function applyStyle(el,k){Object.assign(el.style,styleFor(k))}
+function preserveData(){const currentImgW=getImageWidthMm();document.querySelectorAll('.cellEditor').forEach(ed=>{const r=+ed.dataset.r,c=+ed.dataset.c;cellData[r]??=[];cellData[r][c]??={text:'',img:'',imgWidth:currentImgW,imgRatio:1.5};cellData[r][c].text=ed.querySelector('.cellText').value;cellData[r][c].imgWidth=currentImgW});document.querySelectorAll('.headerInput').forEach(inp=>headerData[+inp.dataset.c]=inp.value);document.querySelectorAll('.columnAlign').forEach(sel=>columnAlignData[+sel.dataset.c]=sel.value);document.querySelectorAll('.columnWidthInput').forEach(inp=>columnWidthData[+inp.dataset.c]=parseFloat(inp.value)||Math.round(100/columnWidthData.length*10)/10)}
+function buildEditors(keep=true){if(keep)preserveData();const cols=Math.max(1,Math.min(8,+$('colCount').value||1)),rows=Math.max(1,Math.min(40,+$('rowCount').value||1));$('colCount').value=cols;$('rowCount').value=rows;while(headerData.length<cols)headerData.push(['obrázok','nemecký text','slovenský text'][headerData.length]||`Stĺpec ${headerData.length+1}`);while(columnAlignData.length<cols)columnAlignData.push('left');if(columnWidthData.length!==cols){if(cols===3){columnWidthData=[28.8,35.6,35.6]}else{columnWidthData=Array(cols).fill(Math.round(100/cols*10)/10)}}buildHeaderEditors(cols);buildCellEditors(cols,rows);bindDynamic();updatePreview()}function buildHeaderEditors(cols){const box=$('headerInputs');box.innerHTML='';for(let c=0;c<cols;c++){box.insertAdjacentHTML('beforeend',`<div style="border-bottom:1px dashed #cbd5e1; padding-bottom:8px; margin-bottom:8px;"><label>Stĺpec ${c+1} – text v 1. riadku</label><div class="row"><input class="headerInput" data-c="${c}" type="text" value="${escAttr(headerData[c]||'')}"><button class="brbtn mini" data-headerbr="${c}">&lt;br&gt;</button></div><div class="two" style="margin-top:4px;"><div><label>Zarovnanie</label><select class="columnAlign" data-c="${c}">${alignOptions(columnAlignData[c]||'left')}</select></div><div><label>Šírka (%)</label><input class="columnWidthInput" data-c="${c}" type="number" min="1" max="100" step="0.1" value="${columnWidthData[c]||''}"></div></div></div>`)}}function buildCellEditors(cols,rows){const box=$('cellInputs');box.innerHTML='';const currentImgW=getImageWidthMm();for(let r=0;r<rows;r++){cellData[r]??=[];box.insertAdjacentHTML('beforeend',`<div style="font-size:16px; font-weight:bold; color:var(--primary); margin-bottom:8px;">Riadok ${r+1}</div>`);const grid = document.createElement('div');grid.className='cellRowGrid';grid.style.setProperty('--cols', cols);for(let c=0;c<cols;c++){cellData[r][c]??={text:'',img:'',imgWidth:currentImgW,imgRatio:1.5};cellData[r][c].imgWidth=currentImgW;const d=cellData[r][c];const ed=document.createElement('div');ed.className='cellEditor';ed.dataset.r=r;ed.dataset.c=c;ed.innerHTML=`<h4>Stĺpec ${c+1}</h4><label>Text / HTML</label><textarea class="cellText" placeholder="Text, &lt;br&gt;, &lt;b&gt;...&lt;/b&gt;">${d.text||''}</textarea><div><label>Obrázok</label><input class="cellImg" type="file" accept="image/*"><div class="imagePreview">${imagePreviewHtml(d.img)}</div></div><div class="btns" style="margin-top:6px;"><button class="light mini insertBrCell" type="button">vložiť &lt;br&gt;</button><button class="danger mini clearImg" type="button">odstrániť obrázok</button></div><div class="small imgState">${d.img?'Obrázok je načítaný a uložený v JSON.':'Bez obrázka.'}</div>`;grid.appendChild(ed);}box.appendChild(grid);if(r<rows-1){box.insertAdjacentHTML('beforeend', `<hr class="row-separator">`);}}}
+function bindDynamic(){document.querySelectorAll('.headerInput,.cellText,.columnAlign,.columnWidthInput').forEach(el=>el.addEventListener('input',updatePreview));document.querySelectorAll('.columnAlign').forEach(el=>el.addEventListener('change',updatePreview));document.querySelectorAll('[data-headerbr]').forEach(b=>b.onclick=()=>insertAtCursor(document.querySelector(`.headerInput[data-c="${b.dataset.headerbr}"]`),'<br>'));document.querySelectorAll('.insertBrCell').forEach(b=>b.onclick=()=>insertAtCursor(b.closest('.cellEditor').querySelector('.cellText'),'<br>'));document.querySelectorAll('.clearImg').forEach(b=>b.onclick=()=>{const ed=b.closest('.cellEditor');cellData[+ed.dataset.r][+ed.dataset.c].img='';ed.querySelector('.imagePreview').innerHTML='';ed.querySelector('.imgState').textContent='Bez obrázka.';updatePreview()});document.querySelectorAll('.cellImg').forEach(inp=>inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const ed=inp.closest('.cellEditor'),reader=new FileReader();reader.onload=()=>{const r=+ed.dataset.r,c=+ed.dataset.c;cellData[r][c].img=reader.result;cellData[r][c].imgWidth=getImageWidthMm();const im=new Image();im.onload=()=>{cellData[r][c].imgRatio=im.naturalWidth&&im.naturalHeight?im.naturalWidth/im.naturalHeight:1.5;updatePreview()};im.src=reader.result;ed.querySelector('.imagePreview').innerHTML=imagePreviewHtml(reader.result);ed.querySelector('.imgState').textContent='Obrázok je načítaný a uložený v JSON.';updatePreview()};reader.readAsDataURL(file)})}
+function colPercents(cols){if(columnWidthData.length===cols){return columnWidthData}if(cols===3)return [28.8,35.6,35.6];return Array(cols).fill(100/cols)}
+function updatePreview(){
+    preserveData();
+    const grade=safeHtml($('grade').value).trim(),year=safeHtml($('year').value).trim();
+    $('gradeYearPreview').innerHTML=grade&&year?`${grade} (${year})`:(grade||year);
+    $('sheetTitlePreview').innerHTML=safeHtml($('sheetTitleInput').value);
+	document.title = slugify($('sheetTitleInput').value);
+    $('instructionsPreview').innerHTML=safeHtml($('instructions').value);
+    $('htmlPreview').innerHTML=safeHtml($('htmlContent').value);
+    
+    $('sheetTitlePreview').style.marginBottom = ($('spaceBelowTitle').value || 8) + 'mm';
+    $('instructionsPreview').style.marginBottom = ($('spaceBelowInstructions').value || 10) + 'mm';
+
+    $('footerAuthor').innerHTML='<b>Autor</b> '+safeHtml($('author').value);
+    applyStyle($('sheetTitlePreview'),'title');
+    applyStyle($('instructionsPreview'),'instructions');
+    applyStyle($('htmlPreview'),'content');
+    applyStyle(document.querySelector('.sheetHeader'),'header');
+    const ha=$('align_header')?$('align_header').value:'right';
+    document.querySelector('.sheetHeader').style.textAlign=ha;
+    document.querySelector('.sheetHeader').style.justifyContent=ha==='right'?'flex-end':ha==='center'?'center':'flex-start';
+    applyStyle(document.querySelector('.footerText'),'footer');
+    updateTablePreview();
+}
+function updateTablePreview(){
+    const table=$('generatedTable');
+    table.innerHTML='';
+    
+    let styleEl = document.getElementById('dynamicTableBorders');
+    if(!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamicTableBorders';
+        document.head.appendChild(styleEl);
+    }
+    const border=$('borderVisible').checked?`${$('borderWidth').value}px ${$('borderStyle').value} ${$('borderColor').value}`:'none';
+    const imgW = getImageWidthMm();
+    styleEl.innerHTML = `
+        .generatedTable th, .generatedTable td,
+        #printPages .generatedTable th, #printPages .generatedTable td {
+            border: ${border} !important;
+        }
+        .generatedTable img, #printPages .generatedTable img {
+            width: ${imgW}mm !important;
+            max-width: ${imgW}mm !important;
+            height: auto !important;
+        }
+    `;
+
+    const cols=+$('colCount').value,rows=+$('rowCount').value,per=colPercents(cols);
+    const cg=document.createElement('colgroup');
+    per.forEach(p=>{const col=document.createElement('col');col.style.width=p+'%';cg.appendChild(col)});
+    table.appendChild(cg);
+    const trh=document.createElement('tr');
+    for(let c=0;c<cols;c++){
+        const align=columnAlignData[c]||'left',th=document.createElement('th');
+        th.innerHTML=safeHtml(headerData[c]||'');
+        th.style.textAlign=align;
+        applyStyle(th,'tableHeader');
+        trh.appendChild(th)
+    }
+    table.appendChild(trh);
+    for(let r=0;r<rows;r++){
+        const tr=document.createElement('tr');
+        for(let c=0;c<cols;c++){
+            const align=columnAlignData[c]||'left',d=cellData[r]?.[c]||{},td=document.createElement('td');
+            td.style.textAlign=align;
+            applyStyle(td,'tableBody');
+            if(d.img){
+                const img=document.createElement('img');
+                img.src=d.img;
+                img.style.width=imgW+'mm';
+                img.style.height='auto';
+                img.style.margin=align==='left'?'0 auto 2px 0':align==='right'?'0 0 2px auto':'0 auto 2px';
+                td.appendChild(img)
+            }
+            const div=document.createElement('div');
+            div.innerHTML=safeHtml(d.text||'');
+            td.appendChild(div);
+            tr.appendChild(td)
+        }
+        table.appendChild(tr)
+    }
+}
+function cloneCellsForJson(){return cellData.map(row=>(row||[]).map(cell=>({text:cell?.text||'',img:cell?.img||'',imgWidth:getImageWidthMm(),imgRatio:cell?.imgRatio||1.5})))}function settings(){preserveData();return{version:'2026-vylepsene-rozlozenie',savedAt:new Date().toISOString(),author:$('author').value,grade:$('grade').value,year:$('year').value,title:$('sheetTitleInput').value,spaceBelowTitle:$('spaceBelowTitle').value,instructions:$('instructions').value,spaceBelowInstructions:$('spaceBelowInstructions').value,htmlContent:$('htmlContent').value,colCount:$('colCount').value,rowCount:$('rowCount').value,defaultImgWidth:getImageWidthMm(),customPageBreaks:$('customPageBreaks').value,marginTopNextPages:$('marginTopNextPages').value,columnWidths:[...columnWidthData],borderVisible:$('borderVisible').checked,borderWidth:$('borderWidth').value,borderStyle:$('borderStyle').value,borderColor:$('borderColor').value,headers:[...headerData],columnAlignments:[...columnAlignData],cells:cloneCellsForJson(),fonts:Object.fromEntries(Object.keys(sections).map(k=>[k,{font:$('font_'+k).value,size:$('size_'+k).value,weight:$('weight_'+k).value,style:$('style_'+k).value,align:(k==='header'&&$('align_header'))?$('align_header').value:undefined}]))}}function loadSettings(s){$('author').value=s.author||'';$('grade').value=s.grade||'';$('year').value=s.year||'';$('sheetTitleInput').value=s.title||'';$('spaceBelowTitle').value=s.spaceBelowTitle!==undefined?s.spaceBelowTitle:8;$('instructions').value=s.instructions||'';$('spaceBelowInstructions').value=s.spaceBelowInstructions!==undefined?s.spaceBelowInstructions:10;$('htmlContent').value=s.htmlContent||'';['colCount','rowCount','borderWidth','borderStyle','borderColor','customPageBreaks','marginTopNextPages'].forEach(k=>{if(s[k]!==undefined&&$(k))$(k).value=s[k]});if(s.defaultImgWidth!==undefined){if(s.defaultImgWidth<10){$('defaultImgWidth').value=s.defaultImgWidth*10}else{$('defaultImgWidth').value=s.defaultImgWidth}}else{$('defaultImgWidth').value=25}$('borderVisible').checked=!!s.borderVisible;headerData=[...(s.headers||[])];columnAlignData=[...(s.columnAlignments||[])];if(s.columnWidths!==undefined){columnWidthData=[...s.columnWidths]}else{columnWidthData=[]}cellData=(s.cells||[]).map(row=>(row||[]).map(cell=>({text:cell?.text||'',img:cell?.img||'',imgWidth:getImageWidthMm(),imgRatio:cell?.imgRatio||1.5})));if(s.fonts)Object.entries(s.fonts).forEach(([k,v])=>{if($('font_'+k)){$('font_'+k).value=v.font;$('size_'+k).value=v.size;$('weight_'+k).value=v.weight;$('style_'+k).value=v.style;if(k==='header'&&$('align_header')&&v.align)$('align_header').value=v.align}});buildEditors(false)}function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function rtfEscapeUnicode(str){return(str||'').replace(/\\/g,'\\\\').replace(/[{}]/g,m=>'\\'+m).replace(/\n/g,'\\line ').replace(/<br\s*\/?>/gi,'\\line ').replace(/<[^>]*>/g,'').split('').map(ch=>{const code=ch.charCodeAt(0);return code>127?'\\u'+(code>32767?code-65536:code)+'?':ch}).join('')}function dataUrlToRtfPict(dataUrl,ratio){const m=(dataUrl||'').match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);if(!m)return'';const kind=m[1]==='png'?'pngblip':'jpegblip',bin=atob(m[2]);let hex='';for(let i=0;i<bin.length;i++)hex+=bin.charCodeAt(i).toString(16).padStart(2,'0');const visibleW=getImageWidthCm()*RTF_WIDTH_CORRECTION;const visibleH=visibleW/(ratio||1.5);const w=cmToTwip(visibleW),h=cmToTwip(visibleH);return`{\\pict\\${kind}\\picw${w}\\pich${h}\\picwgoal${w}\\pichgoal${h} ${hex}}`}function rtfAlign(a){return a==='center'?'\\qc ':a==='right'?'\\qr ':a==='justify'?'\\qj ':'\\ql '}function rtfColWidths(cols){const total=9903;const per=colPercents(cols);const sum=per.reduce((a,b)=>a+b,0)||100;return per.map(p=>Math.floor(total*(p/sum)))}function makeRtf(){preserveData();const s=settings(),cols=+s.colCount,rows=+s.rowCount,widths=rtfColWidths(cols);let r='{\\rtf1\\ansi\\ansicpg1250\\deff0{\\fonttbl{\\f0 Arial;}{\\f1 Comic Sans MS;}{\\f2 Consolas;}{\\f3 Monaco;}}';r+='\\paperw11906\\paperh16838\\margl1200\\margr906\\margt1440\\margb965\\viewkind4\\uc1 ';r+='{\\footer\\pard\\fs20\\b '+rtfEscapeUnicode('Autor: ')+'\\b0 '+rtfEscapeUnicode(s.author)+'\\tab\\qr '+rtfEscapeUnicode('Strana ')+'{\\field{\\*\\fldinst PAGE}{\\fldrslt 1}}\\par}';r+='\n';r+='\\pard\\qr\\b '+rtfEscapeUnicode((s.grade&&s.year)?`${s.grade} (${s.year})`:(s.grade||s.year))+'\\b0\\par\n';
+const twipsTitle = cmToTwip((parseFloat(s.spaceBelowTitle)||8)/10);
+const twipsInstr = cmToTwip((parseFloat(s.spaceBelowInstructions)||10)/10);
+r+='\\pard\\qc\\b\\fs28\\sa'+twipsTitle+' '+rtfEscapeUnicode(s.title)+'\\b0\\par\n';r+='\\pard\\sa'+twipsInstr+' '+rtfEscapeUnicode(s.instructions)+'\\par\n';if(s.htmlContent)r+='\\pard '+rtfEscapeUnicode(s.htmlContent)+'\\par\n';r+='\\pard\\par\n';function rowRtf(cells,isHeader){let out='\\trowd\\trgaph80\\trleft0\\trautofit0 ';let pos=0;for(let c=0;c<cols;c++){pos+=widths[c]||widths[0];out+='\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx'+pos}cells.forEach((txt,i)=>out+='\\intbl '+rtfAlign((s.columnAlignments||[])[i]||'left')+(isHeader?'\\b ':'')+txt+(isHeader?'\\b0 ':'')+'\\cell ');return out+'\\row\n'}r+=rowRtf(s.headers.slice(0,cols).map(rtfEscapeUnicode),true);for(let i=0;i<rows;i++){let cells=[];for(let c=0;c<cols;c++){const d=s.cells[i]?.[c]||{};let content='';if(d.img)content+=dataUrlToRtfPict(d.img,parseFloat(d.imgRatio||1.5))+' ';content+=rtfEscapeUnicode(d.text||'');cells.push(content)}r+=rowRtf(cells,false)}return r+'}'}
+document.querySelectorAll('.brbtn[data-br]').forEach(b=>b.onclick=()=>insertAtCursor($(b.dataset.br),'<br>'));['author','grade','year','sheetTitleInput','instructions','htmlContent','borderVisible','borderWidth','borderStyle','borderColor','defaultImgWidth','spaceBelowTitle','spaceBelowInstructions','customPageBreaks','marginTopNextPages'].forEach(id=>$(id)?.addEventListener('input',updatePreview));$('rebuild').onclick=()=>buildEditors(true);$('addRow').onclick=()=>{$('rowCount').value=+$('rowCount').value+1;buildEditors(true)};$('saveJson').onclick=()=>download(slugify($('sheetTitleInput').value)+'.json',new Blob([JSON.stringify(settings(),null,2)],{type:'application/json;charset=utf-8'}));$('loadJson').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadSettings(JSON.parse(r.result));r.readAsText(f,'utf-8')};$('downloadRtf').onclick=()=>download(slugify($('sheetTitleInput').value)+'.rtf',new Blob([makeRtf()],{type:'application/rtf;charset=utf-8'}));function cloneForPrint(sel){
+    const el=document.querySelector(sel);
+    if(!el)return null;
+    const clone=el.cloneNode(true);
+    if(clone.removeAttribute)clone.removeAttribute('id');
+    clone.querySelectorAll?.('[id]').forEach(n=>n.removeAttribute('id'));
+    return clone
+}
+function createPrintTable(){
+    const src=$('generatedTable');
+    const table=document.createElement('table');
+    table.className='generatedTable';
+    const cg=src.querySelector('colgroup');
+    if(cg)table.appendChild(cg.cloneNode(true));
+    const headerRow=src.querySelector('tr');
+    if(headerRow)table.appendChild(headerRow.cloneNode(true));
+    return table
+}
+function createPrintPage(pageNo,includeIntro){
+    const page=document.createElement('section');
+    page.className='printPage';
+    const content=document.createElement('div');
+    content.className='printPageContent';
+    if(includeIntro){
+        ['.sheetHeader','#sheetTitlePreview','#instructionsPreview','#htmlPreview'].forEach(sel=>{
+            const clone=cloneForPrint(sel);
+            if(clone)content.appendChild(clone)
+        })
+    } else {
+        const topMargin = parseFloat($('marginTopNextPages').value) || 0;
+        if(topMargin > 0){
+            content.style.paddingTop = topMargin + 'mm';
+        }
+    }
+    const table=createPrintTable();
+    content.appendChild(table);
+    const footer=document.createElement('div');
+    footer.className='printPageFooter';
+    footer.innerHTML=`<span class="printAuthor"><b>Autor</b> ${safeHtml($('author').value)}</span><span class="printPageNo">${pageNo}</span>`;
+    page.appendChild(content);
+    page.appendChild(footer);
+    return {page,content,table}
+}
+function printContentMaxPx(){
+    return cmToPx(27.5); /* Úplne nadoraz k pätičke */
+}
+function pageFits(measureRoot,pageObj){
+    measureRoot.innerHTML='';
+    const test=pageObj.page.cloneNode(true);
+    measureRoot.appendChild(test);
+    const content=test.querySelector('.printPageContent');
+    return content.offsetHeight<=printContentMaxPx()
+}
+function updatePrintPageFooters(){
+    document.querySelectorAll('#printPages .printPage').forEach((page,i)=>{
+        const author=page.querySelector('.printAuthor');
+        const no=page.querySelector('.printPageNo');
+        if(author)author.innerHTML='<b>Autor</b> '+safeHtml($('author').value);
+        if(no)no.textContent=String(i+1)
+    })
+}
+function buildPrintPages(){
+    preserveData();
+    updatePreview();
+    const wrap=$('printPages');
+    const measure=$('printMeasure');
+    wrap.innerHTML='';
+    measure.innerHTML='';
+    const sourceRows=[...$('generatedTable').querySelectorAll('tr')];
+    if(!sourceRows.length)return;
+    const bodyRows=sourceRows.slice(1).map(r=>r.cloneNode(true));
+    let pageNo=1;
+    let current=createPrintPage(pageNo,true);
+    wrap.appendChild(current.page);
+    if(!bodyRows.length){
+        updatePrintPageFooters();
+        return
+    }
+
+    const customBreaksStr = $('customPageBreaks').value.trim();
+    const customBreaks = customBreaksStr ? customBreaksStr.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0) : [];
+    let useCustom = customBreaks.length > 0;
+    let customIndex = 0;
+    let rowsOnCurrentPage = 0;
+
+    bodyRows.forEach(row=>{
+        const candidate=row.cloneNode(true);
+        let shouldBreak = false;
+
+        if (useCustom) {
+            const maxRows = customBreaks[customIndex] || customBreaks[customBreaks.length - 1]; 
+            if (rowsOnCurrentPage >= maxRows) {
+                shouldBreak = true;
+            }
+        } else {
+            current.table.appendChild(candidate);
+            if(!pageFits(measure,current)){
+                current.table.removeChild(candidate);
+                shouldBreak = true;
+            } else {
+                current.table.removeChild(candidate);
+            }
+        }
+
+        if (shouldBreak) {
+            pageNo+=1;
+            current=createPrintPage(pageNo,false);
+            wrap.appendChild(current.page);
+            rowsOnCurrentPage = 0;
+            if (useCustom) customIndex++;
+        }
+
+        current.table.appendChild(row.cloneNode(true));
+        rowsOnCurrentPage++;
+    });
+    updatePrintPageFooters()
+}
+window.addEventListener('beforeprint',buildPrintPages);
+window.addEventListener('afterprint',()=>{$('printMeasure').innerHTML=''});
+$('printPdf').onclick=()=>{buildPrintPages();setTimeout(()=>window.print(),80)};document.addEventListener('input',e=>{if(e.target.id?.startsWith('font_')||e.target.id?.startsWith('size_')||e.target.id?.startsWith('weight_')||e.target.id?.startsWith('style_')||e.target.id==='align_header')updatePreview()});makeFontSettings();buildEditors(false);
+
+  </script>
+ </body>
+</html>
