@@ -82,6 +82,30 @@
     .img-preview-box { width: 80px; height: 53px; border: 1px dashed #999; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; }
     .img-preview-box img { max-width: 100%; max-height: 100%; }
     .img-file-btn { max-width: 220px; }
+    .img-file-btn-hidden { display: none; }
+    .img-upload-label {
+      display: inline-block;
+      margin: 8px;
+      padding: 8px;
+      font-size: 15px;
+      border: 1px solid #999;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      user-select: none;
+    }
+    .img-upload-label:hover { background: #f0f0f0; }
+    body.dark-mode .img-upload-label { background: #f7f9ef; color: #000000; border-color: #ffffff; }
+    .img-load-status {
+      min-width: 210px;
+      font-size: 0.9em;
+      text-align: left;
+      color: #555;
+    }
+    .img-load-status.loaded { color: #0b7a22; font-weight: bold; }
+    body.dark-mode .img-load-status { color: #d6e7cf; }
+    body.dark-mode .img-load-status.loaded { color: #9ef0a7; }
 
     @media(max-width:700px){ 
       #board{ grid-template-columns:repeat(2,1fr); } 
@@ -224,6 +248,7 @@ const titleInput = document.getElementById("gameTitleInput");
 const authorInput = document.getElementById("gameAuthorInput");
 const yearInput = document.getElementById("gameYearInput");
 const imgContainer = document.getElementById("imageRowsContainer"); 
+let imageRowCounter = 0;
 
 /* ====== TTS Logic (Ukážka v generátore) ====== */
 document.getElementById("toggleTTS").addEventListener("change", function() {
@@ -298,7 +323,18 @@ function addImageRow(existingData = null) {
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = "image/*";
-    fileInput.className = "img-file-btn";
+    fileInput.className = "img-file-btn img-file-btn-hidden";
+    const fileInputId = "imgFileInput_" + (++imageRowCounter);
+    fileInput.id = fileInputId;
+    
+    const uploadLabel = document.createElement("label");
+    uploadLabel.className = "img-upload-label";
+    uploadLabel.htmlFor = fileInputId;
+    uploadLabel.textContent = "📁 Vybrať obrázok";
+    
+    const loadStatus = document.createElement("span");
+    loadStatus.className = "img-load-status";
+    loadStatus.textContent = "Žiadny obrázok";
     
     const hiddenBase64 = document.createElement("input");
     hiddenBase64.type = "hidden";
@@ -324,6 +360,8 @@ function addImageRow(existingData = null) {
                 imgPreview.src = e.target.result;
                 imgPreview.style.display = "block";
                 hiddenBase64.value = e.target.result;
+                loadStatus.textContent = "✅ Načítané: " + file.name;
+                loadStatus.classList.add("loaded");
             }
             reader.readAsDataURL(file);
         }
@@ -334,12 +372,16 @@ function addImageRow(existingData = null) {
             imgPreview.src = existingData.img;
             imgPreview.style.display = "block";
             hiddenBase64.value = existingData.img;
+            loadStatus.textContent = "✅ Obrázok načítaný zo zálohy";
+            loadStatus.classList.add("loaded");
         }
         if(existingData.text) textInput.value = existingData.text;
     }
 
     div.appendChild(previewBox);
+    div.appendChild(uploadLabel);
     div.appendChild(fileInput);
+    div.appendChild(loadStatus);
     div.appendChild(hiddenBase64);
     div.appendChild(textInput);
     div.appendChild(delBtn);
